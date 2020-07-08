@@ -1,1 +1,1 @@
-web: python manage.py runserver
+web: gunicorn photo_facets.wsgi --log-file -
