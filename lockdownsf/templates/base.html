@@ -1,0 +1,23 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SF Lockdown Photos</title>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
+        <link rel="stylesheet" href="{% static 'js/photo_json.js' %}">
+        <link rel="stylesheet" href="{% static 'js/javascript.js' %}">
+        <script type="text/javascript" src="{% static 'js/photo_json.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/javascript.js' %}"></script>
+        <script async defer 
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initGmap">
+        </script>
+        <link rel="shortcut icon" href="#" />
+    </head>
+
+    <body>
+{% block content %}
+{% endblock %}
+    </body>
+</html>
