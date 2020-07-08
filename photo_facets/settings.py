@@ -25,7 +25,9 @@ SECRET_KEY = '94a6)x1t-ja#t=tbl@#a%nc%wx6#4g_2$e8x@-@wtvia%(=hri'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'arcane-island-30983.herokuapp.com',
+]
 
 
 # Application definition
