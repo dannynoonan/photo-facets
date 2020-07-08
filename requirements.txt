@@ -1,4 +1,5 @@
 django
-gunicorn
 django-heroku
+dj_static
+gunicorn
 requests
