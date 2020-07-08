@@ -13,12 +13,8 @@
         <br/><input id="blm_checkbox" onclick="toggleMarkersForCategory('blm');" type=checkbox>Black Lives Matter (<span id="blm_count"></span>)
     </div>
     <div id="gmap"></div>
-
     
-
-
-    
-<!-- {% if neighborhoods %}
+{% if neighborhoods %}
     <ul>
     {% for neighborhood in neighborhoods %}
         <li><a href="/lockdownsf/{{ neighborhood.slug }}">{{ neighborhood.name }}</a></li>
@@ -26,7 +22,7 @@
     </ul>
 {% else %}
     <p>No neighborhoods found to link to.</p>
-{% endif %}    -->
+{% endif %}   
     
     <!-- <script async defer 
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initGmap">
