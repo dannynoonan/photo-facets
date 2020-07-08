@@ -7,7 +7,8 @@ from .models import Neighborhood
 
 
 def index(request):
-    neighborhoods = Neighborhood.objects.all()
+    # neighborhoods = Neighborhood.objects.all()
+    neighborhoods = []
     context = {'neighborhoods': neighborhoods}
     return render(request, 'index.html', context)
 
