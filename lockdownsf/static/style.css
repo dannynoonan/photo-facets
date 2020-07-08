@@ -1,0 +1,30 @@
+li a {
+    color: green;
+}
+/* Set gmap height explicitly to define the size of the div element that contains the gmap */
+#gmap {
+    height: 100%;
+}
+/* Optional: Makes the sample page fill the window. */
+html, body {
+    height: 100%;
+    margin: 5px;
+    padding: 0;
+}
+#floating-panel {
+    position: absolute;       
+    top: 5px;
+    left: 5px;
+    z-index: 5;
+    background-color: #fff;
+    padding: 5px;
+    border: 1px solid #999;
+    text-align: left;
+    font-family: 'Roboto','sans-serif';
+    line-height: 30px;
+    padding-left: 10px;
+}
+div.marker-window-landscape {
+    height: 600;
+    width: 800;
+}
