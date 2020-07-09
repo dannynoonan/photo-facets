@@ -1,5 +1,7 @@
 django
 django-heroku
-dj_static
+dj-database-url
+dj-static
 gunicorn
+psycopg2-binary
 requests
