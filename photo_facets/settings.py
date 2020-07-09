@@ -26,6 +26,7 @@ SECRET_KEY = '94a6)x1t-ja#t=tbl@#a%nc%wx6#4g_2$e8x@-@wtvia%(=hri'
 DEBUG = True
 
 ALLOWED_HOSTS = [
+    'localhost',
     'arcane-island-30983.herokuapp.com',
 ]
 
@@ -78,8 +79,10 @@ WSGI_APPLICATION = 'photo_facets.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'lockdownsf',
     }
 }
 

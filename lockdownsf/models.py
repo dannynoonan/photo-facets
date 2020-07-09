@@ -30,4 +30,4 @@ class Photo(models.Model):
         unique_together = ('file_name', 'neighborhood_slug')
     
     def __str__(self):
-        return self.neighborhood_slug.slug + '/' + self.file_name + '.png'
+        return self.neighborhood_slug.slug + '/' + self.file_name + '.' + self.file_format
