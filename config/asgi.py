@@ -1,5 +1,5 @@
 """
-ASGI config for photo_facets project.
+ASGI config for photo-facets project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

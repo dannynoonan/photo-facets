@@ -1,5 +1,5 @@
 """
-WSGI config for photo_facets project.
+WSGI config for photo-facets project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
