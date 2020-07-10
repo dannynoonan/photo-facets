@@ -12,7 +12,8 @@ import os
 from django.core.wsgi import get_wsgi_application
 from dj_static import Cling
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'photo_facets.settings')
+# os.environ['DJANGO_SETTINGS_MODULE'] = 'config.settings.heroku'
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.heroku')
 
 # application = get_wsgi_application()
 # https://stackoverflow.com/questions/22007428/error-r10-boot-timeout-django-app-on-heroku

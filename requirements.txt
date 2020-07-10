@@ -1,4 +1,5 @@
 django
+django-environ
 django-heroku
 dj-database-url
 dj-static
