@@ -1,1 +1,1 @@
-web: gunicorn photo_facets.wsgi --log-file -
+web: gunicorn config.wsgi --log-file -
