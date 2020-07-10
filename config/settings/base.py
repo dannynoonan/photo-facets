@@ -81,7 +81,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'photo_facets.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
