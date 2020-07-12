@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<input type="file" id="img-file-input"/>
+<p id="status">Please fucking select a file</p>
+<img id="preview" src="/lockdownsf/static/img/default.jpg"/>
+
+<form method="POST" action="/lockdownsf/submit_form/">
+    {% csrf_token %}
+    <input type="hidden" id="img-url" name="img-url" value="/static/img/default.jpg">
+    <input type="text" name="neighborhood-slug" placeholder="neighborhood slug">
+    <input type="submit" value="Upload photo">
+</form>
+{% endblock %}
