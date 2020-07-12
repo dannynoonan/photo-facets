@@ -17,7 +17,7 @@
 {% if neighborhoods %}
     <ul>
     {% for neighborhood in neighborhoods %}
-        <li><a href="/lockdownsf/{{ neighborhood.slug }}">{{ neighborhood.name }}</a></li>
+        <li><a href="/lockdownsf/neighborhood/{{ neighborhood.slug }}">{{ neighborhood.name }}</a></li>
     {% endfor %}
     </ul>
 {% else %}
