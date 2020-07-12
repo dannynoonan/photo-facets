@@ -42,8 +42,6 @@ def neighborhood(request, neighborhood_slug):
 
 
 def sign_s3(request):
-    print('###### in sign_s3')
-
     print('###### pprint(getmembers(request)):')
     pprint(getmembers(request))
     
@@ -51,16 +49,12 @@ def sign_s3(request):
     # S3_BUCKET = settings.S3_BUCKET_NAME
     S3_BUCKET = 'lockdownsf'
 
-    # object_name = urllib.parse.quote_plus(request.GET['file_name'])
-	# mime_type = request.GET['file_type']
-
     # file_name = request.args.get('file_name')
     # file_type = request.args.get('file_type')
 
+    # object_name = urllib.parse.quote_plus(request.GET['file_name'])
     file_name = request.GET['file_name']
     file_type = request.GET['file_type']
-
-    print('&&&&&&&&&&&&&& file_name: [' + file_name + '] file_type [' + file_type + ']')
 
     s3 = boto3.client('s3')
 
