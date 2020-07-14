@@ -11,6 +11,12 @@ html, body {
     margin: 5px;
     padding: 0;
 }
+.hidden-button {
+    visibility: hidden;
+}
+.hidden-block {
+    display: none;
+}
 #floating-panel {
     position: absolute;       
     top: 5px;

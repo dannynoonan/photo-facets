@@ -276,7 +276,7 @@ function initUpload(){
 window.onload=function(){
     // choose file button
     document.getElementById('img-file-path').onchange = function(){
-        document.getElementById("init-upload-photo").style.display = 'block';
+        document.getElementById("init-upload-photo").style.visibility = 'visible';
     };
     // init file upload button
     document.getElementById('init-upload-photo').onclick = initUpload;
