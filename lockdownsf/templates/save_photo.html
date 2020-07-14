@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if photo %}
+<p><img src="{{ file_path }}" width="1000"/>
+    <ul>
+        <li>Source file name: {{ source_file_name }}</li>
+        <li>Photo uuid: {{ photo.file_name }}</li> <!-- TODO edit field name -->
+        <li>Date taken: {{ photo.dt_taken }}</li>
+        <li>Neighborhood: {{ photo.neighborhood_slug.name }}</li>
+        <li>File format: {{ photo.file_format }}</li>
+        <li>Latitude: {{ photo.latitude }}</li>
+        <li>Longitude: {{ photo.longitude }}</li>
+        <li>Width: {{ photo.width_pixels }}</li>
+        <li>Height: {{ photo.height_pixels }}</li>
+        <li>Aspect format: {{ photo.aspect_format }}</li>
+        <li>Scene type: {{ photo.scene_type }}</li>
+        <li>Business type: {{ photo.business_type }}</li>
+        <li>Other labels: {{ photo.other_types }}</li>
+    </ul> 
+</p>
+{% else %}
+<p>No photo data</p>
+{% endif %}
+
+{% if exception %}
+<p><b>vars(request):</b></p>
+<p>Exception: {{ exception }}</p>
+<p>Data dump: {{ dump }}</p>
+{% endif %}
+
+{% endblock %}
