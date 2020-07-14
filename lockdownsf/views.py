@@ -3,6 +3,7 @@ from inspect import getmembers
 import json
 import os
 from pprint import pprint
+import uuid
 
 from django.shortcuts import render
 from django.template import loader
@@ -86,12 +87,40 @@ def sign_s3(request):
 
 def upload_photo(request):
     template = 'upload_photo.html'
-
+    
+    photo_uuid = uuid.uuid4()
+    all_neighborhoods = Neighborhood.objects.all()
+    all_scene_types = [
+        'mural',
+        'boarded',
+        'distinctiveSign',
+        'personalSign',
+        'park',
+        'slowStreets',
+        'emptyStreet'
+    ]
+    all_business_types = [
+        'dining',
+        'bar',
+        'performanceVenue',
+        'municipal',
+        'foodMarket',
+        'nonFoodShop',
+        'laundry',
+        'salon',
+        'exercise',
+        'medical',
+        'financial'
+    ]
     context = {
+        "photo_uuid": str(photo_uuid),
+        "all_neighborhoods": all_neighborhoods,
+        "all_scene_types": all_scene_types,
+        "all_business_types": all_business_types,
     }
 
     return render(request, template, context)
-
+        
 
 def submit_form(request):
     template = 'upload_photo_success.html'

@@ -211,19 +211,19 @@ function toggleMarkersForCategory(category) {
                     var keyInOtherDisplayedCat = false;
                     keyScan:
                     for (var cat in catsToKeys) {
-                    // if cat is same category we're hiding: ignore
-                    if (cat == category) { continue; }
-                    // if cat isn't currently displayed: ignore
-                    var catCheckbox = document.getElementById(cat + '_checkbox');
-                    if (!(catCheckbox.checked)) { continue; }
-                    // if cat is currently displayed, look for keyToPotentiallyRemove in that 
-                    var keysForCat = catsToKeys[cat];
-                    for (var j = 0; j < keysForCat.length; j++) {
-                        if (keysForCat[j] == keyToPotentiallyRemove) {
-                        keyInOtherDisplayedCat = true;
-                        break keyScan;
-                        } 
-                    }
+                        // if cat is same category we're hiding: ignore
+                        if (cat == category) { continue; }
+                        // if cat isn't currently displayed: ignore
+                        var catCheckbox = document.getElementById(cat + '_checkbox');
+                        if (!(catCheckbox.checked)) { continue; }
+                        // if cat is currently displayed, look for keyToPotentiallyRemove in that 
+                        var keysForCat = catsToKeys[cat];
+                        for (var j = 0; j < keysForCat.length; j++) {
+                            if (keysForCat[j] == keyToPotentiallyRemove) {
+                            keyInOtherDisplayedCat = true;
+                            break keyScan;
+                            } 
+                        }
                     }
                     // if this key is not in catsToKeys for any other currently displayed cats, update its marker's map and remove it from displayedMarkerKeys array
                     if (!(keyInOtherDisplayedCat)) {
@@ -256,20 +256,30 @@ function toggleMarkersForCategory(category) {
     start upload procedure by asking for a signed request from the app.
 */
 function initUpload(){
-    const files = document.getElementById('img-file-input').files;
-    const file = files[0];
+    const files = document.getElementById('img-file-path').files;
+    const uuidFileName = document.getElementById('photo-uuid').innerHTML;
+    var file = files[0];
     if (!file) {
         return alert('No file selected.');
     }
-    getSignedRequest(file);
+    // to replace file.name with uuid, a new file must be created
+    var blob = file.slice(0, file.size, file.type); 
+    var newFile = new File([blob], uuidFileName, {type: file.type});
+    // retain original img file name in DOM
+    document.getElementById("photo-file-name").innerHTML = file.name;
+    getSignedRequest(newFile);
 }
 
 /*
     Bind listeners when the page loads.
 */
 window.onload=function(){
-    el = document.getElementById('img-file-input')
-    el.onchange = initUpload;
+    // choose file button
+    document.getElementById('img-file-path').onchange = function(){
+        document.getElementById("init-upload-photo").style.display = 'block';
+    };
+    // init file upload button
+    document.getElementById('init-upload-photo').onclick = initUpload;
 }
 
 
@@ -305,7 +315,63 @@ function uploadFile(file, s3Data, url) {
         if (xhr.readyState === 4) {
             if (xhr.status === 200 || xhr.status === 204) {
                 document.getElementById("preview").src = url;
-                document.getElementById("img_url").value = url;
+                document.getElementById("photo-file-path").innerHTML = url;
+                document.getElementById("img-properties").style.display = "block";
+                document.getElementById("photo-file-format").innerHTML = file.type;
+
+                // extract and set properties using EXIF
+                var domImg = document.createElement('div');
+                domImg.src = url;
+
+                // TODO extract method
+                EXIF.getData(domImg, function() {
+                    var imgData = EXIF.getAllTags(this);
+                    console.log(imgData);				
+                    // extract and calculate latitude data
+                    var latData = imgData.GPSLatitude;				 			
+                    var latDegree = latData[0].numerator / latData[0].denominator;
+                    var latMinute = latData[1].numerator / latData[1].denominator;
+                    var latSecond = latData[2].numerator / latData[2].denominator;
+                    var latDirection = imgData.GPSLatitudeRef;
+                    var latFinal = convertDMSToDD(latDegree, latMinute, latSecond, latDirection);
+                    document.getElementById("photo-latitude").innerHTML = latFinal;
+                    // extract and calculate longitude data
+                    var lngData = imgData.GPSLongitude;
+                    var lngDegree = lngData[0].numerator / lngData[0].denominator;
+                    var lngMinute = lngData[1].numerator / lngData[1].denominator;
+                    var lngSecond = lngData[2].numerator / lngData[2].denominator;
+                    var lngDirection = imgData.GPSLongitudeRef;
+                    var lngFinal = convertDMSToDD(lngDegree, lngMinute, lngSecond, lngDirection);
+                    document.getElementById("photo-longitude").innerHTML = lngFinal;
+                    // extract dimensions
+                    var width = imgData.PixelXDimension;
+                    var height = imgData.PixelYDimension;
+                    document.getElementById("photo-width").innerHTML = width;
+                    document.getElementById("photo-height").innerHTML = height;
+                    var adjustedWidth = width;
+                    var adjustedHeight = height;
+                    // extract date
+                    var dateTaken = imgData.DateTime;
+                    document.getElementById("photo-date-taken").innerHTML = dateTaken;
+            
+                    // if (width > height) {
+                    //     // landscape or pano
+                    //     if (width > maxImgWidth) {
+                    //         adjustedWidth = maxImgWidth;
+                    //         adjustedHeight = (adjustedWidth / width) * height;
+                    //         console.log('landscape photo id [' + domImg.id + '] width [' + width + '] height [' + height + '] adjustedWidth [' + adjustedWidth + '] adjustedHeight [' + adjustedHeight + ']');
+                    //     }
+                    // }
+                    // // portrait, square, or vertical pano
+                    // else {
+                    //     if (height > maxImgHeight) {
+                    //         adjustedHeight = maxImgHeight;
+                    //         adjustedWidth = (adjustedHeight / height) * width;
+                    //         console.log('portrait photo id [' + domImg.id + '] width [' + width + '] height [' + height + '] adjustedWidth [' + adjustedWidth + '] adjustedHeight [' + adjustedHeight + ']');
+                    //     }
+                    // }
+
+                });
             }
             else {
                 alert("Could not upload file.");

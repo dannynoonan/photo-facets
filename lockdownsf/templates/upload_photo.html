@@ -1,14 +1,45 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<input type="file" id="img-file-input"/>
-<p id="status">Please fucking select a file</p>
-<img id="preview" src="/lockdownsf/static/img/default.jpg"/>
+<p id="status">Please select a photo</p>
+<input type="file" id="img-file-path"/><br/><br/>
+<input hidden type="button" id="init-upload-photo" value="Init upload photo"/>
+<br/><br/>
+<img id="preview" width="1000" src="/lockdownsf/static/img/default.jpg"/>
 
 <form method="POST" action="/lockdownsf/submit_form/">
     {% csrf_token %}
-    <input type="hidden" id="img-url" name="img-url" value="/static/img/default.jpg">
-    <input type="text" name="neighborhood-slug" placeholder="neighborhood slug">
-    <input type="submit" value="Upload photo">
+    <p hidden id="img-properties">
+    Source file name: <span id="photo-file-name"></span><br/>
+    Assigned guid: <span id="photo-uuid" value="{{ photo_uuid }}">{{ photo_uuid }}</span><br/>
+    Stored file path: <span id="photo-file-path"></span><br/>
+    Date taken: <span id="photo-date-taken"></span><br/>
+    <!-- Date uploaded: <span id="photo-date-uploaded"></span><br/> -->
+    File format: <span id="photo-file-format"></span><br/>
+    Latitude: <span id="photo-latitude"></span><br/>
+    Longitude: <span id="photo-longitude"></span><br/>
+    Width: <span id="photo-width"></span><br/>
+    Height: <span id="photo-height"></span><br/>
+    Aspect format: <span id="photo-aspect-format"></span><br/>
+    Neighborhood: <select id="photo-neighborhood-slug" name="photo-neighborhood-slug">
+        <option value="none">* required *</option>
+    {% for neighorhood in all_neighborhoods %}
+        <option value="{{ neighorhood.slug }}">{{ neighorhood.name }}</option>
+    {% endfor %} 
+    </select><br/>
+    Scene type: <select id="photo-scene-type" name="photo-scene-type">
+        <option value="none">* required *</option>
+    {% for scene_type in all_scene_types %}
+        <option value="{{ scene_type }}">{{ scene_type }}</option>
+    {% endfor %} 
+    </select><br/>
+    Business type: <select id="photo-business-type" name="photo-business-type">
+        <option value="none">* optional *</option>
+    {% for business_type in all_business_types %}
+        <option value="{{ business_type }}">{{ business_type }}</option>
+    {% endfor %} 
+    </select><br/>
+    Other labels: <input type="text" id="photo-other-labels" name="photo-other-labels"/><br/>
+    <input type="submit" value="Save photo"/></p>
 </form>
 {% endblock %}
