@@ -257,7 +257,7 @@ function toggleMarkersForCategory(category) {
 */
 function initUpload(){
     const files = document.getElementById('img-file-path').files;
-    const uuidFileName = document.getElementById('photo-uuid').innerHTML;
+    const uuidFileName = document.getElementById('photo-uuid').value;
     var file = files[0];
     if (!file) {
         return alert('No file selected.');
@@ -266,7 +266,8 @@ function initUpload(){
     var blob = file.slice(0, file.size, file.type); 
     var newFile = new File([blob], uuidFileName, {type: file.type});
     // retain original img file name in DOM
-    document.getElementById("photo-file-name").innerHTML = file.name;
+    document.getElementById("photo-file-name-display").innerHTML = file.name;
+    document.getElementById("photo-file-name").value = file.name;
     getSignedRequest(newFile);
 }
 
@@ -315,9 +316,11 @@ function uploadFile(file, s3Data, url) {
         if (xhr.readyState === 4) {
             if (xhr.status === 200 || xhr.status === 204) {
                 document.getElementById("preview").src = url;
-                document.getElementById("photo-file-path").innerHTML = url;
                 document.getElementById("img-properties").style.display = "block";
-                document.getElementById("photo-file-format").innerHTML = file.type;
+                document.getElementById("photo-file-path-display").innerHTML = url;
+                document.getElementById("photo-file-path").value = url;           
+                document.getElementById("photo-file-format-display").innerHTML = file.type;
+                document.getElementById("photo-file-format").value = file.type;
 
                 // extract and set properties using EXIF
                 var domImg = document.createElement('div');
@@ -334,7 +337,8 @@ function uploadFile(file, s3Data, url) {
                     var latSecond = latData[2].numerator / latData[2].denominator;
                     var latDirection = imgData.GPSLatitudeRef;
                     var latFinal = convertDMSToDD(latDegree, latMinute, latSecond, latDirection);
-                    document.getElementById("photo-latitude").innerHTML = latFinal;
+                    document.getElementById("photo-latitude-display").innerHTML = latFinal;
+                    document.getElementById("photo-latitude").value = latFinal;
                     // extract and calculate longitude data
                     var lngData = imgData.GPSLongitude;
                     var lngDegree = lngData[0].numerator / lngData[0].denominator;
@@ -342,17 +346,21 @@ function uploadFile(file, s3Data, url) {
                     var lngSecond = lngData[2].numerator / lngData[2].denominator;
                     var lngDirection = imgData.GPSLongitudeRef;
                     var lngFinal = convertDMSToDD(lngDegree, lngMinute, lngSecond, lngDirection);
-                    document.getElementById("photo-longitude").innerHTML = lngFinal;
+                    document.getElementById("photo-longitude-display").innerHTML = lngFinal;
+                    document.getElementById("photo-longitude").value = lngFinal;
                     // extract dimensions
                     var width = imgData.PixelXDimension;
                     var height = imgData.PixelYDimension;
-                    document.getElementById("photo-width").innerHTML = width;
-                    document.getElementById("photo-height").innerHTML = height;
+                    document.getElementById("photo-width-display").innerHTML = width;
+                    document.getElementById("photo-width").value = width;
+                    document.getElementById("photo-height-display").innerHTML = height;
+                    document.getElementById("photo-height").value = height;
                     var adjustedWidth = width;
                     var adjustedHeight = height;
                     // extract date
                     var dateTaken = imgData.DateTime;
-                    document.getElementById("photo-date-taken").innerHTML = dateTaken;
+                    document.getElementById("photo-date-taken-display").innerHTML = dateTaken;
+                    document.getElementById("photo-date-taken").value = dateTaken;
             
                     // if (width > height) {
                     //     // landscape or pano

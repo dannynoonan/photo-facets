@@ -10,7 +10,7 @@ from django.template import loader
 from django.http import HttpResponse
 from django.http import Http404
 
-from .models import Neighborhood
+from .models import Neighborhood, Photo
 
 
 def index(request):
@@ -43,10 +43,7 @@ def neighborhood(request, neighborhood_slug):
 
 
 def sign_s3(request):
-    print('###### pprint(getmembers(request)):')
-    pprint(getmembers(request))
-    
-	# S3_BUCKET = os.environ.get('S3_BUCKET')
+    # S3_BUCKET = os.environ.get('S3_BUCKET')
     # S3_BUCKET = settings.S3_BUCKET_NAME
     S3_BUCKET = 'lockdownsf'
 
@@ -70,26 +67,27 @@ def sign_s3(request):
         ExpiresIn = 3600
     )
 
-    # print('################### pprint(getmembers(presigned_post)):')
-    # pprint(getmembers(presigned_post))
-
     data = json.dumps({
         'data': presigned_post,
         # 'url': 'https://%s.s3.amazonaws.com/%s' % (S3_BUCKET, file_name),
         'url': 'https://' + S3_BUCKET + '.s3.amazonaws.com/' +  file_name,
     })
 
-    print('@@@@@@@@@@@@@@@@@@@@ data:')
-    pprint(data)
-
     return HttpResponse(data, content_type='json')
 
 
-def upload_photo(request):
-    template = 'upload_photo.html'
+def select_photo(request):
+    template = 'select_photo.html'
     
     photo_uuid = uuid.uuid4()
     all_neighborhoods = Neighborhood.objects.all()
+    all_aspect_formats = [
+        'landscape',
+        'portrait',
+        'square',
+        'pano',
+        'pano_vertical'
+    ]
     all_scene_types = [
         'mural',
         'boarded',
@@ -113,40 +111,53 @@ def upload_photo(request):
         'financial'
     ]
     context = {
-        "photo_uuid": str(photo_uuid),
-        "all_neighborhoods": all_neighborhoods,
-        "all_scene_types": all_scene_types,
-        "all_business_types": all_business_types,
+        'photo_uuid': str(photo_uuid),
+        'all_aspect_formats': all_aspect_formats,
+        'all_neighborhoods': all_neighborhoods,
+        'all_scene_types': all_scene_types,
+        'all_business_types': all_business_types,
     }
 
     return render(request, template, context)
         
 
-def submit_form(request):
-    template = 'upload_photo_success.html'
+def save_photo(request):
+    template = 'save_photo.html'
 
     try:
-        neighborhood_slug = request.POST["neighborhood-slug"]
-        img_url = request.POST["img-url"]
+        neighborhood_slug = request.POST.get('photo-neighborhood-slug', '')
+        source_file_name = request.POST.get('photo-file-name', '')
+        uuid = request.POST.get('photo-uuid', '')
+        file_path = request.POST.get('photo-file-path', '')
+        date_taken = request.POST.get('photo-date-taken', '')
+        file_format = request.POST.get('photo-file-format', '')
+        latitude = request.POST.get('photo-latitude', '')
+        longitude = request.POST.get('photo-longitude', '')
+        width = request.POST.get('photo-width', '')
+        height = request.POST.get('photo-height', '')
+        aspect_format = request.POST.get('photo-aspect-format', '')
+        scene_type = request.POST.get('photo-scene-type', '')
+        business_type = request.POST.get('photo-business-type', '')
+        other_types = request.POST.get('photo-other-labels', '')
 
-        # TODO
-        # import_photo(image_url, neighborhood_slug)
+        neighborhood = Neighborhood.objects.get(pk=neighborhood_slug)
+        photo = Photo(file_name=uuid, neighborhood_slug=neighborhood, dt_taken=date_taken, 
+            file_format=file_format, latitude=latitude, longitude=longitude, 
+            width_pixels=width, height_pixels=height, aspect_format=aspect_format,
+            scene_type=scene_type, business_type=business_type, other_types=other_types)
 
         context = {
-            'neighborhood_slug': neighborhood_slug,
-            'img_url': img_url,
+            'photo': photo,
+            'source_file_name': source_file_name,
+            'file_path': file_path,
         }
 
         return render(request, template, context)
 
-    except Exception as e:
-        print('pprint(getmembers(request)): ')
-        a = getmembers(request)
-        print('pprint(vars(request)): ')
-        b = vars(request)
+    except Exception as ex:
+        dump = getmembers(request)
         context = {
-            'a': a,
-            'b': b,
-            'e': e
+            'dump': dump,
+            'exception': ex
         }
         return render(request, template, context)

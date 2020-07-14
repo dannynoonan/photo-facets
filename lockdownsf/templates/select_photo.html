@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<p id="status">Please select a photo</p>
+<input type="file" id="img-file-path"/><br/><br/>
+<input type="button" id="init-upload-photo" class="hidden-button" value="Init upload photo"/>
+<br/><br/>
+<img id="preview" width="1000" src="/lockdownsf/static/img/default.jpg"/>
+
+<form method="POST" action="/lockdownsf/save_photo/">
+    {% csrf_token %}
+    <!-- hidden input fields -->
+    <input type="hidden" name="photo-file-name" id="photo-file-name"/>
+    <input type="hidden" name="photo-uuid" id="photo-uuid" value="{{ photo_uuid }}"/>
+    <input type="hidden" name="photo-file-path" id="photo-file-path"/>
+    <input type="hidden" name="photo-date-taken" id="photo-date-taken"/>
+    <input type="hidden" name="photo-file-format" id="photo-file-format"/>
+    <input type="hidden" name="photo-latitude" id="photo-latitude"/>
+    <input type="hidden" name="photo-longitude" id="photo-longitude"/>
+    <input type="hidden" name="photo-width" id="photo-width"/>
+    <input type="hidden" name="photo-height" id="photo-height"/>
+    <!-- displayed uneditable fields -->
+    <p id="img-properties" class="hidden-block">
+    Source file name: <span id="photo-file-name-display"></span><br/>
+    Assigned guid: <span id="photo-uuid-display" value="{{ photo_uuid }}">{{ photo_uuid }}</span><br/>
+    Stored file path: <span id="photo-file-path-display"></span><br/>
+    Date taken: <span id="photo-date-taken-display"></span><br/>
+    File format: <span id="photo-file-format-display"></span><br/>
+    Latitude: <span id="photo-latitude-display"></span><br/>
+    Longitude: <span id="photo-longitude-display"></span><br/>
+    Width: <span id="photo-width-display"></span><br/>
+    Height: <span id="photo-height-display"></span><br/>
+    <!-- displayed input fields -->
+    Aspect format: <select id="photo-aspect-format" name="photo-aspect-format">
+        <option value="none">* optional *</option>
+    {% for aspect_format in all_aspect_formats %}
+        <option value="{{ aspect_format }}">{{ aspect_format }}</option>
+    {% endfor %} 
+    </select><br/>
+    Neighborhood: <select id="photo-neighborhood-slug" name="photo-neighborhood-slug">
+        <option value="none">* required *</option>
+    {% for neighorhood in all_neighborhoods %}
+        <option value="{{ neighorhood.slug }}">{{ neighorhood.name }}</option>
+    {% endfor %} 
+    </select><br/>
+    Scene type: <select id="photo-scene-type" name="photo-scene-type">
+        <option value="none">* required *</option>
+    {% for scene_type in all_scene_types %}
+        <option value="{{ scene_type }}">{{ scene_type }}</option>
+    {% endfor %} 
+    </select><br/>
+    Business type: <select id="photo-business-type" name="photo-business-type">
+        <option value="none">* optional *</option>
+    {% for business_type in all_business_types %}
+        <option value="{{ business_type }}">{{ business_type }}</option>
+    {% endfor %} 
+    </select><br/>
+    Other labels: <input type="text" id="photo-other-labels" name="photo-other-labels"/><br/>
+    <input type="submit" value="Save photo"/></p>
+</form>
+{% endblock %}
