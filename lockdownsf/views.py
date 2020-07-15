@@ -1,4 +1,5 @@
 import boto3
+from datetime import datetime
 from inspect import getmembers
 import json
 import os
@@ -11,6 +12,7 @@ from django.http import HttpResponse
 from django.http import Http404
 
 from .models import Neighborhood, Photo
+from .metadata import all_aspect_formats, all_scene_types, all_business_types, all_other_labels, image_file_formats
 
 
 def index(request):
@@ -81,41 +83,14 @@ def select_photo(request):
     
     photo_uuid = uuid.uuid4()
     all_neighborhoods = Neighborhood.objects.all()
-    all_aspect_formats = [
-        'landscape',
-        'portrait',
-        'square',
-        'pano',
-        'pano_vertical'
-    ]
-    all_scene_types = [
-        'mural',
-        'boarded',
-        'distinctiveSign',
-        'personalSign',
-        'park',
-        'slowStreets',
-        'emptyStreet'
-    ]
-    all_business_types = [
-        'dining',
-        'bar',
-        'performanceVenue',
-        'municipal',
-        'foodMarket',
-        'nonFoodShop',
-        'laundry',
-        'salon',
-        'exercise',
-        'medical',
-        'financial'
-    ]
+    
     context = {
         'photo_uuid': str(photo_uuid),
-        'all_aspect_formats': all_aspect_formats,
         'all_neighborhoods': all_neighborhoods,
+        'all_aspect_formats': all_aspect_formats,
         'all_scene_types': all_scene_types,
         'all_business_types': all_business_types,
+        'all_other_labels': all_other_labels,
     }
 
     return render(request, template, context)
@@ -125,6 +100,7 @@ def save_photo(request):
     template = 'save_photo.html'
 
     try:
+        # bind vars to form data 
         neighborhood_slug = request.POST.get('photo-neighborhood-slug', '')
         source_file_name = request.POST.get('photo-file-name', '')
         uuid = request.POST.get('photo-uuid', '')
@@ -138,13 +114,21 @@ def save_photo(request):
         aspect_format = request.POST.get('photo-aspect-format', '')
         scene_type = request.POST.get('photo-scene-type', '')
         business_type = request.POST.get('photo-business-type', '')
-        other_types = request.POST.get('photo-other-labels', '')
+        other_labels = request.POST.get('photo-other-labels', '')
 
+        # process raw vars for Photo obj 
         neighborhood = Neighborhood.objects.get(pk=neighborhood_slug)
-        photo = Photo(file_name=uuid, neighborhood_slug=neighborhood, dt_taken=date_taken, 
-            file_format=file_format, latitude=latitude, longitude=longitude, 
+        # 2020:06:05 15:07:50
+        print('@@@@@@@ date_taken: ' + date_taken)
+        dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
+        print('@@@@@@@ dt_taken: ' + str(dt_taken))
+        file_format = image_file_formats.get(file_format, 'xxx')
+
+        photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
+            dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
             width_pixels=width, height_pixels=height, aspect_format=aspect_format,
-            scene_type=scene_type, business_type=business_type, other_types=other_types)
+            scene_type=scene_type, business_type=business_type, other_labels=other_labels)
+        photo.save()
 
         context = {
             'photo': photo,

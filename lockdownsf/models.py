@@ -11,8 +11,9 @@ class Neighborhood(models.Model):
         return self.slug
 
 class Photo(models.Model):
-    file_name = models.CharField(max_length=64, db_index=True)
-    neighborhood_slug = models.ForeignKey(Neighborhood, db_column='neighborhood_slug', on_delete=models.CASCADE)
+    uuid = models.CharField(max_length=36, db_index=True, primary_key=True)
+    source_file_name = models.CharField(max_length=64, db_index=True)
+    neighborhood = models.ForeignKey(Neighborhood, db_column='neighborhood_slug', on_delete=models.CASCADE)
     file_format = models.CharField(max_length=8, db_index=True)
     dt_taken = models.DateTimeField(null=True)
     dt_inserted = models.DateTimeField(auto_now_add=True)
@@ -24,10 +25,7 @@ class Photo(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     scene_type = models.CharField(max_length=32, db_index=True)
     business_type = models.CharField(max_length=32, db_index=True, null=True)
-    other_types = models.CharField(max_length=128, null=True)
-    
-    class Meta:
-        unique_together = ('file_name', 'neighborhood_slug')
+    other_labels = models.CharField(max_length=128, null=True)
     
     def __str__(self):
-        return self.neighborhood_slug.slug + '/' + self.file_name + '.' + self.file_format
+        return self.uuid + ' (' + self.neighborhood.slug + '/' + self.source_file_name + ')'

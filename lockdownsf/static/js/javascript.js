@@ -333,18 +333,26 @@ function uploadFile(file, s3Data, url) {
                     // extract and calculate latitude data
                     var latData = imgData.GPSLatitude;				 			
                     var latDegree = latData[0].numerator / latData[0].denominator;
+                    document.getElementById("photo-lat-degree").innerHTML = latDegree;
                     var latMinute = latData[1].numerator / latData[1].denominator;
+                    document.getElementById("photo-lat-minute").innerHTML = latMinute;
                     var latSecond = latData[2].numerator / latData[2].denominator;
+                    document.getElementById("photo-lat-second").innerHTML = latSecond;
                     var latDirection = imgData.GPSLatitudeRef;
+                    document.getElementById("photo-lat-direction").innerHTML = latDirection;
                     var latFinal = convertDMSToDD(latDegree, latMinute, latSecond, latDirection);
                     document.getElementById("photo-latitude-display").innerHTML = latFinal;
                     document.getElementById("photo-latitude").value = latFinal;
                     // extract and calculate longitude data
                     var lngData = imgData.GPSLongitude;
                     var lngDegree = lngData[0].numerator / lngData[0].denominator;
+                    document.getElementById("photo-lng-degree").innerHTML = lngDegree;
                     var lngMinute = lngData[1].numerator / lngData[1].denominator;
+                    document.getElementById("photo-lng-minute").innerHTML = lngMinute;
                     var lngSecond = lngData[2].numerator / lngData[2].denominator;
+                    document.getElementById("photo-lng-second").innerHTML = lngSecond;
                     var lngDirection = imgData.GPSLongitudeRef;
+                    document.getElementById("photo-lng-direction").innerHTML = lngDirection;
                     var lngFinal = convertDMSToDD(lngDegree, lngMinute, lngSecond, lngDirection);
                     document.getElementById("photo-longitude-display").innerHTML = lngFinal;
                     document.getElementById("photo-longitude").value = lngFinal;

@@ -7,7 +7,7 @@
 {% if photos %}
     <ul>
     {% for photo in photos %}
-        <li>{{ photo }}</li>
+        <li><a href="https://lockdownsf.s3.amazonaws.com/{{ photo.uuid }}">{{ photo }}</a></li>
     {% endfor %}
     </ul>
 {% else %}

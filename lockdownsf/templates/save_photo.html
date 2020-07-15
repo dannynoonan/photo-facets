@@ -2,17 +2,18 @@
 
 {% block content %}
 {% if photo %}
+<p>Photo {{ file_path }} saved successfully.</p>
 <p><img src="{{ file_path }}" width="1000"/>
     <ul>
         <li>Source file name: {{ source_file_name }}</li>
-        <li>Photo uuid: {{ photo.file_name }}</li> <!-- TODO edit field name -->
+        <li>Photo uuid: {{ photo.uuid }}</li> 
         <li>Date taken: {{ photo.dt_taken }}</li>
-        <li>Neighborhood: {{ photo.neighborhood_slug.name }}</li>
+        <li>Neighborhood: {{ photo.neighborhood.name }}</li>
         <li>File format: {{ photo.file_format }}</li>
         <li>Latitude: {{ photo.latitude }}</li>
         <li>Longitude: {{ photo.longitude }}</li>
-        <li>Width: {{ photo.width_pixels }}</li>
-        <li>Height: {{ photo.height_pixels }}</li>
+        <li>Width: {{ photo.width_pixels }} px</li>
+        <li>Height: {{ photo.height_pixels }} px</li>
         <li>Aspect format: {{ photo.aspect_format }}</li>
         <li>Scene type: {{ photo.scene_type }}</li>
         <li>Business type: {{ photo.business_type }}</li>
