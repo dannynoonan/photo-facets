@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<p><b>Neighborhood listing:</b></p>
+{% if all_neighborhoods %}
+<ul>
+    {% for neighborhood in all_neighborhoods %}
+    <li><a href="/lockdownsf/admin/edit_neighborhood/{{ neighborhood.slug }}/">{{ neighborhood.name }} ({{ neighborhood.slug }})</a></li>
+    {% endfor %}
+</ul>
+{% endif %}  
+<p><a href="/lockdownsf/admin/add_neighborhood/">Add new neighborhood</a></p>
+{% endblock %}

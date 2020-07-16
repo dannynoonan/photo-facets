@@ -2,10 +2,12 @@ from django.db import models
 
 
 class Neighborhood(models.Model):
-    slug = models.SlugField(max_length=32, primary_key=True)
+    slug = models.SlugField(max_length=32, db_index=True, unique=True)
     name = models.CharField(max_length=64)
     center_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     center_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    dt_inserted = models.DateTimeField(auto_now_add=True)
+    dt_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.slug
@@ -13,7 +15,7 @@ class Neighborhood(models.Model):
 class Photo(models.Model):
     uuid = models.CharField(max_length=36, db_index=True, primary_key=True)
     source_file_name = models.CharField(max_length=64, db_index=True)
-    neighborhood = models.ForeignKey(Neighborhood, db_column='neighborhood_slug', on_delete=models.CASCADE)
+    neighborhood = models.ForeignKey(Neighborhood, on_delete=models.CASCADE)
     file_format = models.CharField(max_length=8, db_index=True)
     dt_taken = models.DateTimeField(null=True)
     dt_inserted = models.DateTimeField(auto_now_add=True)
@@ -28,4 +30,4 @@ class Photo(models.Model):
     other_labels = models.CharField(max_length=128, null=True)
     
     def __str__(self):
-        return self.uuid + ' (' + self.neighborhood.slug + '/' + self.source_file_name + ')'
+        return self.uuid + ' (' + self.neighborhood.slug + ' / ' + self.source_file_name + ')'

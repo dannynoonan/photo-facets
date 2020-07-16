@@ -7,7 +7,7 @@
 <br/><br/>
 <img id="preview" width="1000" src="/lockdownsf/static/img/default.jpg"/>
 
-<form method="POST" action="/lockdownsf/save_photo/">
+<form method="POST" action="/lockdownsf/admin/save_photo/">
     {% csrf_token %}
     <!-- hidden input fields -->
     <input type="hidden" name="photo-file-name" id="photo-file-name"/>

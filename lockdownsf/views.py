@@ -26,8 +26,9 @@ def index(request):
 
 def neighborhood(request, neighborhood_slug):
     template = 'neighborhood.html'
+
     try:
-        neighborhood = Neighborhood.objects.get(pk=neighborhood_slug)
+        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         photos = neighborhood.photo_set.all() 
         context = {
             'neighborhood': neighborhood,
@@ -78,8 +79,141 @@ def sign_s3(request):
     return HttpResponse(data, content_type='json')
 
 
+def neighborhood_listing(request):
+    template = 'neighborhood_listing.html'
+
+    all_neighborhoods = Neighborhood.objects.all()
+
+    context = {
+        'all_neighborhoods': all_neighborhoods,
+    }
+
+    return render(request, template, context)
+
+
+def add_neighborhood(request):
+    template = 'neighborhood_add.html'
+
+    context = {
+    }
+
+    return render(request, template, context)
+
+
+def edit_neighborhood(request, neighborhood_slug):
+    template = 'neighborhood_edit.html'
+
+    try:
+        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
+        neighborhood_photos = neighborhood.photo_set.all() 
+
+        context = {
+            'neighborhood': neighborhood,
+            'neighborhood_photos': neighborhood_photos,
+        }
+    except Exception as ex:
+        context = {
+            'neighborhood_slug': neighborhood_slug,
+            'exception': ex,
+        }
+
+    return render(request, template, context)
+
+
+def save_neighborhood(request):
+    template = 'neighborhood_save.html'
+
+    # bind vars to form data 
+    neighborhood_slug = request.POST.get('neighborhood-slug', '')
+    neighborhood_name = request.POST.get('neighborhood-name', '')
+    # center_latitude = request.POST.get('neighborhood-center-latitude', '')
+    # center_longitude = request.POST.get('neighborhood-center-longitude', '')
+    original_neighborhood_slug = request.POST.get('original-neighborhood-slug', '')
+    request_origin_template = request.POST.get('request-origin-template', '')
+
+    # add new neighborhood
+    if request_origin_template == 'neighborhood_add.html':
+        try:
+            # verify no pre-existing neighborhood has the slug value submitted 
+            pre_existing_neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
+            if pre_existing_neighborhood:
+                context = {
+                    'unavailable_neighborhood_slug': neighborhood_slug,
+                    'neighborhood_name': neighborhood_name,
+                    # 'center_latitude': center_latitude,
+                    # 'center_longitude': center_longitude,
+                }
+                return render(request, request_origin_template, context)
+        except:
+            # if no pre-existing neighborhood has the slug value submitted, proceed
+            try:
+                # init new neighborhood
+                neighborhood = Neighborhood(slug=neighborhood_slug, name=neighborhood_name)
+                    # center_latitude=center_latitude, center_longitude=center_longitude)
+                neighborhood.save()
+                context = {
+                    'neighborhood': neighborhood,
+                }
+                return render(request, template, context)
+            except Exception as ex:
+                dump = getmembers(request)
+                context = {
+                    'exception': ex,
+                    'dump': dump,
+                }
+                return render(request, request_origin_template, context)
+
+    # update existing neighborhood
+    if request_origin_template == 'neighborhood_edit.html':
+        # TODO this could throw exception if page out of sync with db
+        neighborhood = Neighborhood.objects.get(slug=original_neighborhood_slug)
+        neighborhood_photos = neighborhood.photo_set.all() 
+        # if neighborhood slug has changed...
+        if neighborhood_slug != original_neighborhood_slug:
+            try:          
+                # verify no other neighborhood has the updated slug value submitted 
+                other_neighborhood = Neighborhood.objects.filter(slug=neighborhood_slug) 
+                if other_neighborhood:
+                    context = {
+                        'unavailable_neighborhood_slug': neighborhood_slug,
+                        'neighborhood': neighborhood,
+                        'neighborhood_photos': neighborhood_photos,
+                    }
+                    return render(request, request_origin_template, context)
+            except Exception as ex:
+                dump = getmembers(request)
+                context = {
+                    'exception': ex,
+                    'dump': dump,
+                }
+                return render(request, request_origin_template, context)
+
+        # if no pre-existing neighborhood has the updated slug value submitted, proceed
+        try:
+            # update neighborhood
+            neighborhood.slug = neighborhood_slug
+            neighborhood.name = neighborhood_name
+            # neighborhood.center_latitude = center_latitude
+            # neighborhood.center_longitude = center_longitude
+            neighborhood.save()
+            neighborhood_photos = neighborhood.photo_set.all() 
+
+            context = {
+                'neighborhood': neighborhood,
+                'neighborhood_photos': neighborhood_photos,
+            }
+            return render(request, template, context)
+        except Exception as ex:
+            dump = getmembers(request)
+            context = {
+                'exception': ex,
+                'dump': dump,
+            }
+            return render(request, request_origin_template, context)
+    
+
 def select_photo(request):
-    template = 'select_photo.html'
+    template = 'photo_select.html'
     
     photo_uuid = uuid.uuid4()
     all_neighborhoods = Neighborhood.objects.all()
@@ -97,7 +231,7 @@ def select_photo(request):
         
 
 def save_photo(request):
-    template = 'save_photo.html'
+    template = 'photo_save.html'
 
     try:
         # bind vars to form data 
@@ -117,11 +251,8 @@ def save_photo(request):
         other_labels = request.POST.get('photo-other-labels', '')
 
         # process raw vars for Photo obj 
-        neighborhood = Neighborhood.objects.get(pk=neighborhood_slug)
-        # 2020:06:05 15:07:50
-        print('@@@@@@@ date_taken: ' + date_taken)
+        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
-        print('@@@@@@@ dt_taken: ' + str(dt_taken))
         file_format = image_file_formats.get(file_format, 'xxx')
 
         photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
@@ -145,3 +276,15 @@ def save_photo(request):
             'exception': ex
         }
         return render(request, template, context)
+
+
+def edit_photo(request, photo_uuid):
+    template = 'photo_edit.html'
+
+    photo = Photo.objects.get(pk=photo_uuid)
+
+    context = {
+        'photo': photo,
+    }
+
+    return render(request, template, context)
