@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<p><b>Add new neighborhood:</b></p>
+{% if exception %}
+<p><font color="red">Exception: {{ exception }}</font></p>
+<p><font color="blue">Dump: {{ dump }}</font></p>
+{% endif %}
+{% if unavailable_neighborhood_slug %}
+<p><font color="red">
+    !!! Neighborhood could not be added with slug {{ unavailable_neighborhood_slug }} since it already exists.
+    Edit existing neighborhood <a href="/lockdownsf/admin/edit_neighborhood/{{ unavailable_neighborhood_slug }}/">here</a>".
+</font></p>
+{% endif %}
+<form method="POST" action="/lockdownsf/admin/save_neighborhood/">
+    {% csrf_token %}
+    <ul>
+        <li>Slug: <input type="text" name="neighborhood-slug"></li>
+        <li>Name: <input type="text" name="neighborhood-name" value="{{ neighborhood_name }}"></li>
+        <!--
+        <li>Center latitude: <input type="text" name="neighborhood_center_latitude" value="{{ neighborhood_center_latitude }}"></li>
+        <li>Center longitude: <input type="text" name="neighborhood_center_longitude" value="{{ neighborhood_center_longitude }}"></li>
+        -->
+    </ul>
+    <input type="hidden" name="request-origin-template" value="neighborhood_add.html">
+    <input type="submit" value="Create neighborhood">
+</form>
+
+<p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
+{% endblock %}

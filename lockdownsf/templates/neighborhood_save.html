@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if exception %}
+<p><font color="red">Exception: {{ exception }}</font></p>
+<p><font color="blue">Dump: {{ dump }}</font></p>
+{% endif %}
+{% if neighborhood %}
+    <p><b>Neighborhood page for {{ neighborhood.name }}</b></p>
+    <ul>
+        <li>Slug: {{ neighborhood.slug }}</li>
+        <li>Name: {{ neighborhood.name }}</li>
+        <!-- <li>Center latitude: {{ neighborhood.center_latitude }}</li>
+        <li>Center longitude: {{ neighborhood.center_longitude }}</li> -->
+    </ul>
+
+    {% if neighborhood_photos %}
+    <p>Photos:</p>
+    <ul>
+        {% for photo in neighborhood_photos %}
+        <li><a href="https://lockdownsf.s3.amazonaws.com/{{ photo.uuid }}">{{ photo }}</a></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No photos for neighborhood.</p>
+    {% endif %}  
+
+{% else %}
+    <p><b>No neighborhood found matching slug {{ neighborhood_slug }}</b></p>
+{% endif %}
+    <p><a href="/lockdownsf/admin/add_neighborhood/">Add new neighborhood</a></p>
+    <p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
+{% endblock %}

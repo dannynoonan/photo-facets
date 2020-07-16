@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if exception %}
+<p><font color="red">Exception: {{ exception }}</font></p>
+<p><font color="blue">Dump: {{ dump }}</font></p>
+{% endif %}
+{% if neighborhood %}
+    <p><b>Neighborhood page for {{ neighborhood.name }}</b></p>
+    {% if unavailable_neighborhood_slug %}
+    <p><font color="red">
+        !!! Neighborhood could not be changed to slug {{ unavailable_neighborhood_slug }} since it already exists.
+        Edit that neighborhood <a href="/lockdownsf/admin/edit_neighborhood/{{ unavailable_neighborhood_slug }}/">here</a>".
+    </font></p>
+    {% endif %}
+    <form method="POST" action="/lockdownsf/admin/save_neighborhood/">
+        {% csrf_token %}
+        <ul>
+            <li>Slug: <input type="text" name="neighborhood-slug" value="{{ neighborhood.slug }}"></li>
+            <li>Name: <input type="text" name="neighborhood-name" value="{{ neighborhood.name }}"></li>
+            <!-- 
+            <li>Center latitude: <input type="text" name="neighborhood-center-latitude" value="{{ neighborhood.center_latitude }}"></li>
+            <li>Center longitude: <input type="text" name="neighborhood-center-longitude" value="{{ neighborhood.center_longitude }}"></li> 
+            -->
+            <li>Date created: {{ neighborhood.dt_inserted }}</li>
+            <li>Date updated: {{ neighborhood.dt_updated }}</li>
+        </ul>
+        <input type="hidden" name="original-neighborhood-slug" value="{{ neighborhood.slug }}">
+        <input type="hidden" name="request-origin-template" value="neighborhood_edit.html">
+        <input type="submit" value="Save changes">
+    </form>
+
+    <p>Photos:</p>
+    {% if neighborhood_photos %}
+    <ul>
+        {% for photo in neighborhood_photos %}
+        <li><a href="https://lockdownsf.s3.amazonaws.com/{{ photo.uuid }}">{{ photo }}</a></li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No photos for neighborhood.</p>
+    {% endif %}  
+
+{% else %}
+<p><b>No neighborhood found matching slug {{ neighborhood_slug }}</b></p>
+{% endif %}
+
+    <p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
+{% endblock %}
