@@ -1,8 +1,11 @@
 import boto3
 from datetime import datetime
 from inspect import getmembers
+from io import BytesIO
 import json
 import os
+from PIL import Image
+import requests
 from pprint import pprint
 import uuid
 
@@ -13,7 +16,7 @@ from django.http import Http404
 
 from .models import Neighborhood, Photo
 from .metadata import all_aspect_formats, all_scene_types, all_business_types, all_other_labels, image_file_formats
-
+from .service import calculate_resized_images
 
 def index(request):
     template = 'index.html'
@@ -243,8 +246,8 @@ def save_photo(request):
         file_format = request.POST.get('photo-file-format', '')
         latitude = request.POST.get('photo-latitude', '')
         longitude = request.POST.get('photo-longitude', '')
-        width = request.POST.get('photo-width', '')
-        height = request.POST.get('photo-height', '')
+        width = int(request.POST.get('photo-width', ''))
+        height = int(request.POST.get('photo-height', ''))
         aspect_format = request.POST.get('photo-aspect-format', '')
         scene_type = request.POST.get('photo-scene-type', '')
         business_type = request.POST.get('photo-business-type', '')
@@ -261,6 +264,24 @@ def save_photo(request):
             scene_type=scene_type, business_type=business_type, other_labels=other_labels)
         photo.save()
 
+        # resize photos 
+        aspect_ratio = width / height
+        print('aspect_ratio: ' + str(aspect_ratio))
+        img_dimensions = calculate_resized_images(aspect_ratio, width, height)
+
+        response = requests.get(file_path)
+        img_orig = Image.open(BytesIO(response.content))
+
+        print('img_orig.format: ' + img_orig.format)
+        print(f"thumb_width: {str(img_dimensions['thumb_width'])}, thumb_height: {str(img_dimensions['thumb_height'])}")
+        print(f"medium_width: {str(img_dimensions['medium_width'])}, medium_height: {str(img_dimensions['medium_height'])}")
+        print(f"large_width: {str(img_dimensions['large_width'])}, large_height: {str(img_dimensions['large_height'])}")
+
+        img_thumb = img_orig.resize((img_dimensions['thumb_width'], img_dimensions['thumb_height']))  
+        img_medium = img_orig.resize((img_dimensions['medium_width'], img_dimensions['medium_height']))  
+        img_large = img_orig.resize((img_dimensions['large_width'], img_dimensions['large_height']))  
+        # TODO upload to s3 - https://stackoverflow.com/questions/46204514/uploading-pil-image-object-to-amazon-s3-python/56241877
+
         context = {
             'photo': photo,
             'source_file_name': source_file_name,
@@ -270,6 +291,7 @@ def save_photo(request):
         return render(request, template, context)
 
     except Exception as ex:
+        print('ex: ' + str(ex))
         dump = getmembers(request)
         context = {
             'dump': dump,
