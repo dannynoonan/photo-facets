@@ -34,7 +34,9 @@
     {% if neighborhood_photos %}
     <ul>
         {% for photo in neighborhood_photos %}
-        <li><a href="https://lockdownsf.s3.amazonaws.com/{{ photo.uuid }}">{{ photo }}</a></li>
+        <li><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">
+            <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"> {{ photo.uuid }}</a> 
+            ({{ photo.source_file_name }})</li>
         {% endfor %}
     </ul>
     {% else %}

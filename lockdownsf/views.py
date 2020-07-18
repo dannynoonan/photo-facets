@@ -1,5 +1,5 @@
 import boto3
-from datetime import datetime
+from datetime import datetime, timedelta
 from inspect import getmembers
 from io import BytesIO
 import json
@@ -40,12 +40,6 @@ def neighborhood(request, neighborhood_slug):
         return render(request, template, context)
     except Neighborhood.DoesNotExist:
         raise Http404("No neighborhood found for slug %s" % neighborhood_slug)
-
-
-# def upload_photo_flask():
-#     port = int(os.environ.get('PORT', 5000))
-#     app.run(host='0.0.0.0', port = port)
-#     return render(request, 'upload_photo.html', context)
 
 
 def sign_s3(request):
@@ -246,8 +240,8 @@ def save_photo(request):
         file_format = request.POST.get('photo-file-format', '')
         latitude = request.POST.get('photo-latitude', '')
         longitude = request.POST.get('photo-longitude', '')
-        width = int(request.POST.get('photo-width', ''))
-        height = int(request.POST.get('photo-height', ''))
+        width = request.POST.get('photo-width', '')
+        height = request.POST.get('photo-height', '')
         aspect_format = request.POST.get('photo-aspect-format', '')
         scene_type = request.POST.get('photo-scene-type', '')
         business_type = request.POST.get('photo-business-type', '')
@@ -257,6 +251,14 @@ def save_photo(request):
         neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
         file_format = image_file_formats.get(file_format, 'xxx')
+        if width:
+            width = int(width)
+        else:
+            width = 0
+        if height:
+            height = int(height)
+        else:
+            height = 0
 
         photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
             dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
@@ -266,26 +268,30 @@ def save_photo(request):
 
         # resize photos 
         aspect_ratio = width / height
-        print('aspect_ratio: ' + str(aspect_ratio))
         img_dimensions = calculate_resized_images(aspect_ratio, width, height)
 
-        response = requests.get(file_path)
-        img_orig = Image.open(BytesIO(response.content))
+        # load original image
+        response = requests.get(file_path, stream=True)
+        # response = requests.get(file_path)
+        orig_img = Image.open(BytesIO(response.content))
 
-        print('img_orig.format: ' + img_orig.format)
-        print(f"thumb_width: {str(img_dimensions['thumb_width'])}, thumb_height: {str(img_dimensions['thumb_height'])}")
-        print(f"medium_width: {str(img_dimensions['medium_width'])}, medium_height: {str(img_dimensions['medium_height'])}")
-        print(f"large_width: {str(img_dimensions['large_width'])}, large_height: {str(img_dimensions['large_height'])}")
+        print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
+        print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
 
-        img_thumb = img_orig.resize((img_dimensions['thumb_width'], img_dimensions['thumb_height']))  
-        img_medium = img_orig.resize((img_dimensions['medium_width'], img_dimensions['medium_height']))  
-        img_large = img_orig.resize((img_dimensions['large_width'], img_dimensions['large_height']))  
-        # TODO upload to s3 - https://stackoverflow.com/questions/46204514/uploading-pil-image-object-to-amazon-s3-python/56241877
+        large_file_path = resize_and_upload(
+            orig_img, 'large', img_dimensions['large'], uuid)
+        medium_file_path = resize_and_upload(
+            orig_img, 'medium', img_dimensions['medium'], uuid)
+        small_file_path = resize_and_upload(
+            orig_img, 'small', img_dimensions['small'], uuid)
 
         context = {
             'photo': photo,
             'source_file_name': source_file_name,
             'file_path': file_path,
+            'small_file_path': small_file_path,
+            'medium_file_path': medium_file_path,
+            'large_file_path': large_file_path,
         }
 
         return render(request, template, context)
@@ -298,6 +304,48 @@ def save_photo(request):
             'exception': ex
         }
         return render(request, template, context)
+
+
+def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
+    print('****** in resize_and_upload')
+
+    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
+    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
+
+    # im = Image.open(orig_img)
+    orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
+    
+    print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
+    print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
+    
+    in_mem_file = BytesIO()
+    orig_img.save(in_mem_file, format=orig_img.format)
+    in_mem_file.seek(0)
+
+    print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
+    print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
+
+    resized_img_file_name = f"{thumb_type}/{uuid}"
+
+    # Upload image to s3
+    S3_BUCKET = 'lockdownsf'
+    client_s3 = boto3.client('s3') 
+
+    response = client_s3.put_object( 
+        ACL="public-read",
+        Bucket=S3_BUCKET,
+        Body=in_mem_file,
+        ContentType='image/jpeg',
+        Key=resized_img_file_name,
+        Expires = datetime.now() + timedelta(minutes = 6),
+    )
+
+    resized_img_file_path = f"https://{S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
+
+    print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
+    print(f"====== [{thumb_type}] str(response): {str(response)}")
+
+    return resized_img_file_path
 
 
 def edit_photo(request, photo_uuid):

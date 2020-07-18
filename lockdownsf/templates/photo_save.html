@@ -2,9 +2,17 @@
 
 {% block content %}
 {% if photo %}
-<p>Photo {{ file_path }} saved successfully.</p>
-<p><img src="{{ file_path }}" width="1000"/>
+<p>Photo {{ photo.uuid }} saved successfully.</p>
+<p>
     <ul>
+        <!-- <li><a href="{{ file_path }}">Original</a>:<br/>
+            <img src="{{ file_path }}"/></li> -->
+        <li><a href="{{ large_file_path }}">Large</a>:<br/>
+            <img src="{{ large_file_path }}"/></li>
+        <li><a href="{{ medium_file_path }}">Medium</a>:<br/>
+            <img src="{{ medium_file_path }}"/></li>
+        <li><a href="{{ small_file_path }}">Small</a>:<br/>
+            <img src="{{ small_file_path }}"/></li>
         <li>Source file name: {{ source_file_name }}</li>
         <li>Photo uuid: {{ photo.uuid }}</li> 
         <li>Date taken: {{ photo.dt_taken }}</li>

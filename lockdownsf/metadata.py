@@ -1,7 +1,7 @@
 
 img_max_dimensions = {
-    'thumb_width': 60,
-    'thumb_height': 60,
+    'small_width': 120,
+    'small_height': 120,
     'medium_width': 600,
     'medium_height': 500,
     'large_width': 1200,

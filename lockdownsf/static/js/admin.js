@@ -1,8 +1,4 @@
-const tmp_path = 'tmp/';
-const full_path = 'full/';
-const large_path = 'large/';
-const medium_path = 'medium/';
-const thumb_path = 'thumb/';
+const orig_dir = 'orig/';
 
 // 
 // https://devcenter.heroku.com/articles/s3-upload-python
@@ -43,7 +39,7 @@ window.onload=function(){
 */
 function initUpload() {
     const files = document.getElementById('img-file-path').files;
-    const uuidFileName = tmp_path + document.getElementById('photo-uuid').value;
+    const uuidFileName = orig_dir + document.getElementById('photo-uuid').value;
     var file = files[0];
     if (!file) {
         return alert('No file selected.');
