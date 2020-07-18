@@ -5,5 +5,6 @@ django-heroku
 dj-database-url
 dj-static
 gunicorn
+Pillow
 psycopg2-binary
 requests
