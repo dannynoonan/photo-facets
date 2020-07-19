@@ -28,6 +28,8 @@ class Photo(models.Model):
     scene_type = models.CharField(max_length=32, db_index=True)
     business_type = models.CharField(max_length=32, db_index=True, null=True)
     other_labels = models.CharField(max_length=128, null=True)
+    extracted_text_raw = models.CharField(max_length=4096, null=True)
+    extracted_text_formatted = models.CharField(max_length=4096, null=True)
     
     def __str__(self):
         return self.uuid + ' (' + self.neighborhood.slug + ' / ' + self.source_file_name + ')'

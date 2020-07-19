@@ -39,7 +39,7 @@ window.onload=function(){
 */
 function initUpload() {
     const files = document.getElementById('img-file-path').files;
-    const uuidFileName = orig_dir + document.getElementById('photo-uuid').value;
+    const uuidFileName = document.getElementById('photo-uuid').value;
     var file = files[0];
     if (!file) {
         return alert('No file selected.');
