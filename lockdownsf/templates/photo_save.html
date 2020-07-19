@@ -26,6 +26,7 @@
         <li>Scene type: {{ photo.scene_type }}</li>
         <li>Business type: {{ photo.business_type }}</li>
         <li>Other labels: {{ photo.other_types }}</li>
+        <li>Extracted text: {{ extracted_text_formatted|safe }}</li>
     </ul> 
 </p>
 {% else %}

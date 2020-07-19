@@ -15,8 +15,9 @@ from django.http import HttpResponse
 from django.http import Http404
 
 from .models import Neighborhood, Photo
-from .metadata import all_aspect_formats, all_scene_types, all_business_types, all_other_labels, image_file_formats
-from .service import calculate_resized_images
+from .metadata import all_aspect_formats, all_scene_types, all_business_types, all_other_labels, image_file_formats, S3_BUCKET
+from .service import calculate_resized_images, detect_text
+
 
 def index(request):
     template = 'index.html'
@@ -230,80 +231,90 @@ def select_photo(request):
 def save_photo(request):
     template = 'photo_save.html'
 
-    try:
-        # bind vars to form data 
-        neighborhood_slug = request.POST.get('photo-neighborhood-slug', '')
-        source_file_name = request.POST.get('photo-file-name', '')
-        uuid = request.POST.get('photo-uuid', '')
-        file_path = request.POST.get('photo-file-path', '')
-        date_taken = request.POST.get('photo-date-taken', '')
-        file_format = request.POST.get('photo-file-format', '')
-        latitude = request.POST.get('photo-latitude', '')
-        longitude = request.POST.get('photo-longitude', '')
-        width = request.POST.get('photo-width', '')
-        height = request.POST.get('photo-height', '')
-        aspect_format = request.POST.get('photo-aspect-format', '')
-        scene_type = request.POST.get('photo-scene-type', '')
-        business_type = request.POST.get('photo-business-type', '')
-        other_labels = request.POST.get('photo-other-labels', '')
+    #try:
+    # bind vars to form data 
+    neighborhood_slug = request.POST.get('photo-neighborhood-slug', '')
+    source_file_name = request.POST.get('photo-file-name', '')
+    uuid = request.POST.get('photo-uuid', '')
+    file_path = request.POST.get('photo-file-path', '')
+    date_taken = request.POST.get('photo-date-taken', '')
+    file_format = request.POST.get('photo-file-format', '')
+    latitude = request.POST.get('photo-latitude', '')
+    longitude = request.POST.get('photo-longitude', '')
+    width = request.POST.get('photo-width', '')
+    height = request.POST.get('photo-height', '')
+    aspect_format = request.POST.get('photo-aspect-format', '')
+    scene_type = request.POST.get('photo-scene-type', '')
+    business_type = request.POST.get('photo-business-type', '')
+    other_labels = request.POST.get('photo-other-labels', '')
 
-        # process raw vars for Photo obj 
-        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
-        dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
-        file_format = image_file_formats.get(file_format, 'xxx')
-        if width:
-            width = int(width)
-        else:
-            width = 0
-        if height:
-            height = int(height)
-        else:
-            height = 0
+    # process raw vars for Photo obj 
+    neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
+    dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
+    file_format = image_file_formats.get(file_format, 'xxx')
+    if width:
+        width = int(width)
+    else:
+        width = 0
+    if height:
+        height = int(height)
+    else:
+        height = 0
 
-        photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
-            dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
-            width_pixels=width, height_pixels=height, aspect_format=aspect_format,
-            scene_type=scene_type, business_type=business_type, other_labels=other_labels)
-        photo.save()
+    # analyze photo
+    extracted_text_raw, extracted_text_formatted = detect_text(uuid, S3_BUCKET)
 
-        # resize photos 
-        aspect_ratio = width / height
-        img_dimensions = calculate_resized_images(aspect_ratio, width, height)
+    print(f"++++++++ neighborhood [{neighborhood}] name [{neighborhood.slug}] id [{neighborhood.id}] ")
+    print('++++++++ begin save photo')
 
-        # load original image
-        response = requests.get(file_path, stream=True)
-        # response = requests.get(file_path)
-        orig_img = Image.open(BytesIO(response.content))
+    photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
+        dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
+        width_pixels=width, height_pixels=height, aspect_format=aspect_format,
+        scene_type=scene_type, business_type=business_type, other_labels=other_labels,
+        extracted_text_raw=extracted_text_raw, extracted_text_formatted=extracted_text_formatted)
+    photo.save()
 
-        print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
-        print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
+    print('++++++++ end save photo')
 
-        large_file_path = resize_and_upload(
-            orig_img, 'large', img_dimensions['large'], uuid)
-        medium_file_path = resize_and_upload(
-            orig_img, 'medium', img_dimensions['medium'], uuid)
-        small_file_path = resize_and_upload(
-            orig_img, 'small', img_dimensions['small'], uuid)
+    # resize photos 
+    aspect_ratio = width / height
+    img_dimensions = calculate_resized_images(aspect_ratio, width, height)
 
-        context = {
-            'photo': photo,
-            'source_file_name': source_file_name,
-            'file_path': file_path,
-            'small_file_path': small_file_path,
-            'medium_file_path': medium_file_path,
-            'large_file_path': large_file_path,
-        }
+    # load original image
+    response = requests.get(file_path, stream=True)
+    # response = requests.get(file_path)
+    orig_img = Image.open(BytesIO(response.content))
 
-        return render(request, template, context)
+    print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
+    print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
 
-    except Exception as ex:
-        print('ex: ' + str(ex))
-        dump = getmembers(request)
-        context = {
-            'dump': dump,
-            'exception': ex
-        }
-        return render(request, template, context)
+    large_file_path = resize_and_upload(
+        orig_img, 'large', img_dimensions['large'], uuid)
+    medium_file_path = resize_and_upload(
+        orig_img, 'medium', img_dimensions['medium'], uuid)
+    small_file_path = resize_and_upload(
+        orig_img, 'small', img_dimensions['small'], uuid)
+
+    context = {
+        'photo': photo,
+        'source_file_name': source_file_name,
+        'file_path': file_path,
+        'extracted_text_formatted': extracted_text_formatted,
+        'small_file_path': small_file_path,
+        'medium_file_path': medium_file_path,
+        'large_file_path': large_file_path,
+    }
+
+    return render(request, template, context)
+
+    # except Exception as ex:
+    #     print('ex: ' + str(ex))
+    #     dump = getmembers(request)
+    #     context = {
+    #         'dump': dump,
+    #         'exception': ex
+    #     }
+    #     return render(request, template, context)
 
 
 def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
@@ -320,15 +331,16 @@ def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
     
     in_mem_file = BytesIO()
     orig_img.save(in_mem_file, format=orig_img.format)
-    in_mem_file.seek(0)
 
     print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
     print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
 
+    in_mem_file.seek(0)
+
     resized_img_file_name = f"{thumb_type}/{uuid}"
 
     # Upload image to s3
-    S3_BUCKET = 'lockdownsf'
+    # S3_BUCKET = 'lockdownsf'
     client_s3 = boto3.client('s3') 
 
     response = client_s3.put_object( 

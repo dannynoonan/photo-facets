@@ -1,4 +1,6 @@
-from .metadata import img_max_dimensions
+import boto3
+
+from .metadata import img_max_dimensions, AWS_REGION_NAME
 
 
 def calculate_resized_images(aspect_ratio, width, height):
@@ -45,3 +47,30 @@ def calculate_resized_images(aspect_ratio, width, height):
             img_dimensions['large'] = (large_width, large_height)
             
     return img_dimensions
+
+
+def detect_text(photo, bucket):
+
+    # https://docs.aws.amazon.com/rekognition/latest/dg/text-detecting-text-procedure.html
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.detect_text
+
+    # TODO could this extract more than 50 words?
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/textract.html
+
+    client = boto3.client('rekognition', region_name=AWS_REGION_NAME)
+    response = client.detect_text(Image={'S3Object':{'Bucket':bucket,'Name':photo}})
+                        
+    text_detections = response['TextDetections']
+    extracted_text_raw = ''
+    extracted_text_formatted = ''
+    for text in text_detections:
+        if text['Type'] == 'LINE':
+            extracted_text_raw = f"{extracted_text_raw} {text['DetectedText']}"
+            extracted_text_formatted = f"{extracted_text_formatted}<br/>{text['DetectedText']}"
+    
+    print ('extracted_text_raw')
+    print (extracted_text_raw)
+    print ('text_format')
+    print (extracted_text_formatted)
+
+    return extracted_text_raw, extracted_text_formatted

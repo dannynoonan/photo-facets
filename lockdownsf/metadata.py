@@ -1,3 +1,6 @@
+AWS_REGION_NAME = 'us-west-1'
+S3_BUCKET = 'lockdownsf'
+
 
 img_max_dimensions = {
     'small_width': 120,
