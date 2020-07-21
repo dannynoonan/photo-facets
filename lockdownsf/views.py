@@ -14,17 +14,49 @@ from django.template import loader
 from django.http import HttpResponse
 from django.http import Http404
 
+from .metadata import *
 from .models import Neighborhood, Photo
-from .metadata import all_aspect_formats, all_scene_types, all_business_types, all_other_labels, image_file_formats, S3_BUCKET
-from .service import calculate_resized_images, detect_text
+from .service import calculate_resized_images, extract_text
 
 
 def index(request):
     template = 'index.html'
-    neighborhoods = Neighborhood.objects.all()
+
+    all_neighborhoods = Neighborhood.objects.all()
+    all_photos = Photo.objects.all()
+
+    photo_collection_json = []
+    for neighborhood in all_neighborhoods:
+        neighborhood_photos_json = []
+        for photo in neighborhood.photo_set.all():
+            cats_json = []
+            if scene_types_to_checkboxes[photo.scene_type]:
+                print(f"photo.scene_type [{photo.scene_type}] -> scene_types_to_checkboxes[photo.scene_type] [{scene_types_to_checkboxes[photo.scene_type]}] for photo.uuid [{photo.uuid}]")
+                cats_json.append(scene_types_to_checkboxes[photo.scene_type])
+            if photo.business_type and photo.business_type != 'none': # TODO shouldn't need to be here
+                cats_json.append(photo.business_type)
+            if photo.other_labels:
+                cats_json.extend(photo.other_labels.split('|'))
+            photo_json = {
+                'uuid': photo.uuid,
+                'aspect_format': photo.aspect_format,
+                'longitude': str(photo.longitude),
+                'latitude': str(photo.latitude),
+                'cats': cats_json
+            }
+            neighborhood_photos_json.append(photo_json)
+        neighborhood_json = {
+            'neighborhood': neighborhood.slug,
+            'photos': neighborhood_photos_json,
+        }
+        photo_collection_json.append(neighborhood_json)
+
     context = {
-        'neighborhoods': neighborhoods
+        'all_neighborhoods': all_neighborhoods,
+        'all_photos': all_photos,
+        'photo_collection_json': json.dumps(photo_collection_json, indent=4)
     }
+
     return render(request, template, context)
 
 
@@ -46,7 +78,6 @@ def neighborhood(request, neighborhood_slug):
 def sign_s3(request):
     # S3_BUCKET = os.environ.get('S3_BUCKET')
     # S3_BUCKET = settings.S3_BUCKET_NAME
-    S3_BUCKET = 'lockdownsf'
 
     # file_name = request.args.get('file_name')
     # file_type = request.args.get('file_type')
@@ -262,7 +293,7 @@ def save_photo(request):
         height = 0
 
     # analyze photo
-    extracted_text_raw, extracted_text_formatted = detect_text(uuid, S3_BUCKET)
+    extracted_text_raw, extracted_text_formatted = extract_text(uuid, S3_BUCKET)
 
     print(f"++++++++ neighborhood [{neighborhood}] name [{neighborhood.slug}] id [{neighborhood.id}] ")
     print('++++++++ begin save photo')
@@ -340,7 +371,6 @@ def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
     resized_img_file_name = f"{thumb_type}/{uuid}"
 
     # Upload image to s3
-    # S3_BUCKET = 'lockdownsf'
     client_s3 = boto3.client('s3') 
 
     response = client_s3.put_object( 

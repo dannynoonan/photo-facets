@@ -4,19 +4,13 @@
     <div id="floating-panel">
         <input onclick="hideAllMarkers();" type=button value="Hide All Markers">
         <br/><input onclick="displayAllMarkers();" type=button value="Dislay All Markers">
-        <br/><input id="mural_checkbox" onclick="toggleMarkersForCategory('mural');" type=checkbox>Murals (<span id="mural_count"></span>)
-        <br/><input id="park_checkbox" onclick="toggleMarkersForCategory('park');" type=checkbox>Parks (<span id="park_count"></span>)
-        <br/><input id="dining_checkbox" onclick="toggleMarkersForCategory('dining');" type=checkbox>Restaurants (<span id="dining_count"></span>)
-        <br/><input id="exercise_checkbox" onclick="toggleMarkersForCategory('exercise');" type=checkbox>Gyms/Yoga studios (<span id="exercise_count"></span>)
-        <br/><input id="financial_checkbox" onclick="toggleMarkersForCategory('financial');" type=checkbox>Banks/Finance (<span id="financial_count"></span>)
-        <br/><input id="nonFoodShop_checkbox" onclick="toggleMarkersForCategory('nonFoodShop');" type=checkbox>Shops (non food) (<span id="nonFoodShop_count"></span>)
-        <br/><input id="blm_checkbox" onclick="toggleMarkersForCategory('blm');" type=checkbox>Black Lives Matter (<span id="blm_count"></span>)
+        <ul id="facet-list"></ul>
     </div>
     <div id="gmap"></div>
     
-{% if neighborhoods %}
+{% if all_neighborhoods %}
     <ul>
-    {% for neighborhood in neighborhoods %}
+    {% for neighborhood in all_neighborhoods %}
         <li><a href="/lockdownsf/neighborhood/{{ neighborhood.slug }}">{{ neighborhood.name }}</a></li>
     {% endfor %}
     </ul>
@@ -24,7 +18,4 @@
     <p>No neighborhoods found to link to.</p>
 {% endif %}   
     
-    <!-- <script async defer 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initGmap">
-    </script> -->
 {% endblock %}

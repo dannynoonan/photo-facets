@@ -57,3 +57,33 @@ all_other_labels = [
 image_file_formats = {
     'image/jpeg': 'jpg'
 }
+
+
+scene_types_to_checkboxes = {
+    'boarded': 'boarded',
+    'boarded_tagged': 'boarded',
+    'boarded_mural': 'mural',
+    'sign_generic': '',
+    'sign_distinctive': 'sign',
+    'sign_personal': 'sign',
+    'park': 'park',
+    'slow_streets': '',
+    'empty_street': '',
+    'none': '',
+}
+
+
+# business_types_to_checkboxes = {
+#     'food_market': 'food_market',
+#     'non_food_shop': 'non_food_shop',
+#     'dining': 'dining',
+#     'bar': 'bar',
+#     'laundry': 'laundry',
+#     'salon': 'salon',
+#     'exercise': 'exercise',
+#     'medical': 'medical',
+#     'financial': 'financial',
+#     'performance_venue': 'performance_venue',
+#     'municipal': 'municipal',
+#     'religious': 'religious', 
+# }
