@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <a class="navbar-brand" href="/lockdownsf/admin/search_photos/">Photos</a>
+    <div class="collapse navbar-collapse" id="navbarColor01">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item {% if template == 'photo_search.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/admin/search_photos/">Search</a>
+            </li>
+            <li class="nav-item {% if template == 'photo_select.html' or template == 'photo_edit.html' or template == 'photo_save.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/admin/select_photo/">Add/Edit</a>
+            </li>
+            
+        </ul>
+    </div>
+
+    <div class="collapse navbar-collapse" id="navbarColor01">
+        <form class="form-inline my-2 my-lg-0" action="/admin/edit_neighborhood/" method="POST">
+            <a class="navbar-brand" href="/lockdownsf/admin/neighborhood_listing/">Neighborhoods</a>
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item {% if template == 'neighborhood_listing.html' %} active {% endif %}">
+                    <a class="nav-link" href="/lockdownsf/admin/neighborhood_listing/">List</a>
+                </li>
+                <li class="nav-item {% if template == 'neighborhood_add.html' or template == 'neighborhood_edit.html' or template == 'neighborhood_save.html' %} active {% endif %}">
+                    <a class="nav-link" href="/lockdownsf/admin/add_neighborhood/">Add/Edit</a>
+                </li>
+                <li class="nav-item nav-link">Lookup:</li>
+            </ul>
+            <select class="form-control" id="select-neighborhood" name="select-neighborhood">
+                <option value="none">* neighborhood *</option>
+            {% for neighborhood in all_neighborhoods %}
+                <option value="{{ neighborhood.slug }}">{{ neighborhood.name }}</option>
+            {% endfor %} 
+            </select>
+            <button class="btn btn-secondary my-2 my-sm-0" type="submit">Go</button>
+        </form>
+    </div>
+</nav>
+
+{% block body %}
+{% endblock %}
+
+{% endblock %}

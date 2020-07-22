@@ -1,6 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'admin.html' %}
 
-{% block content %}
+{% block body %}
 <p><b>Neighborhood listing:</b></p>
 {% if all_neighborhoods %}
 <ul>
@@ -9,5 +9,5 @@
     {% endfor %}
 </ul>
 {% endif %}  
-<p><a href="/lockdownsf/admin/add_neighborhood/">Add new neighborhood</a></p>
+
 {% endblock %}

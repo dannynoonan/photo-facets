@@ -52,6 +52,7 @@ def index(request):
         photo_collection_json.append(neighborhood_json)
 
     context = {
+        'template': template,
         'all_neighborhoods': all_neighborhoods,
         'all_photos': all_photos,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4)
@@ -114,6 +115,7 @@ def neighborhood_listing(request):
     all_neighborhoods = Neighborhood.objects.all()
 
     context = {
+        'template': template,
         'all_neighborhoods': all_neighborhoods,
     }
 
@@ -123,7 +125,11 @@ def neighborhood_listing(request):
 def add_neighborhood(request):
     template = 'neighborhood_add.html'
 
+    all_neighborhoods = Neighborhood.objects.all()
+
     context = {
+        'template': template,
+        'all_neighborhoods': all_neighborhoods,
     }
 
     return render(request, template, context)
@@ -132,16 +138,22 @@ def add_neighborhood(request):
 def edit_neighborhood(request, neighborhood_slug):
     template = 'neighborhood_edit.html'
 
+    all_neighborhoods = Neighborhood.objects.all()
+
     try:
         neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         neighborhood_photos = neighborhood.photo_set.all() 
 
         context = {
+            'template': template,
+            'all_neighborhoods': all_neighborhoods,
             'neighborhood': neighborhood,
             'neighborhood_photos': neighborhood_photos,
         }
     except Exception as ex:
         context = {
+            'template': template,
+            'all_neighborhoods': all_neighborhoods,
             'neighborhood_slug': neighborhood_slug,
             'exception': ex,
         }
@@ -151,6 +163,8 @@ def edit_neighborhood(request, neighborhood_slug):
 
 def save_neighborhood(request):
     template = 'neighborhood_save.html'
+
+    all_neighborhoods = Neighborhood.objects.all()
 
     # bind vars to form data 
     neighborhood_slug = request.POST.get('neighborhood-slug', '')
@@ -167,6 +181,8 @@ def save_neighborhood(request):
             pre_existing_neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
             if pre_existing_neighborhood:
                 context = {
+                    'template': request_origin_template,
+                    'all_neighborhoods': all_neighborhoods,
                     'unavailable_neighborhood_slug': neighborhood_slug,
                     'neighborhood_name': neighborhood_name,
                     # 'center_latitude': center_latitude,
@@ -181,12 +197,16 @@ def save_neighborhood(request):
                     # center_latitude=center_latitude, center_longitude=center_longitude)
                 neighborhood.save()
                 context = {
+                    'template': template,
+                    'all_neighborhoods': all_neighborhoods,
                     'neighborhood': neighborhood,
                 }
                 return render(request, template, context)
             except Exception as ex:
                 dump = getmembers(request)
                 context = {
+                    'template': request_origin_template,
+                    'all_neighborhoods': all_neighborhoods,
                     'exception': ex,
                     'dump': dump,
                 }
@@ -204,6 +224,8 @@ def save_neighborhood(request):
                 other_neighborhood = Neighborhood.objects.filter(slug=neighborhood_slug) 
                 if other_neighborhood:
                     context = {
+                        'template': request_origin_template,
+                        'all_neighborhoods': all_neighborhoods,
                         'unavailable_neighborhood_slug': neighborhood_slug,
                         'neighborhood': neighborhood,
                         'neighborhood_photos': neighborhood_photos,
@@ -212,6 +234,8 @@ def save_neighborhood(request):
             except Exception as ex:
                 dump = getmembers(request)
                 context = {
+                    'template': request_origin_template,
+                    'all_neighborhoods': all_neighborhoods,
                     'exception': ex,
                     'dump': dump,
                 }
@@ -228,6 +252,8 @@ def save_neighborhood(request):
             neighborhood_photos = neighborhood.photo_set.all() 
 
             context = {
+                'template': template,
+                'all_neighborhoods': all_neighborhoods,
                 'neighborhood': neighborhood,
                 'neighborhood_photos': neighborhood_photos,
             }
@@ -235,6 +261,8 @@ def save_neighborhood(request):
         except Exception as ex:
             dump = getmembers(request)
             context = {
+                'template': request_origin_template,
+                'all_neighborhoods': all_neighborhoods,
                 'exception': ex,
                 'dump': dump,
             }
@@ -244,12 +272,13 @@ def save_neighborhood(request):
 def select_photo(request):
     template = 'photo_select.html'
     
-    photo_uuid = uuid.uuid4()
     all_neighborhoods = Neighborhood.objects.all()
+    photo_uuid = uuid.uuid4()
     
     context = {
-        'photo_uuid': str(photo_uuid),
+        'template': template,
         'all_neighborhoods': all_neighborhoods,
+        'photo_uuid': str(photo_uuid),
         'all_aspect_formats': all_aspect_formats,
         'all_scene_types': all_scene_types,
         'all_business_types': all_business_types,
@@ -261,6 +290,8 @@ def select_photo(request):
 
 def save_photo(request):
     template = 'photo_save.html'
+
+    all_neighborhoods = Neighborhood.objects.all()
 
     #try:
     # bind vars to form data 
@@ -327,6 +358,8 @@ def save_photo(request):
         orig_img, 'small', img_dimensions['small'], uuid)
 
     context = {
+        'template': template,
+        'all_neighborhoods': all_neighborhoods,
         'photo': photo,
         'source_file_name': source_file_name,
         'file_path': file_path,
@@ -393,10 +426,30 @@ def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
 def edit_photo(request, photo_uuid):
     template = 'photo_edit.html'
 
+    all_neighborhoods = Neighborhood.objects.all()
+
     photo = Photo.objects.get(pk=photo_uuid)
 
     context = {
+        'template': template,
+        'all_neighborhoods': all_neighborhoods,
         'photo': photo,
+    }
+
+    return render(request, template, context)
+
+
+def search_photos(request):
+    template = 'photo_search.html'
+
+    all_neighborhoods = Neighborhood.objects.all()
+
+    context = {
+        'template': template,
+        'all_neighborhoods': all_neighborhoods,
+        'all_scene_types': all_scene_types,
+        'all_business_types': all_business_types,
+        'all_other_labels': all_other_labels,
     }
 
     return render(request, template, context)
