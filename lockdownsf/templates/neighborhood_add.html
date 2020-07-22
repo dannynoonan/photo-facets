@@ -1,6 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'admin.html' %}
 
-{% block content %}
+{% block body %}
+
 <p><b>Add new neighborhood:</b></p>
 {% if exception %}
 <p><font color="red">Exception: {{ exception }}</font></p>
@@ -27,4 +28,5 @@
 </form>
 
 <p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
+
 {% endblock %}

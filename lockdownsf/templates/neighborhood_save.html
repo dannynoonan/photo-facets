@@ -1,6 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'admin.html' %}
 
-{% block content %}
+{% block body %}
 {% if exception %}
 <p><font color="red">Exception: {{ exception }}</font></p>
 <p><font color="blue">Dump: {{ dump }}</font></p>
@@ -28,6 +28,5 @@
 {% else %}
     <p><b>No neighborhood found matching slug {{ neighborhood_slug }}</b></p>
 {% endif %}
-    <p><a href="/lockdownsf/admin/add_neighborhood/">Add new neighborhood</a></p>
-    <p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
+
 {% endblock %}

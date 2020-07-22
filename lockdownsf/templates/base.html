@@ -4,7 +4,7 @@
 <html>
     <head>
         <title>SF Lockdown Photos</title>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+        
         <link rel="stylesheet" type="text/css" href="{% static 'bootstrap-flatly.min.css' %}">
         <link rel="stylesheet" type="text/css" href="{% static 'style.css' %}">
         <link rel="stylesheet" href="{% static 'js/live_site.js' %}">
@@ -18,7 +18,9 @@
         <script async defer 
             src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initGmap">
         </script>
+
         {% else %}
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
         <script type="text/javascript" src="{% static 'js/admin.js' %}"></script>
         {% endif %}
 
@@ -26,7 +28,7 @@
     </head>
 
     <body>
-{% block content %}
-{% endblock %}
+    {% block content %}
+    {% endblock %}
     </body>
 </html>

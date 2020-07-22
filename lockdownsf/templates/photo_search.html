@@ -1,0 +1,35 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+
+
+<form class="form-inline my-2 my-lg-0" action="/admin/search_photos/" method="GET">
+
+    <div class="form-group">
+
+    <select class="form-control" id="search-scene-type" name="search-scene-type">
+        <option value="none">* scene type *</option>
+    {% for scene_type in all_scene_types %}
+        <option value="{{ search_scene_type }}">{{ scene_type }}</option>
+    {% endfor %} 
+    </select>
+    <select class="form-control" id="search-business-type" name="search-business-type">
+        <option value="none">* business type *</option>
+    {% for business_type in all_business_types %}
+        <option value="{{ search_business_type }}">{{ business_type }}</option>
+    {% endfor %} 
+    </select>
+    <select class="form-control" id="search-other-labels" name="photo-business-type">
+        <option value="none">* other labels *</option>
+    {% for other_label in all_other_labels %}
+        <option value="{{ search_other_label }}">{{ other_label }}</option>
+    {% endfor %} 
+    </select>
+    <input class="form-control mr-sm-2" type="text" placeholder="text search">
+    <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+
+    </div>
+
+</form>
+
+{% endblock %}

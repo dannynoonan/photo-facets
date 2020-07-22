@@ -12,5 +12,6 @@ urlpatterns = [
     path('admin/edit_neighborhood/<str:neighborhood_slug>/', views.edit_neighborhood, name='edit_neighborhood'),
     path('admin/select_photo/', views.select_photo, name='select_photo'),
     path('admin/save_photo/', views.save_photo, name='save_photo'),
+    path('admin/search_photos/', views.search_photos, name='search_photos'),
     path('admin/edit_photo/<str:photo_uuid>/', views.edit_photo, name='edit_photo'),
 ]
