@@ -2,9 +2,9 @@
 
 {% block content %}
     <div id="floating-panel">
-        <input onclick="hideAllMarkers();" type=button value="Hide All Markers">
-        <br/><input onclick="displayAllMarkers();" type=button value="Dislay All Markers">
-        <ul id="facet-list"></ul>
+        <input type="button" class="btn btn-primary" value="Hide All" onclick="hideAllMarkers();" >
+        <input type="button" class="btn btn-primary" value="Dislay All" onclick="displayAllMarkers();">
+        <ul class="list-group" id="facet-list"></ul>
     </div>
     <div id="gmap"></div>
     

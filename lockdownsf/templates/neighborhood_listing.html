@@ -1,13 +1,27 @@
 {% extends 'admin.html' %}
 
 {% block body %}
-<p><b>Neighborhood listing:</b></p>
+<h4>Neighborhood listing:</h4>
+
 {% if all_neighborhoods %}
-<ul>
+<table class="table table-hover">
+    <thead>
+        <tr><th scope="col">Name</th>
+            <th scope="col">Slug</th>
+            <th scope="col">Photos</th>
+            <th scope="col">Center latitude</th>
+            <th scope="col">Center longitude</th></tr>
+    </thead>
+    <tbody>
     {% for neighborhood in all_neighborhoods %}
-    <li><a href="/lockdownsf/admin/edit_neighborhood/{{ neighborhood.slug }}/">{{ neighborhood.name }} ({{ neighborhood.slug }})</a></li>
+        <tr><th scope="row"><a href="/lockdownsf/admin/edit_neighborhood/{{ neighborhood.slug }}/">{{ neighborhood.name }}</a></th>
+            <td>{{ neighborhood.slug }}</td>
+            <td>{{ neighborhood.photo_count }}</td>
+            <td>{{ neighborhood.center_latitude }}</td>
+            <td>{{ neighborhood.center_longitude }}</td></tr>
     {% endfor %}
-</ul>
+    </tbody>
+</table>
 {% endif %}  
 
 {% endblock %}

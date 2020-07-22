@@ -109,10 +109,28 @@ def sign_s3(request):
     return HttpResponse(data, content_type='json')
 
 
+def admin(request):
+    template = 'admin.html'
+
+    all_neighborhoods = Neighborhood.objects.all()
+
+    context = {
+        'all_neighborhoods': all_neighborhoods,
+        'all_scene_types': all_scene_types,
+        'all_business_types': all_business_types,
+        'all_other_labels': all_other_labels,
+    }
+
+    return render(request, template, context)
+
+
 def neighborhood_listing(request):
     template = 'neighborhood_listing.html'
 
     all_neighborhoods = Neighborhood.objects.all()
+
+    for neighborhood in all_neighborhoods:
+        neighborhood.photo_count = len(neighborhood.photo_set.all())
 
     context = {
         'template': template,
@@ -363,7 +381,6 @@ def save_photo(request):
         'photo': photo,
         'source_file_name': source_file_name,
         'file_path': file_path,
-        'extracted_text_formatted': extracted_text_formatted,
         'small_file_path': small_file_path,
         'medium_file_path': medium_file_path,
         'large_file_path': large_file_path,
