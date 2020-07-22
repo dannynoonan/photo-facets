@@ -8,8 +8,11 @@ li a {
 /* Optional: Makes the sample page fill the window. */
 html, body {
     height: 100%;
-    margin: 5px;
+    margin: 0;
     padding: 0;
+}
+.actual-body {
+    padding: 15px;
 }
 .hidden-button {
     visibility: hidden;
@@ -33,4 +36,14 @@ html, body {
 div.marker-window-landscape {
     height: 600;
     width: 800;
+}
+table.table-fit {
+    width: auto !important;
+    table-layout: auto !important;
+}
+table.table-fit thead th, table.table-fit tfoot th {
+    width: auto !important;
+}
+table.table-fit tbody td, table.table-fit tfoot td {
+    width: auto !important;
 }

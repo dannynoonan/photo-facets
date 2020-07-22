@@ -1,41 +1,51 @@
 {% extends 'admin.html' %}
 
 {% block body %}
+
 {% if photo %}
-<p>Photo {{ photo.uuid }} saved successfully.</p>
-<p>
-    <ul>
-        <!-- <li><a href="{{ file_path }}">Original</a>:<br/>
-            <img src="{{ file_path }}"/></li> -->
-        <li><a href="{{ large_file_path }}">Large</a>:<br/>
-            <img src="{{ large_file_path }}"/></li>
-        <li><a href="{{ medium_file_path }}">Medium</a>:<br/>
-            <img src="{{ medium_file_path }}"/></li>
-        <li><a href="{{ small_file_path }}">Small</a>:<br/>
-            <img src="{{ small_file_path }}"/></li>
-        <li>Source file name: {{ source_file_name }}</li>
-        <li>Photo uuid: {{ photo.uuid }}</li> 
-        <li>Date taken: {{ photo.dt_taken }}</li>
-        <li>Neighborhood: {{ photo.neighborhood.name }}</li>
-        <li>File format: {{ photo.file_format }}</li>
-        <li>Latitude: {{ photo.latitude }}</li>
-        <li>Longitude: {{ photo.longitude }}</li>
-        <li>Width: {{ photo.width_pixels }} px</li>
-        <li>Height: {{ photo.height_pixels }} px</li>
-        <li>Aspect format: {{ photo.aspect_format }}</li>
-        <li>Scene type: {{ photo.scene_type }}</li>
-        <li>Business type: {{ photo.business_type }}</li>
-        <li>Other labels: {{ photo.other_types }}</li>
-        <li>Extracted text: {{ extracted_text_formatted|safe }}</li>
-    </ul> 
-</p>
+<h4>Photo {{ photo.uuid }} saved successfully.</h4>
+<table class="table table-hover">
+    <tbody>
+        <tr><th scope="row"><a href="{{ large_file_path }}">Large</a>:</th>
+            <td><img src="{{ large_file_path }}"/></td></tr>
+        <tr><th scope="row"><a href="{{ medium_file_path }}">Medium</a>:</th>
+            <td><img src="{{ medium_file_path }}"/></td></tr>
+        <tr><th scope="row"><a href="{{ small_file_path }}">Small</a>:</th>
+            <td><img src="{{ small_file_path }}"/></td></tr>
+        <tr><th scope="row">Source file name:</th>
+            <td>{{ source_file_name }}</td></tr>
+        <tr><th scope="row">Photo uuid:</th>
+            <td>{{ photo.uuid }}</td></tr>
+        <tr><th scope="row">Date taken:</th>
+            <td>{{ photo.dt_taken }}</td></tr>
+        <tr><th scope="row">Neighborhood:</th>
+            <td>{{ photo.neighborhood.name }}</td></tr>
+        <tr><th scope="row">File format:</th>
+            <td>{{ photo.file_format }}</td></tr>
+        <tr><th scope="row">Latitude:</th>
+            <td>{{ photo.latitude }}</td></tr>
+        <tr><th scope="row">Longitude:</th>
+            <td>{{ photo.longitude }}</td></tr>
+        <tr><th scope="row">Dimensions:</th>
+            <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} (photo.aspect_format)</td></tr>
+        <tr><th scope="row">Scene type:</th>
+            <td>{{ photo.scene_type }}</td></tr>
+        <tr><th scope="row">Business type:</th>
+            <td>{{ photo.business_type }}</td></tr>
+        <tr><th scope="row">Other labels:</th>
+            <td>{{ photo.other_labels }}</td></tr>
+        <tr><th scope="row">Extracted text:</th>
+            <td>{{ photo.extracted_text_formatted|safe }}</td></tr>
+    </tbody>
+</table>
+
 {% else %}
 <p>No photo data</p>
 {% endif %}
 
 {% if exception %}
+<h5>Exception: {{ exception }}</h5>
 <p><b>vars(request):</b></p>
-<p>Exception: {{ exception }}</p>
 <p>Data dump: {{ dump }}</p>
 {% endif %}
 

@@ -1,36 +1,83 @@
 {% extends 'admin.html' %}
 
 {% block body %}
+
 {% if exception %}
-<p><font color="red">Exception: {{ exception }}</font></p>
-<p><font color="blue">Dump: {{ dump }}</font></p>
+<div class="alert alert-danger">
+    <h5><strong>Exception:</strong> {{ exception }}</h5>
+    <p>Data dump: {{ dump }}</p>
+</div>
 {% endif %}
+
 {% if neighborhood %}
-    <p><b>Neighborhood page for {{ neighborhood.name }}</b></p>
+    <h4>Neighborhood page for {{ neighborhood.name }}</h4>
+
     {% if unavailable_neighborhood_slug %}
-    <p><font color="red">
-        !!! Neighborhood could not be changed to slug {{ unavailable_neighborhood_slug }} since it already exists.
-        Edit that neighborhood <a href="/lockdownsf/admin/edit_neighborhood/{{ unavailable_neighborhood_slug }}/">here</a>".
-    </font></p>
+    <div class="alert alert-danger">
+        <h5><strong>Update failed:</strong> Neighborhood could not be changed to slug <strong>{{ unavailable_neighborhood_slug }}</strong> since it already exists.</h5>
+        <p>Edit that neighborhood <a href="/lockdownsf/admin/edit_neighborhood/{{ unavailable_neighborhood_slug }}/">here</a>.</p>
+    </div>
     {% endif %}
+    
     <form method="POST" action="/lockdownsf/admin/save_neighborhood/">
         {% csrf_token %}
-        <ul>
+        <input type="hidden" name="original-neighborhood-slug" value="{{ neighborhood.slug }}">
+        <input type="hidden" name="request-origin-template" value="neighborhood_edit.html">
+        <table class="table table-hover table-fit">
+            <tbody>
+                <tr class="table-fit"><th scope="row">Slug:</th>
+                    <td class="table-fit"><input type="text" name="neighborhood-slug" value="{{ neighborhood.slug }}"></td></tr>
+                <tr class="table-fit"><th scope="row">Name:</th>
+                    <td class="table-fit"><input type="text" name="neighborhood-name" value="{{ neighborhood.name }}"></td></tr>
+                <!-- <tr><th scope="row">Center latitude:</th>
+                    <td><input type="text" name="neighborhood-center-latitude" value="{{ neighborhood.center_latitude }}"></td></tr>
+                <tr><th scope="row">Center longitude:</th>
+                    <td><input type="text" name="neighborhood-center-longitude" value="{{ neighborhood.center_longitude }}"></td></tr> -->
+                <tr class="table-fit"><th scope="row">Date created:</th>
+                    <td class="table-fit">{{ neighborhood.dt_inserted }}</td></tr>
+                <tr class="table-fit"><th scope="row">Date updated:</th>
+                    <td class="table-fit">{{ neighborhood.dt_updated }}</td></tr>
+                <tr class="table-fit"><th scope="row"></th>
+                    <td class="table-fit"><input type="submit" value="Save changes"></td></tr>
+            </tbody>
+        </table>
+
+        <!-- <ul>
             <li>Slug: <input type="text" name="neighborhood-slug" value="{{ neighborhood.slug }}"></li>
-            <li>Name: <input type="text" name="neighborhood-name" value="{{ neighborhood.name }}"></li>
-            <!-- 
+            <li>Name: <input type="text" name="neighborhood-name" value="{{ neighborhood.name }}"></li>         
             <li>Center latitude: <input type="text" name="neighborhood-center-latitude" value="{{ neighborhood.center_latitude }}"></li>
             <li>Center longitude: <input type="text" name="neighborhood-center-longitude" value="{{ neighborhood.center_longitude }}"></li> 
-            -->
             <li>Date created: {{ neighborhood.dt_inserted }}</li>
             <li>Date updated: {{ neighborhood.dt_updated }}</li>
         </ul>
         <input type="hidden" name="original-neighborhood-slug" value="{{ neighborhood.slug }}">
         <input type="hidden" name="request-origin-template" value="neighborhood_edit.html">
-        <input type="submit" value="Save changes">
+        <input type="submit" value="Save changes"> -->
     </form>
 
-    <p>Photos:</p>
+    {% if neighborhood_photos %}
+    <h4>Neighborhood photos</h4>
+    <table class="table table-hover table-fit">
+        <thead>
+            <tr><th scope="col">Photo</th>
+                <th scope="col">UUID</th>
+                <th scope="col">Source file</th></tr>
+        </thead>
+        <tbody>
+        {% for photo in neighborhood_photos %}
+            <tr><td><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">
+                    <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"></a></td>
+                <td>{{ photo.uuid }}</td>
+                <td>{{ photo.source_file_name }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% else %}
+    <h4>No photos for neighborhood.</h4>
+    {% endif %}  
+
+    <!-- <p>Photos:</p>
     {% if neighborhood_photos %}
     <ul>
         {% for photo in neighborhood_photos %}
@@ -41,11 +88,12 @@
     </ul>
     {% else %}
     <p>No photos for neighborhood.</p>
-    {% endif %}  
+    {% endif %}   -->
 
 {% else %}
-<p><b>No neighborhood found matching slug {{ neighborhood_slug }}</b></p>
+<div class="alert alert-warning">
+    <h4>No neighborhood found matching slug <strong>{{ neighborhood_slug }}</strong>.</h4>
+</div>
 {% endif %}
 
-    <p>Back to <a href="/lockdownsf/admin/neighborhood_listing/">neighborhood listing</a> page</p>
 {% endblock %}

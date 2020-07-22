@@ -42,7 +42,7 @@ function initGmap() {
     console.log(photoCollection);
     // init gmap
     gmap = new google.maps.Map(document.getElementById('gmap'), {
-        zoom: 13,
+        zoom: 14,
         center: baseLatLng,
         mapTypeId: 'terrain'
     });
@@ -92,18 +92,23 @@ function addFacetsToNav() {
     for (var cat in catsToKeys) {
         // create checkbox for each facet
         var facetCheckbox = document.createElement('input');
-        facetCheckbox.id = cat + '_checkbox';
         facetCheckbox.setAttribute('type', 'checkbox');
+        facetCheckbox.id = cat + '_checkbox';
         facetCheckbox.checked = true;
         // add listener for adding/removing markers to map for category
         facetCheckbox.onclick = toggleMarkersForCategory;
-        // create text node for displaying facet label and counts
-        var facetText = document.createTextNode(facetLabels[cat] + '('+ catsToKeys[cat].length + ')');     
-        // wrap checkbox and text in list item and add to facet-list
+        // create textNode and span element for displaying facet label and counts
+        var facetLabel = document.createTextNode(facetLabels[cat]);     
+        var facetCount = document.createElement('span');
+        facetCount.innerHTML = catsToKeys[cat].length;
+        facetCount.className = 'badge badge-primary badge-pill';
+        // wrap checkbox, textNode, and span in list item and add to facet-list
         var facetLi = document.createElement('li');
-        facetLi.appendChild(facetCheckbox);    
-        facetLi.appendChild(facetText);                           
-        document.getElementById("facet-list").appendChild(facetLi); 
+        facetLi.className = 'list-group-item d-flex justify-content-between align-items-center';
+        facetLi.appendChild(facetCheckbox);
+        facetLi.appendChild(facetLabel);
+        facetLi.appendChild(facetCount);
+        document.getElementById("facet-list").appendChild(facetLi);
     }
 }
 
