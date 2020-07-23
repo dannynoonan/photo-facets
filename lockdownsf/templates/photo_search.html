@@ -3,33 +3,67 @@
 {% block body %}
 
 
-<form class="form-inline my-2 my-lg-0" action="/admin/search_photos/" method="GET">
+<form class="form-inline my-2 my-lg-0" action="/lockdownsf/admin/search_photos/" method="GET">
 
     <div class="form-group">
 
     <select class="form-control" id="search-scene-type" name="search-scene-type">
-        <option value="none">* scene type *</option>
+        <option value="">* scene type *</option>
     {% for scene_type in all_scene_types %}
-        <option value="{{ search_scene_type }}">{{ scene_type }}</option>
+        <option value="{{ scene_type }}" {% if search_criteria.scene_type == scene_type %} selected {% endif %}>{{ scene_type }}</option>
     {% endfor %} 
     </select>
     <select class="form-control" id="search-business-type" name="search-business-type">
-        <option value="none">* business type *</option>
+        <option value="">* business type *</option>
     {% for business_type in all_business_types %}
-        <option value="{{ search_business_type }}">{{ business_type }}</option>
+        <option value="{{ business_type }}" {% if search_criteria.business_type == business_type %} selected {% endif %}>{{ business_type }}</option>
     {% endfor %} 
     </select>
     <select class="form-control" id="search-other-labels" name="photo-business-type">
-        <option value="none">* other labels *</option>
+        <option value="">* other labels *</option>
     {% for other_label in all_other_labels %}
-        <option value="{{ search_other_label }}">{{ other_label }}</option>
+        <option value="{{ other_label }}" {% if search_criteria.other_label == other_label %} selected {% endif %}>{{ other_label }}</option>
     {% endfor %} 
     </select>
-    <input class="form-control mr-sm-2" type="text" placeholder="text search">
+    <input type="text" class="form-control mr-sm-2" id="search-text" name="search-text" value="{{ search_criteria.search_text }}" placeholder="search text">
     <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
 
     </div>
 
 </form>
+
+{% if search_criteria|length > 0 %}
+    <h4><strong>{{ matching_photos|length }}</strong> photos matching criteria: 
+    {% if search_criteria.scene_type %} scene_type==<strong>{{ search_criteria.scene_type }}</strong>, {% endif %} 
+    {% if search_criteria.business_type %} business_type==<strong>{{ search_criteria.business_type }}</strong>, {% endif %} 
+    {% if search_criteria.other_labels %} other_labels==<strong>{{ search_criteria.other_labels }}</strong>, {% endif %}
+    {% if search_criteria.search_text %} search_text==<strong>{{ search_criteria.search_text }}</strong> {% endif %}</h4>
+
+    {% if matching_photos %}
+    <table class="table table-hover table-fit">
+        <thead>
+            <tr><th scope="col">Photo</th>
+                <th scope="col">UUID</th>
+                <th scope="col">Source file</th>
+                <th scope="col">Scene type</th>
+                <th scope="col">Business type</th>
+                <th scope="col">Other labels</th>
+                <th scope="col">OCR text</th></tr>
+        </thead>
+        <tbody>
+        {% for photo in matching_photos %}
+            <tr><td><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">
+                    <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"></a></td>
+                <td>{{ photo.uuid }}</td>
+                <td>{{ photo.source_file_name }}</td>
+                <td>{{ photo.scene_type }}</td>
+                <td>{{ photo.business_type }}</td>
+                <td>{{ photo.other_labels }}</td>
+                <td>{{ photo.extracted_text_formatted }}</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endif %}
 
 {% endblock %}

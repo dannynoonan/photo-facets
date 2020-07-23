@@ -461,12 +461,32 @@ def search_photos(request):
 
     all_neighborhoods = Neighborhood.objects.all()
 
+    # bind vars to form data 
+    search_criteria = {}
+    filters = {}
+    if request.GET.get('search-scene-type'):
+        search_criteria['scene_type'] = request.GET.get('search-scene-type')
+        filters['scene_type'] = search_criteria['scene_type']
+    if request.GET.get('search-business-type'):
+        search_criteria['business_type'] = request.GET.get('search-business-type')
+        filters['business_type'] = search_criteria['business_type']
+    if request.GET.get('search-other-labels'):
+        search_criteria['other_label'] = request.GET.get('search-other-labels')
+        filters['other_labels__contains'] = search_criteria['other_label']
+    if request.GET.get('search-text'):
+        search_criteria['search_text'] = request.GET.get('search-text')
+        filters['extracted_text_raw__contains'] = search_criteria['search_text']        
+
+    matching_photos = Photo.objects.filter(**filters)
+
     context = {
         'template': template,
         'all_neighborhoods': all_neighborhoods,
         'all_scene_types': all_scene_types,
         'all_business_types': all_business_types,
         'all_other_labels': all_other_labels,
+        'search_criteria': search_criteria,
+        'matching_photos': matching_photos,
     }
 
     return render(request, template, context)

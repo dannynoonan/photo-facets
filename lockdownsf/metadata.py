@@ -33,10 +33,10 @@ all_scene_types = [
 ]
 
 all_business_types = [
-    'food_market',
-    'non_food_shop',
     'dining',
     'bar',
+    'food_market',
+    'non_food_shop',
     'laundry',
     'salon',
     'exercise',
