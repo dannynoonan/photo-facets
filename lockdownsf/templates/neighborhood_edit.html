@@ -41,18 +41,6 @@
                     <td class="table-fit"><input type="submit" value="Save changes"></td></tr>
             </tbody>
         </table>
-
-        <!-- <ul>
-            <li>Slug: <input type="text" name="neighborhood-slug" value="{{ neighborhood.slug }}"></li>
-            <li>Name: <input type="text" name="neighborhood-name" value="{{ neighborhood.name }}"></li>         
-            <li>Center latitude: <input type="text" name="neighborhood-center-latitude" value="{{ neighborhood.center_latitude }}"></li>
-            <li>Center longitude: <input type="text" name="neighborhood-center-longitude" value="{{ neighborhood.center_longitude }}"></li> 
-            <li>Date created: {{ neighborhood.dt_inserted }}</li>
-            <li>Date updated: {{ neighborhood.dt_updated }}</li>
-        </ul>
-        <input type="hidden" name="original-neighborhood-slug" value="{{ neighborhood.slug }}">
-        <input type="hidden" name="request-origin-template" value="neighborhood_edit.html">
-        <input type="submit" value="Save changes"> -->
     </form>
 
     {% if neighborhood_photos %}
@@ -76,19 +64,6 @@
     {% else %}
     <h4>No photos for neighborhood.</h4>
     {% endif %}  
-
-    <!-- <p>Photos:</p>
-    {% if neighborhood_photos %}
-    <ul>
-        {% for photo in neighborhood_photos %}
-        <li><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">
-            <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"> {{ photo.uuid }}</a> 
-            ({{ photo.source_file_name }})</li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>No photos for neighborhood.</p>
-    {% endif %}   -->
 
 {% else %}
 <div class="alert alert-warning">
