@@ -168,3 +168,10 @@ function convertDMSToDD(degrees, minutes, seconds, direction) {
     }
     return dd;
 }
+
+
+function updateNeighborhoodFormAction() {
+    var baseAction = "/lockdownsf/admin/edit_neighborhood/"
+    var selectedValue = document.getElementById("select-neighborhood").value;
+    document.getElementById("goto-neighborhood-form").action = baseAction + selectedValue + "/";
+}

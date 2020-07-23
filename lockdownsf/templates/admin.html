@@ -17,7 +17,8 @@
     </div>
 
     <div class="collapse navbar-collapse" id="navbarColor01">
-        <form class="form-inline my-2 my-lg-0" action="/admin/edit_neighborhood/" method="POST">
+        <form class="form-inline my-2 my-lg-0" id="goto-neighborhood-form" action="/lockdownsf/admin/edit_neighborhood/none/" method="POST">
+            {% csrf_token %}
             <a class="navbar-brand" href="/lockdownsf/admin/neighborhood_listing/">Neighborhoods</a>
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item {% if template == 'neighborhood_listing.html' %} active {% endif %}">
@@ -28,7 +29,7 @@
                 </li>
                 <li class="nav-item nav-link">Lookup:</li>
             </ul>
-            <select class="form-control" id="select-neighborhood" name="select-neighborhood">
+            <select class="form-control" id="select-neighborhood" name="select-neighborhood" onchange="updateNeighborhoodFormAction();">
                 <option value="none">* neighborhood *</option>
             {% for neighborhood in all_neighborhoods %}
                 <option value="{{ neighborhood.slug }}">{{ neighborhood.name }}</option>
