@@ -158,6 +158,13 @@ def edit_neighborhood(request, neighborhood_slug):
 
     all_neighborhoods = Neighborhood.objects.all()
 
+    if not neighborhood_slug or neighborhood_slug == "none":
+        context = {
+            'template': template,
+            'all_neighborhoods': all_neighborhoods,
+        }
+        return render(request, template, context)
+
     try:
         neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         neighborhood_photos = neighborhood.photo_set.all() 

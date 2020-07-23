@@ -2,42 +2,43 @@
 
 {% block body %}
 
+<div class="row justify-content-center">
+    <form class="form-inline my-2 my-lg-0" action="/lockdownsf/admin/search_photos/" method="GET">
+        <strong>Scene type:</strong>&nbsp;
+        <select class="form-control" id="search-scene-type" name="search-scene-type">
+            <option value="">* scene type *</option>
+        {% for scene_type in all_scene_types %}
+            <option value="{{ scene_type }}" {% if search_criteria.scene_type == scene_type %} selected {% endif %}>{{ scene_type }}</option>
+        {% endfor %} 
+        </select>
+        &nbsp;&nbsp;&nbsp;<strong>Business type:</strong>&nbsp;
+        <select class="form-control" id="search-business-type" name="search-business-type">
+            <option value="">* business type *</option>
+        {% for business_type in all_business_types %}
+            <option value="{{ business_type }}" {% if search_criteria.business_type == business_type %} selected {% endif %}>{{ business_type }}</option>
+        {% endfor %} 
+        </select>
+        &nbsp;&nbsp;&nbsp;<strong>Other label:</strong>&nbsp;
+        <select class="form-control" id="search-other-labels" name="photo-business-type">
+            <option value="">* other labels *</option>
+        {% for other_label in all_other_labels %}
+            <option value="{{ other_label }}" {% if search_criteria.other_label == other_label %} selected {% endif %}>{{ other_label }}</option>
+        {% endfor %} 
+        </select>
+        &nbsp;&nbsp;&nbsp;<strong>Search text:</strong>&nbsp;
+        <input type="text" class="form-control mr-sm-2" id="search-text" name="search-text" value="{{ search_criteria.search_text }}" placeholder="search text">
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+    </form>
+</div>
 
-<form class="form-inline my-2 my-lg-0" action="/lockdownsf/admin/search_photos/" method="GET">
-
-    <div class="form-group">
-
-    <select class="form-control" id="search-scene-type" name="search-scene-type">
-        <option value="">* scene type *</option>
-    {% for scene_type in all_scene_types %}
-        <option value="{{ scene_type }}" {% if search_criteria.scene_type == scene_type %} selected {% endif %}>{{ scene_type }}</option>
-    {% endfor %} 
-    </select>
-    <select class="form-control" id="search-business-type" name="search-business-type">
-        <option value="">* business type *</option>
-    {% for business_type in all_business_types %}
-        <option value="{{ business_type }}" {% if search_criteria.business_type == business_type %} selected {% endif %}>{{ business_type }}</option>
-    {% endfor %} 
-    </select>
-    <select class="form-control" id="search-other-labels" name="photo-business-type">
-        <option value="">* other labels *</option>
-    {% for other_label in all_other_labels %}
-        <option value="{{ other_label }}" {% if search_criteria.other_label == other_label %} selected {% endif %}>{{ other_label }}</option>
-    {% endfor %} 
-    </select>
-    <input type="text" class="form-control mr-sm-2" id="search-text" name="search-text" value="{{ search_criteria.search_text }}" placeholder="search text">
-    <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-
-    </div>
-
-</form>
+<br/><br/>
 
 {% if search_criteria|length > 0 %}
     <h4><strong>{{ matching_photos|length }}</strong> photos matching criteria: 
-    {% if search_criteria.scene_type %} scene_type==<strong>{{ search_criteria.scene_type }}</strong>, {% endif %} 
-    {% if search_criteria.business_type %} business_type==<strong>{{ search_criteria.business_type }}</strong>, {% endif %} 
-    {% if search_criteria.other_labels %} other_labels==<strong>{{ search_criteria.other_labels }}</strong>, {% endif %}
-    {% if search_criteria.search_text %} search_text==<strong>{{ search_criteria.search_text }}</strong> {% endif %}</h4>
+    {% if search_criteria.scene_type %} scene_type [<strong>{{ search_criteria.scene_type }}</strong>] {% endif %} 
+    {% if search_criteria.business_type %} business_type [<strong>{{ search_criteria.business_type }}</strong>] {% endif %} 
+    {% if search_criteria.other_labels %} other_labels [<strong>{{ search_criteria.other_labels }}</strong>] {% endif %}
+    {% if search_criteria.search_text %} search_text [<strong>{{ search_criteria.search_text }}</strong>] {% endif %}</h4><br/><br/>
 
     {% if matching_photos %}
     <table class="table table-hover table-fit">
@@ -59,7 +60,7 @@
                 <td>{{ photo.scene_type }}</td>
                 <td>{{ photo.business_type }}</td>
                 <td>{{ photo.other_labels }}</td>
-                <td>{{ photo.extracted_text_formatted }}</td></tr>
+                <td>{{ photo.extracted_text_formatted|safe }}</td></tr>
         {% endfor %}
         </tbody>
     </table>
