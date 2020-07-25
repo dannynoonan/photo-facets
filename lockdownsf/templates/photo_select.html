@@ -14,6 +14,7 @@
 <form method="POST" action="/lockdownsf/admin/save_photo/">
     {% csrf_token %}
     <!-- hidden input fields -->
+    <input type="hidden" name="request-origin-template" id="request-origin-template" value="photo_select.html"/>
     <input type="hidden" name="photo-file-name" id="photo-file-name"/>
     <input type="hidden" name="photo-uuid" id="photo-uuid" value="{{ photo_uuid }}"/>
     <input type="hidden" name="photo-file-path" id="photo-file-path"/>
