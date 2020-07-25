@@ -53,7 +53,7 @@
         </thead>
         <tbody>
         {% for photo in matching_photos %}
-            <tr><td><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">
+            <tr><td><a href="/lockdownsf/admin/edit_photo/{{ photo.uuid }}/">
                     <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"></a></td>
                 <td>{{ photo.uuid }}</td>
                 <td>{{ photo.source_file_name }}</td>

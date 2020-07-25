@@ -319,78 +319,105 @@ def save_photo(request):
     all_neighborhoods = Neighborhood.objects.all()
 
     #try:
-    # bind vars to form data 
+    # bind and process form vars needed for both the 'add' and 'edit' workflows
+    request_origin_template = request.POST.get('request-origin-template', '')
     neighborhood_slug = request.POST.get('photo-neighborhood-slug', '')
-    source_file_name = request.POST.get('photo-file-name', '')
     uuid = request.POST.get('photo-uuid', '')
-    file_path = request.POST.get('photo-file-path', '')
-    date_taken = request.POST.get('photo-date-taken', '')
-    file_format = request.POST.get('photo-file-format', '')
-    latitude = request.POST.get('photo-latitude', '')
-    longitude = request.POST.get('photo-longitude', '')
-    width = request.POST.get('photo-width', '')
-    height = request.POST.get('photo-height', '')
-    aspect_format = request.POST.get('photo-aspect-format', '')
     scene_type = request.POST.get('photo-scene-type', '')
     business_type = request.POST.get('photo-business-type', '')
     other_labels = request.POST.get('photo-other-labels', '')
 
-    # process raw vars for Photo obj 
-    neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
-    dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
-    file_format = image_file_formats.get(file_format, 'xxx')
-    if width:
-        width = int(width)
+    # photo_edit workflow: process additional form vars, fetch and update photo
+    if request_origin_template == "photo_edit.html":
+        extracted_text_formatted = request.POST.get('photo-extracted-text', '')
+        extracted_text_raw = extracted_text_formatted.replace('<br/>', ' ')
+        try:
+            photo = Photo.objects.get(uuid=uuid)
+            # update properties
+            photo.neighborhood_slug = neighborhood_slug
+            photo.scene_type = scene_type
+            photo.business_type = business_type
+            photo.other_labels = other_labels
+            photo.extracted_text_formatted = extracted_text_formatted
+            photo.extracted_text_raw = extracted_text_raw
+            photo.save()
+
+            file_path = ''
+
+        except Exception as ex:
+            print('ex: ' + str(ex))
+            dump = getmembers(request)
+            context = {
+                'dump': dump,
+                'exception': ex
+            }
+            return render(request, template, context)
+
+    # photo_select workflow: process additional form vars, resize image, run OCR analysis 
+    elif request_origin_template == "photo_select.html":
+        source_file_name = request.POST.get('photo-file-name', '')
+        file_path = request.POST.get('photo-file-path', '') 
+        date_taken = request.POST.get('photo-date-taken', '')
+        file_format = request.POST.get('photo-file-format', '')
+        latitude = request.POST.get('photo-latitude', '')
+        longitude = request.POST.get('photo-longitude', '')
+        width = request.POST.get('photo-width', '')
+        height = request.POST.get('photo-height', '')
+        aspect_format = request.POST.get('photo-aspect-format', '')
+
+        # process raw vars 
+        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
+        dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
+        file_format = image_file_formats.get(file_format, 'xxx')
+        if width:
+            width = int(width)
+        else:
+            width = 0
+        if height:
+            height = int(height)
+        else:
+            height = 0
+
+        # analyze photo
+        extracted_text_raw, extracted_text_formatted = extract_text(uuid, S3_BUCKET)
+
+        # init and save photo
+        photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
+            dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
+            width_pixels=width, height_pixels=height, aspect_format=aspect_format,
+            scene_type=scene_type, business_type=business_type, other_labels=other_labels,
+            extracted_text_raw=extracted_text_raw, extracted_text_formatted=extracted_text_formatted)
+        photo.save()
+
+        # resize photos for s3 upload
+        aspect_ratio = width / height
+        img_dimensions = calculate_resized_images(aspect_ratio, width, height)
+
+        # load original image
+        response = requests.get(file_path, stream=True)
+        orig_img = Image.open(BytesIO(response.content))
+
+        print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
+        print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
+
+        resize_and_upload(orig_img, 'large', img_dimensions['large'], uuid)
+        resize_and_upload(orig_img, 'medium', img_dimensions['medium'], uuid)
+        resize_and_upload(orig_img, 'small', img_dimensions['small'], uuid)
+
     else:
-        width = 0
-    if height:
-        height = int(height)
-    else:
-        height = 0
+        context = {
+            'template': template,
+            'all_neighborhoods': all_neighborhoods,
+            'exception': 'Source template was neither photo_select nor photo_edit, unable to save photo.',
+        }
 
-    # analyze photo
-    extracted_text_raw, extracted_text_formatted = extract_text(uuid, S3_BUCKET)
-
-    print(f"++++++++ neighborhood [{neighborhood}] name [{neighborhood.slug}] id [{neighborhood.id}] ")
-    print('++++++++ begin save photo')
-
-    photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
-        dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
-        width_pixels=width, height_pixels=height, aspect_format=aspect_format,
-        scene_type=scene_type, business_type=business_type, other_labels=other_labels,
-        extracted_text_raw=extracted_text_raw, extracted_text_formatted=extracted_text_formatted)
-    photo.save()
-
-    print('++++++++ end save photo')
-
-    # resize photos 
-    aspect_ratio = width / height
-    img_dimensions = calculate_resized_images(aspect_ratio, width, height)
-
-    # load original image
-    response = requests.get(file_path, stream=True)
-    # response = requests.get(file_path)
-    orig_img = Image.open(BytesIO(response.content))
-
-    print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
-    print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
-
-    large_file_path = resize_and_upload(
-        orig_img, 'large', img_dimensions['large'], uuid)
-    medium_file_path = resize_and_upload(
-        orig_img, 'medium', img_dimensions['medium'], uuid)
-    small_file_path = resize_and_upload(
-        orig_img, 'small', img_dimensions['small'], uuid)
+        return render(request, template, context)
 
     context = {
         'template': template,
         'all_neighborhoods': all_neighborhoods,
         'photo': photo,
-        'source_file_name': source_file_name,
         'file_path': file_path,
-        'small_file_path': small_file_path,
-        'medium_file_path': medium_file_path,
-        'large_file_path': large_file_path,
     }
 
     return render(request, template, context)
@@ -457,6 +484,9 @@ def edit_photo(request, photo_uuid):
     context = {
         'template': template,
         'all_neighborhoods': all_neighborhoods,
+        'all_scene_types': all_scene_types,
+        'all_business_types': all_business_types,
+        'all_other_labels': all_other_labels,
         'photo': photo,
     }
 

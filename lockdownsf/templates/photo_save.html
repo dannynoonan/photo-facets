@@ -4,16 +4,15 @@
 
 {% if photo %}
 <h4>Photo {{ photo.uuid }} saved successfully.</h4>
+<img src="https://lockdownsf.s3.amazonaws.com/medium/{{ photo.uuid }}"/>
 <table class="table table-hover">
     <tbody>
-        <tr><th scope="row"><a href="{{ large_file_path }}">Large</a>:</th>
-            <td><img src="{{ large_file_path }}"/></td></tr>
-        <tr><th scope="row"><a href="{{ medium_file_path }}">Medium</a>:</th>
-            <td><img src="{{ medium_file_path }}"/></td></tr>
-        <tr><th scope="row"><a href="{{ small_file_path }}">Small</a>:</th>
-            <td><img src="{{ small_file_path }}"/></td></tr>
+        <tr><th scope="row">Sizes:</th>
+            <td><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">Large</a> | 
+                <a href="https://lockdownsf.s3.amazonaws.com/medium/{{ photo.uuid }}">Medium</a> | 
+                <a href="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}">Small</a></td></tr>
         <tr><th scope="row">Source file name:</th>
-            <td>{{ source_file_name }}</td></tr>
+            <td>{{ photo.source_file_name }}</td></tr>
         <tr><th scope="row">Photo uuid:</th>
             <td>{{ photo.uuid }}</td></tr>
         <tr><th scope="row">Date taken:</th>
@@ -27,7 +26,7 @@
         <tr><th scope="row">Longitude:</th>
             <td>{{ photo.longitude }}</td></tr>
         <tr><th scope="row">Dimensions:</th>
-            <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} (photo.aspect_format)</td></tr>
+            <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} ({{ photo.aspect_format }})</td></tr>
         <tr><th scope="row">Scene type:</th>
             <td>{{ photo.scene_type }}</td></tr>
         <tr><th scope="row">Business type:</th>
@@ -36,17 +35,22 @@
             <td>{{ photo.other_labels }}</td></tr>
         <tr><th scope="row">Extracted text:</th>
             <td>{{ photo.extracted_text_formatted|safe }}</td></tr>
+        <tr><th scope="row"><a href="/lockdownsf/admin/edit_photo/{{ photo.uuid }}">Edit photo</a></th>
+            <td></td></tr>
     </tbody>
 </table>
 
 {% else %}
-<p>No photo data</p>
+<div class="alert alert-danger">
+    <h5>Unable to save, no photo data was returned.</h5>
+</div>
 {% endif %}
 
 {% if exception %}
-<h5>Exception: {{ exception }}</h5>
-<p><b>vars(request):</b></p>
-<p>Data dump: {{ dump }}</p>
+<div class="alert alert-danger">
+    <h5><strong>Exception:</strong> {{ exception }}</h5>
+    <p>Data dump: {{ dump }}</p>
+</div>
 {% endif %}
 
 {% endblock %}

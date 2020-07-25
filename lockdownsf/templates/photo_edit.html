@@ -1,0 +1,80 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+
+{% if photo %}
+<img src="https://lockdownsf.s3.amazonaws.com/medium/{{ photo.uuid }}"/>
+
+<form method="POST" action="/lockdownsf/admin/save_photo/">
+    {% csrf_token %}
+    <input type="hidden" name="request-origin-template" id="request-origin-template" value="photo_edit.html"/>
+    <input type="hidden" name="photo-uuid" id="photo-uuid" value="{{ photo.uuid }}"/>
+    <table class="table table-hover table-fit">
+        <tbody>
+            <tr><th scope="row">Preview:</th>
+                <td><a href="https://lockdownsf.s3.amazonaws.com/large/{{ photo.uuid }}">Large</a> | 
+                    <a href="https://lockdownsf.s3.amazonaws.com/medium/{{ photo.uuid }}">Medium</a> | 
+                    <a href="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}">Small</a></td></tr>
+            <tr><th scope="row">Photo UUID:</th>
+                <td>{{ photo.uuid }}</td></tr>
+            <tr><th scope="row">Source file name:</th>
+                <td>{{ photo.source_file_name }}</td></tr>
+            <tr><th scope="row">Date taken:</th>
+                <td>{{ photo.dt_taken }}</td></tr>
+            <tr><th scope="row">File format:</th>
+                <td>{{ photo.file_format }}</td></tr>
+            <tr><th scope="row">Latitude:</th>
+                <td>{{ photo.latitude }}</td></tr>
+            <tr><th scope="row">Longitude:</th>
+                <td>{{ photo.longitude }}</td></tr>
+            <tr><th scope="row">Dimensions:</th>
+                <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} (photo.aspect_format)</td></tr>
+            <tr><th scope="row">Neighborhood:</th>
+                <td><select id="photo-neighborhood-slug" class="form-control" name="photo-neighborhood-slug">
+                    {% for neighorhood in all_neighborhoods %}
+                        <option value="{{ neighorhood.slug }}" {% if neighorhood.slug == photo.neighorhood.slug %} selected {% endif %}>
+                            {{ neighorhood.name }}</option>
+                    {% endfor %} 
+                </select></td>
+            </tr>
+            <tr><th scope="row">Scene type:</th>
+                <td><select id="photo-scene-type" class="form-control" name="photo-scene-type">
+                    {% for scene_type in all_scene_types %}
+                        <option value="{{ scene_type }}" {% if scene_type == photo.scene_type %} selected {% endif %}>
+                            {{ scene_type }}</option>
+                    {% endfor %} 
+                </select></td>
+            </tr>
+            <tr><th scope="row">Business type:</th>
+                <td><select id="photo-business-type" class="form-control" name="photo-business-type">
+                        <option value="none">* optional *</option>
+                    {% for business_type in all_business_types %}
+                        <option value="{{ business_type }}" {% if scene_type == photo.business_type %} selected {% endif %}>
+                            {{ business_type }}</option>
+                    {% endfor %} 
+                </select></td>
+            </tr>
+            <tr><th scope="row">Other labels:</th>
+                <td><input type="text" id="photo-other-labels" class="form-control" name="photo-other-labels" value="{{ photo.other_labels }}"/></td></tr>
+            <tr><th scope="row">Extracted text:</th>
+                <td><textarea id="photo-extracted-text" class="form-control" name="photo-extracted-text" rows="8" cols="100">{{ photo.extracted_text_formatted }}</textarea></td></tr>
+            <tr><th scope="row"></th>
+                <td><input type="submit" class="btn btn-secondary my-2 my-sm-0" value="Save changes"/></td></tr>
+        </tbody>
+    </table>
+</form>
+
+{% else %}
+<div class="alert alert-warning">
+    <h5>No photo found matching uuid <strong>{{ photo_uuid }}</strong></h5>
+</div>
+{% endif %}
+
+{% if exception %}
+<div class="alert alert-danger">
+    <h5><strong>Exception:</strong> {{ exception }}</h5>
+    <p>Data dump: {{ dump }}</p>
+</div>
+{% endif %}
+
+{% endblock %}

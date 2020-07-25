@@ -71,9 +71,13 @@ def extract_text(img_file_name, bucket):
         print(f"parsing rekognition detect_text response for image [{img_file_name}]")
         for text in text_detections:
             if text['Type'] == 'LINE':
-                extracted_text_raw = f"{extracted_text_raw} {text['DetectedText']}"
-                extracted_text_formatted = f"{extracted_text_formatted}<br/>{text['DetectedText']}"
- 
+                if extracted_text_raw:
+                    extracted_text_raw = f"{extracted_text_raw} {text['DetectedText']}"
+                    extracted_text_formatted = f"{extracted_text_formatted}<br/>{text['DetectedText']}"
+                else:
+                    extracted_text_raw = text['DetectedText']
+                    extracted_text_formatted = text['DetectedText']
+
     # otherwise use AWS textract's detect_document_text (more costly, only use if 50 word threshold met)
     else:
         # https://docs.aws.amazon.com/textract/latest/dg/detecting-document-text.html
