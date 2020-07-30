@@ -28,7 +28,7 @@
             <tr><th scope="row">Longitude:</th>
                 <td>{{ photo.longitude }}</td></tr>
             <tr><th scope="row">Dimensions:</th>
-                <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} (photo.aspect_format)</td></tr>
+                <td>{{ photo.width_pixels }} x {{ photo.height_pixels }} ({{ photo.aspect_format }})</td></tr>
             <tr><th scope="row">Neighborhood:</th>
                 <td><select id="photo-neighborhood-slug" class="form-control" name="photo-neighborhood-slug">
                     {% for neighorhood in all_neighborhoods %}
