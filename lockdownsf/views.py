@@ -9,10 +9,11 @@ import requests
 from pprint import pprint
 import uuid
 
-from django.shortcuts import render
-from django.template import loader
 from django.http import HttpResponse
 from django.http import Http404
+from django.db.models import Q
+from django.shortcuts import render
+from django.template import loader
 
 from .metadata import *
 from .models import Neighborhood, Photo
@@ -500,21 +501,24 @@ def search_photos(request):
 
     # bind vars to form data 
     search_criteria = {}
-    filters = {}
+    and_filters = {}
+    or_filters = ''
     if request.GET.get('search-scene-type'):
         search_criteria['scene_type'] = request.GET.get('search-scene-type')
-        filters['scene_type'] = search_criteria['scene_type']
+        and_filters['scene_type'] = search_criteria['scene_type']
     if request.GET.get('search-business-type'):
         search_criteria['business_type'] = request.GET.get('search-business-type')
-        filters['business_type'] = search_criteria['business_type']
+        and_filters['business_type'] = search_criteria['business_type']
     if request.GET.get('search-other-labels'):
         search_criteria['other_label'] = request.GET.get('search-other-labels')
-        filters['other_labels__contains'] = search_criteria['other_label']
+        and_filters['other_labels__contains'] = search_criteria['other_label']
     if request.GET.get('search-text'):
         search_criteria['search_text'] = request.GET.get('search-text')
-        filters['extracted_text_raw__contains'] = search_criteria['search_text']        
+        or_filters = Q(extracted_text_raw__contains = search_criteria['search_text']) | Q(uuid__contains = search_criteria['search_text']) | Q(source_file_name__contains = search_criteria['search_text'])
 
-    matching_photos = Photo.objects.filter(**filters)
+    matching_photos = Photo.objects.filter(**and_filters)
+    if or_filters:
+        matching_photos = matching_photos.filter(or_filters)
 
     context = {
         'template': template,

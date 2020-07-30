@@ -39,32 +39,32 @@
     {% if search_criteria.business_type %} business_type [<strong>{{ search_criteria.business_type }}</strong>] {% endif %} 
     {% if search_criteria.other_labels %} other_labels [<strong>{{ search_criteria.other_labels }}</strong>] {% endif %}
     {% if search_criteria.search_text %} search_text [<strong>{{ search_criteria.search_text }}</strong>] {% endif %}</h4><br/><br/>
+{% endif %}
 
-    {% if matching_photos %}
-    <table class="table table-hover table-fit">
-        <thead>
-            <tr><th scope="col">Photo</th>
-                <th scope="col">UUID</th>
-                <th scope="col">Source file</th>
-                <th scope="col">Scene type</th>
-                <th scope="col">Business type</th>
-                <th scope="col">Other labels</th>
-                <th scope="col">OCR text</th></tr>
-        </thead>
-        <tbody>
-        {% for photo in matching_photos %}
-            <tr><td><a href="/lockdownsf/admin/edit_photo/{{ photo.uuid }}/">
-                    <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"></a></td>
-                <td>{{ photo.uuid }}</td>
-                <td>{{ photo.source_file_name }}</td>
-                <td>{{ photo.scene_type }}</td>
-                <td>{{ photo.business_type }}</td>
-                <td>{{ photo.other_labels }}</td>
-                <td>{{ photo.extracted_text_formatted|safe }}</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-    {% endif %}
+{% if matching_photos %}
+<table class="table table-hover table-fit">
+    <thead>
+        <tr><th scope="col">Photo</th>
+            <th scope="col">UUID</th>
+            <th scope="col">Source file</th>
+            <th scope="col">Scene type</th>
+            <th scope="col">Business type</th>
+            <th scope="col">Other labels</th>
+            <th scope="col">OCR text</th></tr>
+    </thead>
+    <tbody>
+    {% for photo in matching_photos %}
+        <tr><td><a href="/lockdownsf/admin/edit_photo/{{ photo.uuid }}/">
+                <img src="https://lockdownsf.s3.amazonaws.com/small/{{ photo.uuid }}"></a></td>
+            <td>{{ photo.uuid }}</td>
+            <td>{{ photo.source_file_name }}</td>
+            <td>{{ photo.scene_type }}</td>
+            <td>{{ photo.business_type }}</td>
+            <td>{{ photo.other_labels }}</td>
+            <td>{{ photo.extracted_text_formatted|safe }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
 {% endif %}
 
 {% endblock %}
