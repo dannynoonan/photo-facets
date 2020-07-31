@@ -4,7 +4,11 @@ django-environ
 django-heroku
 dj-database-url
 dj-static
+google-api-python-client 
+google-auth-httplib2 
+google-auth-oauthlib
 gunicorn
+oauth2client
 Pillow
 psycopg2-binary
 requests
