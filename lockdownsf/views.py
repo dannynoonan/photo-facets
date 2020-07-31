@@ -18,6 +18,7 @@ from django.template import loader
 from .metadata import *
 from .models import Neighborhood, Photo
 from .service import calculate_resized_images, extract_text
+from .gphotosapi import *
 
 
 def index(request):
@@ -59,6 +60,19 @@ def index(request):
         'photo_collection_json': json.dumps(photo_collection_json, indent=4)
     }
 
+    return render(request, template, context)
+
+
+def test(request):
+    template = 'test.html'
+
+    service = init_gphotos_service()
+    albums = get_albums(service)
+
+    context = {
+        'albums': albums,
+    }
+    
     return render(request, template, context)
 
 
