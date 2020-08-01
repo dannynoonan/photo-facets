@@ -19,10 +19,13 @@
     <div class="collapse navbar-collapse" id="navbarColor01">
         <form class="form-inline my-2 my-lg-0" id="goto-neighborhood-form" action="/lockdownsf/admin/edit_neighborhood/none/" method="POST">
             {% csrf_token %}
-            <a class="navbar-brand" href="/lockdownsf/admin/neighborhood_listing/">Neighborhoods</a>
+            <a class="navbar-brand" href="/lockdownsf/admin/neighborhood_listing/">Albums</a>
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item {% if template == 'neighborhood_listing.html' %} active {% endif %}">
                     <a class="nav-link" href="/lockdownsf/admin/neighborhood_listing/">List</a>
+                </li>
+                <li class="nav-item {% if template == 'album_import.html' %} active {% endif %}">
+                    <a class="nav-link" href="/lockdownsf/admin/album_import/">Import</a>
                 </li>
                 <li class="nav-item {% if template == 'neighborhood_add.html' or template == 'neighborhood_edit.html' or template == 'neighborhood_save.html' %} active {% endif %}">
                     <a class="nav-link" href="/lockdownsf/admin/add_neighborhood/">Add/Edit</a>
@@ -41,6 +44,8 @@
 </nav>
 
 <div class="actual-body">
+    <div class="g-signin2" data-onsuccess="onSignIn"></div>
+    <a href="#" onclick="signOut();">Sign out</a>
 {% block body %}
 {% endblock %}
 </div>

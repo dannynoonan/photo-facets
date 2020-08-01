@@ -1,0 +1,19 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+<h4>Album mappings to Google Photos:</h4>
+
+{% if albums %}
+<ul>
+    {% for album in albums %}
+    <form action="/lockdownsf/admin/album_import/" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="album-id" value="{{ album.id }}">
+        <input type="submit" value="Preview">
+    </form>
+    <li>{{ album.title }} [{{ album.id }}]</li>
+    {% endfor %}
+</ul>
+{% endif %}
+    
+{% endblock %}

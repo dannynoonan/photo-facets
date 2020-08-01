@@ -10,6 +10,7 @@
         <link rel="stylesheet" href="{% static 'js/live_site.js' %}">
         <link rel="stylesheet" href="{% static 'js/admin.js' %}">
 
+        <!-- begin live site -->
         {% if photo_collection_json %}
         <script>
             photoCollection = {{ photo_collection_json|safe }};
@@ -18,11 +19,32 @@
         <script async defer 
             src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initGmap">
         </script>
+        <!-- end live site -->
 
+        <!-- begin admin site -->
         {% else %}
+        <meta name="google-signin-client_id" content="656115714274-r8mllgbe6t01iba59b2ab93un487n37i.apps.googleusercontent.com">
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
         <script type="text/javascript" src="{% static 'js/admin.js' %}"></script>
+        <script src="https://apis.google.com/js/platform.js" async defer></script>
+        <script>
+            function onSignIn(googleUser) {
+                var profile = googleUser.getBasicProfile();
+                console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+                console.log('Name: ' + profile.getName());
+                console.log('Image URL: ' + profile.getImageUrl());
+                console.log('Email: ' + profile.getEmail()); // This is null if the 'email' scope is not present.
+            }
+
+            function signOut() {
+                var auth2 = gapi.auth2.getAuthInstance();
+                auth2.signOut().then(function () {
+                    console.log('User signed out.');
+                });
+            }
+        </script>
         {% endif %}
+        <!-- end admin site -->
 
         <link rel="shortcut icon" href="#" />
     </head>

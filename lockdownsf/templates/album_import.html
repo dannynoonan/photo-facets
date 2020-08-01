@@ -1,0 +1,18 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+<h4>Google Photos album import preview:</h4>
+
+{% if album %}
+<h5>{{ album.title }} [{{ album.id }}]</h5>
+{% if album_photos %}
+<ul>
+    {% for photo in album_photos %}
+    <li>{{ photo.filename }} [{{ photo.id }}]</li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endif %}
+    
+{% endblock %}
+        

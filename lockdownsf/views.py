@@ -63,19 +63,6 @@ def index(request):
     return render(request, template, context)
 
 
-def test(request):
-    template = 'test.html'
-
-    service = init_gphotos_service()
-    albums = get_albums(service)
-
-    context = {
-        'albums': albums,
-    }
-    
-    return render(request, template, context)
-
-
 def neighborhood(request, neighborhood_slug):
     template = 'neighborhood.html'
 
@@ -136,6 +123,35 @@ def admin(request):
         'all_other_labels': all_other_labels,
     }
 
+    return render(request, template, context)
+
+
+def album_listing(request):
+    template = 'album_listing.html'
+
+    albums = get_albums()
+
+    context = {
+        'albums': albums,
+    }
+    
+    return render(request, template, context)
+
+
+def album_import(request):
+    template = 'album_import.html'
+
+    # bind vars to form data 
+    album_id = request.POST.get('album-id', '')
+
+    album = get_album(album_id)
+    album_photos = get_photos_for_album(album_id)
+
+    context = {
+        'album': album,
+        'album_photos': album_photos,
+    }
+    
     return render(request, template, context)
 
 
