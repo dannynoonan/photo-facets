@@ -54,6 +54,10 @@ all_other_labels = [
     'black_lives_matter',
 ]
 
+
+image_file_types = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'heic', 'ico', 'tiff', 'webp']
+
+
 image_file_formats = {
     'image/jpeg': 'jpg'
 }

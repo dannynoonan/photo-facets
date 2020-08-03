@@ -138,6 +138,28 @@ def album_listing(request):
     return render(request, template, context)
 
 
+def album_create(request):
+    template = 'album_create.html'
+
+    # bind vars to form data 
+    album_title = request.POST.get('album-title', '')
+    image_dir_path = request.POST.get('image-dir-path', '')
+
+    album = init_new_album(album_title, image_dir_path)
+
+    if not album:
+        context = {
+            'error': 'Failure to init album'
+        }
+
+    else:
+        context = {
+            'album': album,
+        }
+    
+    return render(request, template, context)
+
+
 def album_import(request):
     template = 'album_import.html'
 
