@@ -5,13 +5,30 @@
 
 {% if album %}
 <h5>{{ album.title }} [{{ album.id }}]</h5>
+
 {% if album_photos %}
-<ul>
+<table class="table table-hover">
+    <thead>
+        <tr><th scope="col">photo</th>
+            <th scope="col">filename</th>
+            <th scope="col">id</th>
+            <th scope="col">mime type</th>
+            <th scope="col">date taken</th>
+            <th scope="col">dimensions</th></tr>
+    </thead>
+    <tbody>
     {% for photo in album_photos %}
-    <li>{{ photo.filename }} [{{ photo.id }}]</li>
+        <tr><th scope="row"><a href="{{ photo.productUrl }}"><img src="{{ photo.baseUrl }}"></a></th>
+            <td>{{ photo.filename }}</th>
+            <td>{{ photo.id }}</td>
+            <td>{{ photo.mimeType }}</td>
+            <td>{{ photo.mediaMetadata.creationTime }}</td>
+            <td>{{ photo.mediaMetadata.width }} x {{ photo.mediaMetadata.height }}</td></tr>
     {% endfor %}
-</ul>
+    </tbody>
+</table>
 {% endif %}
+
 {% endif %}
     
 {% endblock %}

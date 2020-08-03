@@ -15,5 +15,13 @@
     {% endfor %}
 </ul>
 {% endif %}
+
+<h5>Create new album:</h5>
+<form action="/lockdownsf/admin/album_create/" method="POST">
+    {% csrf_token %}
+    <input type="text" name="album-title" placeholder="new album title">
+    <input type="text" name="image-dir-path" placeholder="image source dir">
+    <input type="submit" value="Create album">
+</form>
     
 {% endblock %}
