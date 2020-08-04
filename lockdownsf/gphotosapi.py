@@ -12,7 +12,6 @@ import requests
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-import ipdb
 
 from .metadata import image_file_types
 
@@ -199,7 +198,6 @@ def map_images_to_album(image_ids, album_id, gphotos_service=None):
         }
 
         # app_created_photos = get_app_created_photos_for_album(album_response['id'])
-        ipdb.set_trace()
 
         return result
 
