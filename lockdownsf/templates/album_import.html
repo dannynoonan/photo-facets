@@ -13,7 +13,7 @@
 
 <div id="album-create-form" class="hidden-block">
     <h5 id="album-create-label"></h5>
-    <form action="/lockdownsf/admin/album_view/" method="POST">
+    <form action="/lockdownsf/admin/album_view/_" method="POST">
         {% csrf_token %}
         <!-- <input type="hidden" id="image-count" name="image-count"> -->
         <input type="text" name="album-title" placeholder="new album title">

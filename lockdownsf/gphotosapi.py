@@ -1,10 +1,12 @@
 from __future__ import print_function
 
+from io import BytesIO
 import imghdr
 import magic
 from os import listdir
 from os.path import dirname, exists, isfile, join
 import pickle
+from PIL import Image
 import requests
 
 from googleapiclient.discovery import build
@@ -46,12 +48,16 @@ def init_gphotos_service():
     return gphotos_service
 
 
-def init_new_album(album_title, image_dir_path, gphotos_service=None):
+def init_new_album(album_title, image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
-    if not album_title or not image_dir_path:
-        print(f"Failed to init_new_album, required property was not set: album_title [{album_title}] image_dir_path [{image_dir_path}]")
+    if not album_title:
+        print(f"Failed to init_new_album, album_title is required")
+        return None
+
+    if not (image_list or image_dir_path):
+        print(f"Failed to init_new_album, either image_list or image_dir_path must be set")
         return None
 
     # create new album
@@ -60,8 +66,8 @@ def init_new_album(album_title, image_dir_path, gphotos_service=None):
     }
     album_response = gphotos_service.albums().create(body=request_body).execute()
 
-    # upload images from image_dir_path
-    media_items_response = batch_upload_images(image_dir_path)
+    # upload images from image_list or image_dir_path
+    media_items_response = batch_upload_images(image_list=image_list, image_dir_path=image_dir_path, from_cloud=from_cloud)
     uploaded_media_items = media_items_response.get('newMediaItemResults', [])
     if not uploaded_media_items: 
         print(f"Failed to batch upload images from image_dir_path [{image_dir_path}]")
@@ -85,23 +91,32 @@ def init_new_album(album_title, image_dir_path, gphotos_service=None):
     return album_response
 
 
-def batch_upload_images(image_dir_path, gphotos_service=None):
+def batch_upload_images(image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
+
+    if not (image_list or image_dir_path):
+        print(f"Failed to batch_upload_images, either image_list or image_dir_path must be set")
+        return None
 
     new_media_items = []
     token = pickle.load(open(TOKEN_PICKLE_FILE, 'rb'))
     
-    # https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
-    files_in_dir = [f for f in listdir(image_dir_path) if isfile(join(image_dir_path, f))]
+    if not image_list:
+        image_list = []
+        # https://stackoverflow.com/questions/3207219/how-do-i-list-all-files-of-a-directory
+        files_in_dir = [f for f in listdir(image_dir_path) if isfile(join(image_dir_path, f))]
 
-    for f in files_in_dir:
-        image_path = join(image_dir_path, f)
-        if imghdr.what(image_path) not in image_file_types:
-            print(f"file [{f}] is not a blessed image file type. skipping...")
-            continue
-        print(f"begin upload_image for filename [{f}]")
-        response = upload_image(image_path, f, token)
+        for f in files_in_dir:
+            image_path = join(image_dir_path, f)
+            image_list.append(image_path)
+
+    for image_path in image_list:
+        # if imghdr.what(image_path) not in image_file_types:
+        #     print(f"file [{image_path}] is not a blessed image file type. skipping...")
+        #     continue
+        print(f"begin upload_image for filename [{image_path}]")
+        response = upload_image(image_path, token, from_cloud=from_cloud)
         new_media_item = {
             'simpleMediaItem': {
                 'uploadToken': response.content.decode('utf-8')
@@ -118,9 +133,25 @@ def batch_upload_images(image_dir_path, gphotos_service=None):
     return upload_response
 
 
-def upload_image(image_path, image_filename, token):
+def upload_image(image_path, token, from_cloud=False):
     mime = magic.Magic(mime=True)
-    mime_type = mime.from_file(image_path)
+    image_filename = image_path.split('/')[-1:][0]  # er?
+
+    print(f"in upload_image, image_path [{image_path}] image_filename [{image_filename}]")
+
+    if from_cloud:
+        # download image from s3, save to in-memory file
+        response = requests.get(image_path, stream=True)
+        pil_image = Image.open(BytesIO(response.content))
+        in_mem_image = BytesIO()
+        pil_image.save(in_mem_image, format=pil_image.format)
+        # print(f"^^^^^^ file size / image.tell(): {str(in_mem_image.tell())}")
+        in_mem_image.seek(0)
+        mime_type = pil_image.format
+    else:
+        in_mem_image = open(image_path, 'rb').read()
+        mime_type = mime.from_file(image_path)
+
     headers = {
         'Authorization': 'Bearer ' + token.token,
         'Content-type': 'application/octet-stream',
@@ -129,9 +160,7 @@ def upload_image(image_path, image_filename, token):
         'X-Goog-Upload-File-Name': image_filename
     }
 
-    print(f"in upload_image, image_path [{image_path}] image_filename [{image_filename}] mime_type [{mime_type}]")
-    image = open(image_path, 'rb').read()
-    response = requests.post(GPHOTOS_UPLOAD_URL, data=image, headers=headers)
+    response = requests.post(GPHOTOS_UPLOAD_URL, data=in_mem_image, headers=headers)
     print(f"Upload token [{response.content.decode('utf-8')}]")
 
     return response
@@ -177,6 +206,35 @@ def map_images_to_album(image_ids, album_id, gphotos_service=None):
         return result
 
 
+def get_album(album_id, gphotos_service=None):
+    if not gphotos_service:
+        gphotos_service = init_gphotos_service()
+
+    response = gphotos_service.albums().get(albumId=album_id).execute()
+    album = None
+    if response:      
+        album = {
+            'id': response['id'],
+            'title': response['title']
+        }
+
+    return album
+
+
+# https://stackoverflow.com/questions/52565028/mediaitems-search-not-working-with-albumid
+def get_photos_for_album(album_id, gphotos_service=None):
+    if not gphotos_service:
+        gphotos_service = init_gphotos_service()
+        
+    search_body = {
+        "albumId": album_id,
+        "pageSize": 10
+    }
+    response = gphotos_service.mediaItems().search(body=search_body).execute()
+
+    return response.get('mediaItems', [])
+
+
 # not in use
 # https://stackoverflow.com/questions/58928685/google-photos-api-python-working-non-deprecated-example
 # https://www.youtube.com/watch?v=lj1uzJQnX38
@@ -196,37 +254,6 @@ def get_albums(gphotos_service=None):
             albums.append(album)
 
     return albums
-
-
-# not in use
-def get_album(album_id, gphotos_service=None):
-    if not gphotos_service:
-        gphotos_service = init_gphotos_service()
-
-    response = gphotos_service.albums().get(albumId=album_id).execute()
-    album = None
-    if response:      
-        album = {
-            'id': response['id'],
-            'title': response['title']
-        }
-
-    return album
-
-
-# not in use
-# https://stackoverflow.com/questions/52565028/mediaitems-search-not-working-with-albumid
-def get_photos_for_album(album_id, gphotos_service=None):
-    if not gphotos_service:
-        gphotos_service = init_gphotos_service()
-        
-    search_body = {
-        "albumId": album_id,
-        "pageSize": 10
-    }
-    response = gphotos_service.mediaItems().search(body=search_body).execute()
-
-    return response.get('mediaItems', [])
 
 
 # not in use

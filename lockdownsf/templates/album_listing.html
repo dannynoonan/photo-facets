@@ -3,6 +3,8 @@
 {% block body %}
 <h4>Album mappings to Google Photos:</h4>
 
+<p>(this all needs to be refactored)</p>
+
 {% if albums %}
 <ul>
     {% for album in albums %}
@@ -15,13 +17,5 @@
     {% endfor %}
 </ul>
 {% endif %}
-
-<h5>Create new album:</h5>
-<form action="/lockdownsf/admin/album_create/" method="POST">
-    {% csrf_token %}
-    <input type="text" name="album-title" placeholder="new album title">
-    <input type="file" name="multi-file-upload" id="multi-file-upload" onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
-    <input type="submit" value="Create album">
-</form>
     
 {% endblock %}
