@@ -134,7 +134,6 @@ def batch_upload_images(image_list=None, image_dir_path=None, from_cloud=False, 
 
 
 def upload_image(image_path, token, from_cloud=False):
-    mime = magic.Magic(mime=True)
     image_filename = image_path.split('/')[-1:][0]  # er?
 
     print(f"in upload_image, image_path [{image_path}] image_filename [{image_filename}]")
@@ -150,6 +149,7 @@ def upload_image(image_path, token, from_cloud=False):
         mime_type = pil_image.format
     else:
         in_mem_image = open(image_path, 'rb').read()
+        mime = magic.Magic(mime=True)
         mime_type = mime.from_file(image_path)
 
     headers = {
