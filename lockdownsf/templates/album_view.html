@@ -1,24 +1,12 @@
 {% extends 'admin.html' %}
 
 {% block body %}
-<h4>Album [{{ album_title }}] created</h4>
-
-{% if images_to_upload %}
-<p>Uploading {{ images_to_upload|length }} images:</p>
-<ul>
-    {% for image_url in images_to_upload %}
-    <li><a href="{{ image_url }}"><img src="{{ image_url }}" width="200"></a></li>
-    {% endfor %}
-</ul>
-{% endif %}
-
-
-
 
 {% if album %}
-<h5>{{ album.title }} [{{ album.id }}]</h5>
+<h4>Album: <a href="{{ album.productUrl }}">{{ album.title }}</a></h4>
 
 {% if album_photos %}
+<p>{{ album_photos|length }} photos:</p>
 <table class="table table-hover">
     <thead>
         <tr><th scope="col">photo</th>

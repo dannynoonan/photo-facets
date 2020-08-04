@@ -138,32 +138,6 @@ def album_listing(request):
     return render(request, template, context)
 
 
-def album_create(request):
-    template = 'album_create.html'
-
-    # bind vars to form data 
-    album_title = request.POST.get('album-title', '')
-    # image_dir_path = request.POST.get('image-dir-path', '')
-
-    # album = init_new_album(album_title, image_dir_path)
-
-    files_to_upload = request.POST.get('multi-file-upload', [])
-    print(f"files_to_upload [{files_to_upload}]")
-    # album = init_new_album(album_title, image_dir_path)
-
-    if not album:
-        context = {
-            'error': 'Failure to init album'
-        }
-
-    else:
-        context = {
-            'album': album,
-        }
-    
-    return render(request, template, context)
-
-
 def album_import(request):
     template = 'album_import.html'
 
@@ -172,14 +146,23 @@ def album_import(request):
     return render(request, template, context)
 
 
-def album_view(request):
+def album_view(request, album_id):
     template = 'album_view.html'
 
-    # bind vars to form data 
-    album_title = request.POST.get('album-title', '')
-    images_to_upload = request.POST.getlist('images-to-upload', [])
+    if album_id and album_id != "_":
+        album = get_album(album_id)
+        album_photos = get_photos_for_album(album_id)
+    else:
+        # bind vars to form data 
+        album_title = request.POST.get('album-title', '')
+        images_to_upload = request.POST.getlist('images-to-upload', [])
+
+        album = init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
+        album_photos = get_photos_for_album(album['id'])
 
     context = {
+        'album': album,
+        'album_photos': album_photos,
         'album_title': album_title,
         'images_to_upload': images_to_upload,
     }
