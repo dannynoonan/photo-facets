@@ -6,7 +6,7 @@
 {% if albums %}
 <ul>
     {% for album in albums %}
-    <form action="/lockdownsf/admin/album_import/" method="POST">
+    <form action="/lockdownsf/admin/album_view/" method="POST">
         {% csrf_token %}
         <input type="hidden" name="album-id" value="{{ album.id }}">
         <input type="submit" value="Preview">
@@ -20,7 +20,7 @@
 <form action="/lockdownsf/admin/album_create/" method="POST">
     {% csrf_token %}
     <input type="text" name="album-title" placeholder="new album title">
-    <input type="text" name="image-dir-path" placeholder="image source dir">
+    <input type="file" name="multi-file-upload" id="multi-file-upload" onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
     <input type="submit" value="Create album">
 </form>
     

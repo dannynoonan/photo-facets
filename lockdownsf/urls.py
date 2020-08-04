@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/album_create/', views.album_create, name='album_create'),
     path('admin/album_listing/', views.album_listing, name='album_listing'),
     path('admin/album_import/', views.album_import, name='album_import'),
+    path('admin/album_view/', views.album_view, name='album_view'),
     path('admin/neighborhood_listing/', views.neighborhood_listing, name='neighborhood_listing'),
     path('admin/add_neighborhood/', views.add_neighborhood, name='add_neighborhood'),
     path('admin/save_neighborhood/', views.save_neighborhood, name='save_neighborhood'),

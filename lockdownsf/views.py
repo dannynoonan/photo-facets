@@ -143,9 +143,13 @@ def album_create(request):
 
     # bind vars to form data 
     album_title = request.POST.get('album-title', '')
-    image_dir_path = request.POST.get('image-dir-path', '')
+    # image_dir_path = request.POST.get('image-dir-path', '')
 
-    album = init_new_album(album_title, image_dir_path)
+    # album = init_new_album(album_title, image_dir_path)
+
+    files_to_upload = request.POST.get('multi-file-upload', [])
+    print(f"files_to_upload [{files_to_upload}]")
+    # album = init_new_album(album_title, image_dir_path)
 
     if not album:
         context = {
@@ -163,15 +167,21 @@ def album_create(request):
 def album_import(request):
     template = 'album_import.html'
 
-    # bind vars to form data 
-    album_id = request.POST.get('album-id', '')
+    context = {}
+    
+    return render(request, template, context)
 
-    album = get_album(album_id)
-    album_photos = get_photos_for_album(album_id)
+
+def album_view(request):
+    template = 'album_view.html'
+
+    # bind vars to form data 
+    album_title = request.POST.get('album-title', '')
+    images_to_upload = request.POST.getlist('images-to-upload', [])
 
     context = {
-        'album': album,
-        'album_photos': album_photos,
+        'album_title': album_title,
+        'images_to_upload': images_to_upload,
     }
     
     return render(request, template, context)
