@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from io import BytesIO
 import imghdr
-import magic
+# import magic
 from os import listdir
 from os.path import dirname, exists, isfile, join
 import pickle
@@ -135,6 +135,12 @@ def batch_upload_images(image_list=None, image_dir_path=None, from_cloud=False, 
 
 def upload_image(image_path, token, from_cloud=False):
     image_filename = image_path.split('/')[-1:][0]  # er?
+    headers = {
+        'Authorization': 'Bearer ' + token.token,
+        'Content-type': 'application/octet-stream',
+        'X-Goog-Upload-Protocol': 'raw',
+        'X-Goog-Upload-File-Name': image_filename
+    }
 
     print(f"in upload_image, image_path [{image_path}] image_filename [{image_filename}]")
 
@@ -146,19 +152,11 @@ def upload_image(image_path, token, from_cloud=False):
         pil_image.save(in_mem_image, format=pil_image.format)
         # print(f"^^^^^^ file size / image.tell(): {str(in_mem_image.tell())}")
         in_mem_image.seek(0)
-        mime_type = pil_image.format
+        headers['X-Goog-Upload-Content-Type'] = pil_image.format
     else:
         in_mem_image = open(image_path, 'rb').read()
-        mime = magic.Magic(mime=True)
-        mime_type = mime.from_file(image_path)
-
-    headers = {
-        'Authorization': 'Bearer ' + token.token,
-        'Content-type': 'application/octet-stream',
-        'X-Goog-Upload-Content-Type': mime_type,
-        'X-Goog-Upload-Protocol': 'raw',
-        'X-Goog-Upload-File-Name': image_filename
-    }
+        # mime = magic.Magic(mime=True)
+        # mime_type = mime.from_file(image_path)
 
     response = requests.post(GPHOTOS_UPLOAD_URL, data=in_mem_image, headers=headers)
     print(f"Upload token [{response.content.decode('utf-8')}]")
