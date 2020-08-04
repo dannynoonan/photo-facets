@@ -8,7 +8,6 @@ google-api-python-client
 google-auth-httplib2 
 google-auth-oauthlib
 gunicorn
-python-magic==0.4.14
 oauth2client
 Pillow
 psycopg2-binary
