@@ -1,10 +1,10 @@
 import boto3
-from datetime import datetime, timedelta
+from datetime import datetime
 from inspect import getmembers
 from io import BytesIO
 import json
 import os
-from PIL import Image
+# from PIL import Image
 import requests
 from pprint import pprint
 import uuid
@@ -15,10 +15,11 @@ from django.db.models import Q
 from django.shortcuts import render
 from django.template import loader
 
-from .metadata import *
-from .models import Neighborhood, Photo
-from .service import calculate_resized_images, extract_text
-from .gphotosapi import *
+from lockdownsf import metadata
+from lockdownsf.models import Neighborhood, Photo
+from lockdownsf.services import image_utils 
+from lockdownsf.services import s3manager 
+from lockdownsf.services import gphotosapi 
 
 
 def index(request):
@@ -32,9 +33,9 @@ def index(request):
         neighborhood_photos_json = []
         for photo in neighborhood.photo_set.all():
             cats_json = []
-            if scene_types_to_checkboxes[photo.scene_type]:
-                print(f"photo.scene_type [{photo.scene_type}] -> scene_types_to_checkboxes[photo.scene_type] [{scene_types_to_checkboxes[photo.scene_type]}] for photo.uuid [{photo.uuid}]")
-                cats_json.append(scene_types_to_checkboxes[photo.scene_type])
+            if metadata.scene_types_to_checkboxes[photo.scene_type]:
+                print(f"photo.scene_type [{photo.scene_type}] -> scene_types_to_checkboxes[photo.scene_type] [{metadata.scene_types_to_checkboxes[photo.scene_type]}] for photo.uuid [{photo.uuid}]")
+                cats_json.append(metadata.scene_types_to_checkboxes[photo.scene_type])
             if photo.business_type and photo.business_type != 'none': # TODO shouldn't need to be here
                 cats_json.append(photo.business_type)
             if photo.other_labels:
@@ -92,7 +93,7 @@ def sign_s3(request):
     s3 = boto3.client('s3')
 
     presigned_post = s3.generate_presigned_post(
-        Bucket = S3_BUCKET,
+        Bucket = metadata.S3_BUCKET,
         Key = file_name,
         Fields = {"acl": "public-read", "Content-Type": file_type},
         Conditions = [
@@ -104,8 +105,7 @@ def sign_s3(request):
 
     data = json.dumps({
         'data': presigned_post,
-        # 'url': 'https://%s.s3.amazonaws.com/%s' % (S3_BUCKET, file_name),
-        'url': 'https://' + S3_BUCKET + '.s3.amazonaws.com/' +  file_name,
+        'url': 'https://' + metadata.S3_BUCKET + '.s3.amazonaws.com/' +  file_name,
     })
 
     return HttpResponse(data, content_type='json')
@@ -118,9 +118,9 @@ def admin(request):
 
     context = {
         'all_neighborhoods': all_neighborhoods,
-        'all_scene_types': all_scene_types,
-        'all_business_types': all_business_types,
-        'all_other_labels': all_other_labels,
+        'all_scene_types': metadata.all_scene_types,
+        'all_business_types': metadata.all_business_types,
+        'all_other_labels': metadata.all_other_labels,
     }
 
     return render(request, template, context)
@@ -150,21 +150,27 @@ def album_view(request, album_id):
     template = 'album_view.html'
 
     if album_id and album_id != "_":
-        album = get_album(album_id)
-        album_photos = get_photos_for_album(album_id)
+        # if we're loading a pre-existing album: fetch it from the db and the gphotos api
+        album = gphotosapi.get_album(album_id)
+        album_photos = gphotosapi.get_photos_for_album(album_id)
     else:
+        # if we're uploading photos and creating a new album: 
+        # - upload the photos to s3
+        # - extract location and OCR text info from photos
+        # - initialize a google photos album
+        # - insert album and photo data into db
+         
         # bind vars to form data 
         album_title = request.POST.get('album-title', '')
         images_to_upload = request.POST.getlist('images-to-upload', [])
 
-        album = init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
-        album_photos = get_photos_for_album(album['id'])
+
+        album = gphotosapi.init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
+        album_photos = gphotosapi.get_photos_for_album(album['id'])
 
     context = {
         'album': album,
         'album_photos': album_photos,
-        'album_title': album_title,
-        'images_to_upload': images_to_upload,
     }
     
     return render(request, template, context)
@@ -350,10 +356,10 @@ def select_photo(request):
         'template': template,
         'all_neighborhoods': all_neighborhoods,
         'photo_uuid': str(photo_uuid),
-        'all_aspect_formats': all_aspect_formats,
-        'all_scene_types': all_scene_types,
-        'all_business_types': all_business_types,
-        'all_other_labels': all_other_labels,
+        'all_aspect_formats': metadata.all_aspect_formats,
+        'all_scene_types': metadata.all_scene_types,
+        'all_business_types': metadata.all_business_types,
+        'all_other_labels': metadata.all_other_labels,
     }
 
     return render(request, template, context)
@@ -414,7 +420,7 @@ def save_photo(request):
         # process raw vars 
         neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
         dt_taken = datetime.strptime(date_taken, '%Y:%m:%d %H:%M:%S')
-        file_format = image_file_formats.get(file_format, 'xxx')
+        file_format = metadata.image_file_formats.get(file_format, 'xxx')
         if width:
             width = int(width)
         else:
@@ -425,7 +431,7 @@ def save_photo(request):
             height = 0
 
         # analyze photo
-        extracted_text_raw, extracted_text_formatted = extract_text(uuid, S3_BUCKET)
+        extracted_text_raw, extracted_text_formatted = s3manager.extract_text(uuid, metadata.S3_BUCKET)
 
         # init and save photo
         photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
@@ -437,7 +443,7 @@ def save_photo(request):
 
         # resize photos for s3 upload
         aspect_ratio = width / height
-        img_dimensions = calculate_resized_images(aspect_ratio, width, height)
+        img_dimensions = image_utils.calculate_resized_images(aspect_ratio, width, height)
 
         # load original image
         response = requests.get(file_path, stream=True)
@@ -446,9 +452,9 @@ def save_photo(request):
         print('@@@@@@@ orig_img.format: ' + str(orig_img.format))
         print('@@@@@@@ orig_img.size: ' + str(orig_img.size))
 
-        resize_and_upload(orig_img, 'large', img_dimensions['large'], uuid)
-        resize_and_upload(orig_img, 'medium', img_dimensions['medium'], uuid)
-        resize_and_upload(orig_img, 'small', img_dimensions['small'], uuid)
+        s3manager.resize_and_upload(orig_img, 'large', img_dimensions['large'], uuid)
+        s3manager.resize_and_upload(orig_img, 'medium', img_dimensions['medium'], uuid)
+        s3manager.resize_and_upload(orig_img, 'small', img_dimensions['small'], uuid)
 
     else:
         context = {
@@ -478,46 +484,46 @@ def save_photo(request):
     #     return render(request, template, context)
 
 
-def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
-    print('****** in resize_and_upload')
+# def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
+#     print('****** in resize_and_upload')
 
-    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
-    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
+#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
+#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
 
-    # im = Image.open(orig_img)
-    orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
+#     # im = Image.open(orig_img)
+#     orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
     
-    print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
-    print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
+#     print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
+#     print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
     
-    in_mem_file = BytesIO()
-    orig_img.save(in_mem_file, format=orig_img.format)
+#     in_mem_file = BytesIO()
+#     orig_img.save(in_mem_file, format=orig_img.format)
 
-    print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
-    print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
+#     print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
+#     print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
 
-    in_mem_file.seek(0)
+#     in_mem_file.seek(0)
 
-    resized_img_file_name = f"{thumb_type}/{uuid}"
+#     resized_img_file_name = f"{thumb_type}/{uuid}"
 
-    # Upload image to s3
-    client_s3 = boto3.client('s3') 
+#     # Upload image to s3
+#     client_s3 = boto3.client('s3') 
 
-    response = client_s3.put_object( 
-        ACL="public-read",
-        Bucket=S3_BUCKET,
-        Body=in_mem_file,
-        ContentType='image/jpeg',
-        Key=resized_img_file_name,
-        Expires = datetime.now() + timedelta(minutes = 6),
-    )
+#     response = client_s3.put_object( 
+#         ACL="public-read",
+#         Bucket=metadata.S3_BUCKET,
+#         Body=in_mem_file,
+#         ContentType='image/jpeg',
+#         Key=resized_img_file_name,
+#         Expires = datetime.now() + timedelta(minutes = 6),
+#     )
 
-    resized_img_file_path = f"https://{S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
+#     resized_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
 
-    print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
-    print(f"====== [{thumb_type}] str(response): {str(response)}")
+#     print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
+#     print(f"====== [{thumb_type}] str(response): {str(response)}")
 
-    return resized_img_file_path
+#     return resized_img_file_path
 
 
 def edit_photo(request, photo_uuid):
@@ -530,9 +536,9 @@ def edit_photo(request, photo_uuid):
     context = {
         'template': template,
         'all_neighborhoods': all_neighborhoods,
-        'all_scene_types': all_scene_types,
-        'all_business_types': all_business_types,
-        'all_other_labels': all_other_labels,
+        'all_scene_types': metadata.all_scene_types,
+        'all_business_types': metadata.all_business_types,
+        'all_other_labels': metadata.all_other_labels,
         'photo': photo,
     }
 
@@ -568,9 +574,9 @@ def search_photos(request):
     context = {
         'template': template,
         'all_neighborhoods': all_neighborhoods,
-        'all_scene_types': all_scene_types,
-        'all_business_types': all_business_types,
-        'all_other_labels': all_other_labels,
+        'all_scene_types': metadata.all_scene_types,
+        'all_business_types': metadata.all_business_types,
+        'all_other_labels': metadata.all_other_labels,
         'search_criteria': search_criteria,
         'matching_photos': matching_photos,
     }
