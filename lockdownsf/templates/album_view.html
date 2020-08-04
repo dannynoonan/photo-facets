@@ -1,0 +1,47 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+<h4>Album [{{ album_title }}] created</h4>
+
+{% if images_to_upload %}
+<p>Uploading {{ images_to_upload|length }} images:</p>
+<ul>
+    {% for image_url in images_to_upload %}
+    <li><a href="{{ image_url }}"><img src="{{ image_url }}" width="200"></a></li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+
+
+
+{% if album %}
+<h5>{{ album.title }} [{{ album.id }}]</h5>
+
+{% if album_photos %}
+<table class="table table-hover">
+    <thead>
+        <tr><th scope="col">photo</th>
+            <th scope="col">filename</th>
+            <th scope="col">id</th>
+            <th scope="col">mime type</th>
+            <th scope="col">date taken</th>
+            <th scope="col">dimensions</th></tr>
+    </thead>
+    <tbody>
+    {% for photo in album_photos %}
+        <tr><th scope="row"><a href="{{ photo.productUrl }}"><img src="{{ photo.baseUrl }}"></a></th>
+            <td>{{ photo.filename }}</th>
+            <td>{{ photo.id }}</td>
+            <td>{{ photo.mimeType }}</td>
+            <td>{{ photo.mediaMetadata.creationTime }}</td>
+            <td>{{ photo.mediaMetadata.width }} x {{ photo.mediaMetadata.height }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% endif %}
+    
+{% endblock %}
+        
