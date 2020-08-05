@@ -1,10 +1,11 @@
 import boto3
 from datetime import datetime
+import exifread
 from inspect import getmembers
 from io import BytesIO
 import json
 import os
-# from PIL import Image
+from PIL import Image, ExifTags
 import requests
 from pprint import pprint
 import uuid
@@ -20,6 +21,8 @@ from lockdownsf.models import Neighborhood, Photo
 from lockdownsf.services import image_utils 
 from lockdownsf.services import s3manager 
 from lockdownsf.services import gphotosapi 
+
+import ipdb
 
 
 def index(request):
@@ -164,6 +167,22 @@ def album_view(request, album_id):
         album_title = request.POST.get('album-title', '')
         images_to_upload = request.POST.getlist('images-to-upload', [])
 
+        media_objects = []
+        for image_path in images_to_upload:
+            image_file_name = image_path.split('/')[-1:][0]   
+
+            response = requests.get(image_path, stream=True)
+            pil_image = Image.open(BytesIO(response.content))
+
+            # extract location info
+            exif_data = image_utils.get_exif_data(pil_image)
+            print(f"^^^^^^ exif_data['GPSInfo']: {exif_data['GPSInfo']}")
+            lat, lng = image_utils.get_lat_lng(exif_data['GPSInfo'])
+            print(f"@@@@@@ lat: [{lat}] lng: [{lng}]")
+
+            # extract OCR text
+            extracted_text_raw, extracted_text_formatted = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
+            print(f"text extracted for image [{image_file_name}]: [{extracted_text_raw}]")
 
         album = gphotosapi.init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
         album_photos = gphotosapi.get_photos_for_album(album['id'])
@@ -482,48 +501,6 @@ def save_photo(request):
     #         'exception': ex
     #     }
     #     return render(request, template, context)
-
-
-# def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
-#     print('****** in resize_and_upload')
-
-#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
-#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
-
-#     # im = Image.open(orig_img)
-#     orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
-    
-#     print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
-#     print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
-    
-#     in_mem_file = BytesIO()
-#     orig_img.save(in_mem_file, format=orig_img.format)
-
-#     print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
-#     print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
-
-#     in_mem_file.seek(0)
-
-#     resized_img_file_name = f"{thumb_type}/{uuid}"
-
-#     # Upload image to s3
-#     client_s3 = boto3.client('s3') 
-
-#     response = client_s3.put_object( 
-#         ACL="public-read",
-#         Bucket=metadata.S3_BUCKET,
-#         Body=in_mem_file,
-#         ContentType='image/jpeg',
-#         Key=resized_img_file_name,
-#         Expires = datetime.now() + timedelta(minutes = 6),
-#     )
-
-#     resized_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
-
-#     print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
-#     print(f"====== [{thumb_type}] str(response): {str(response)}")
-
-#     return resized_img_file_path
 
 
 def edit_photo(request, photo_uuid):
