@@ -48,16 +48,12 @@ def init_gphotos_service():
     return gphotos_service
 
 
-def init_new_album(album_title, image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
+def init_new_album_simple(album_title, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
     if not album_title:
         print(f"Failed to init_new_album, album_title is required")
-        return None
-
-    if not (image_list or image_dir_path):
-        print(f"Failed to init_new_album, either image_list or image_dir_path must be set")
         return None
 
     # create new album
@@ -66,6 +62,12 @@ def init_new_album(album_title, image_list=None, image_dir_path=None, from_cloud
     }
     album_response = gphotos_service.albums().create(body=request_body).execute()
 
+    print(f"Successfully created album [{album_response['title']}]")
+
+    return album_response
+
+
+def upload_and_map_images_to_album(album_response, image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
     # upload images from image_list or image_dir_path
     media_items_response = batch_upload_images(image_list=image_list, image_dir_path=image_dir_path, from_cloud=from_cloud)
     uploaded_media_items = media_items_response.get('newMediaItemResults', [])
@@ -82,13 +84,56 @@ def init_new_album(album_title, image_list=None, image_dir_path=None, from_cloud
     # map newly uploaded images into new album
     result = map_images_to_album(uploaded_image_ids, album_response['id'])
 
-    print(f"Successfully created album [{album_title}], uploaded [{len(uploaded_image_ids)}] images, and mapped [{len(result['mapped_image_ids'])}] images to album at url [{album_response['productUrl']}]")
+    print(f"Successfully uploaded [{len(uploaded_image_ids)}] images and mapped [{len(result['mapped_image_ids'])}] images to album [{album_response['title']}] at url [{album_response['productUrl']}]")
 
     if result.get('unmapped_image_ids', ''):
         print(f"Failed to add [{len(result['unmapped_image_ids'])}] images into album. This may be due to a duplicate version of an image already existing in your library. Make sure you are only trying to add images that don't already exist in your library.")
         # app_created_photos = get_app_created_photos_for_album(album_response['id'])
 
-    return album_response
+    return result
+
+
+# def init_new_album(album_title, image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
+#     if not gphotos_service:
+#         gphotos_service = init_gphotos_service()
+
+#     if not album_title:
+#         print(f"Failed to init_new_album, album_title is required")
+#         return None
+
+#     if not (image_list or image_dir_path):
+#         print(f"Failed to init_new_album, either image_list or image_dir_path must be set")
+#         return None
+
+#     # create new album
+#     request_body = {
+#         "album": { "title": album_title }
+#     }
+#     album_response = gphotos_service.albums().create(body=request_body).execute()
+
+#     # upload images from image_list or image_dir_path
+#     media_items_response = batch_upload_images(image_list=image_list, image_dir_path=image_dir_path, from_cloud=from_cloud)
+#     uploaded_media_items = media_items_response.get('newMediaItemResults', [])
+#     if not uploaded_media_items: 
+#         print(f"Failed to batch upload images from image_dir_path [{image_dir_path}]")
+#         return
+
+#     uploaded_image_ids = []
+#     for i in uploaded_media_items:
+#         if i['status']['message'] == 'Success':
+#             print(f"media item [{i['mediaItem']}] is IN")
+#             uploaded_image_ids.append(i['mediaItem']['id'])
+
+#     # map newly uploaded images into new album
+#     result = map_images_to_album(uploaded_image_ids, album_response['id'])
+
+#     print(f"Successfully created album [{album_title}], uploaded [{len(uploaded_image_ids)}] images, and mapped [{len(result['mapped_image_ids'])}] images to album at url [{album_response['productUrl']}]")
+
+#     if result.get('unmapped_image_ids', ''):
+#         print(f"Failed to add [{len(result['unmapped_image_ids'])}] images into album. This may be due to a duplicate version of an image already existing in your library. Make sure you are only trying to add images that don't already exist in your library.")
+#         # app_created_photos = get_app_created_photos_for_album(album_response['id'])
+
+#     return album_response
 
 
 def batch_upload_images(image_list=None, image_dir_path=None, from_cloud=False, gphotos_service=None):
