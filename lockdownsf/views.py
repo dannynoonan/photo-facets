@@ -17,7 +17,7 @@ from django.shortcuts import render
 from django.template import loader
 
 from lockdownsf import metadata
-from lockdownsf.models import Neighborhood, Photo
+from lockdownsf.models import Album, MediaItem, Neighborhood, Photo
 from lockdownsf.services import image_utils 
 from lockdownsf.services import s3manager 
 from lockdownsf.services import gphotosapi 
@@ -153,24 +153,33 @@ def album_view(request, album_id):
     template = 'album_view.html'
 
     if album_id and album_id != "_":
-        # if we're loading a pre-existing album: fetch it from the db and the gphotos api
+        """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
         album = gphotosapi.get_album(album_id)
         album_photos = gphotosapi.get_photos_for_album(album_id)
     else:
-        # if we're uploading photos and creating a new album: 
-        # - upload the photos to s3
-        # - extract location and OCR text info from photos
-        # - initialize a google photos album
-        # - insert album and photo data into db
+        """If we're uploading photos and creating a new album: 
+        - init and save Album to db with status PENDING and no external_id
+        - download the photos from s3
+        - extract location and OCR text info from photos
+        - init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
+        - create gphotos album
+        - update Album in db with status ACTIVE and external_id set
+        - upload and map gphotos mediaItems to gphotos album
+        - update MediaItems in db with statuses ACTIVE and external_ids set
+        - delete photos from s3
+        """
          
         # bind vars to form data 
         album_title = request.POST.get('album-title', '')
         images_to_upload = request.POST.getlist('images-to-upload', [])
 
-        media_objects = []
+        # TODO: insert Album into db with status PENDING and no external_id
+
+        media_items = []
         for image_path in images_to_upload:
             image_file_name = image_path.split('/')[-1:][0]   
 
+            # download the photos from s3
             response = requests.get(image_path, stream=True)
             pil_image = Image.open(BytesIO(response.content))
 
@@ -184,11 +193,27 @@ def album_view(request, album_id):
             extracted_text_raw, extracted_text_formatted = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
             print(f"text extracted for image [{image_file_name}]: [{extracted_text_raw}]")
 
-        album = gphotosapi.init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
-        album_photos = gphotosapi.get_photos_for_album(album['id'])
+            # TODO: init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
+
+        # album = gphotosapi.init_new_album(album_title, image_list=images_to_upload, from_cloud=True)
+
+        # create gphotos album
+        album_response = gphotosapi.init_new_album_simple(album_title)
+
+        # TODO: update Album in db with status ACTIVE and external_id set
+
+        # upload and map gphotos mediaItems to gphotos album
+        mapped_images_response = gphotosapi.upload_and_map_images_to_album(album_response, image_list=images_to_upload, from_cloud=True)
+
+        # TODO: update MediaItems in db with statuses ACTIVE and external_ids set
+
+        # TODO: delete photos from s3
+
+        # TODO: what objects get returned to html page?
+        album_photos = gphotosapi.get_photos_for_album(album_response['id'])
 
     context = {
-        'album': album,
+        'album': album_response,
         'album_photos': album_photos,
     }
     
