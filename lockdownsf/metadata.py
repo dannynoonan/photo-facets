@@ -1,5 +1,18 @@
+from enum import Enum
+
+
 AWS_REGION_NAME = 'us-west-1'
 S3_BUCKET = 'lockdownsf'
+
+
+class Status(Enum):
+    NEWBORN = 'NEWBORN'
+    LOADED = 'LOADED'
+    LOADED_AND_MAPPED = 'LOADED_AND_MAPPED'
+
+
+class ExternalResource(Enum):
+    GOOGLE_PHOTOS_V1 = 'GOOGLE_PHOTOS_V1'
 
 
 img_max_dimensions = {
