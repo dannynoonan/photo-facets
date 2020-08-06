@@ -8,12 +8,16 @@ from os.path import dirname, exists, isfile, join
 import pickle
 from PIL import Image
 import requests
+import shutil
 
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 # from lockdownsf import metadata
+from lockdownsf.services import image_utils
+
+import ipdb
 
 
 API_NAME = 'photoslibrary'
@@ -127,12 +131,13 @@ def batch_upload_images(image_list=None, image_dir_path=None, from_cloud=False, 
         #     print(f"file [{image_path}] is not a blessed image file type. skipping...")
         #     continue
         print(f"begin upload_image for filename [{image_path}]")
-        response = upload_image(image_path, token, from_cloud=from_cloud)
-        new_media_item = {
-            'simpleMediaItem': {
-                'uploadToken': response.content.decode('utf-8')
-            }
-        }
+        # response = upload_image(image_path, token, from_cloud=from_cloud)
+        # new_media_item = {
+        #     'simpleMediaItem': {
+        #         'uploadToken': response.content.decode('utf-8')
+        #     }
+        # }
+        new_media_item = upload_image(image_path, token, from_cloud=from_cloud)
         new_media_items.append(new_media_item)
 
     request_body = {
@@ -154,25 +159,29 @@ def upload_image(image_path, token, from_cloud=False):
     }
 
     print(f"in upload_image, image_path [{image_path}] image_filename [{image_filename}]")
+    new_media_item = {}
 
     if from_cloud:
-        # download image from s3, save to in-memory file
-        response = requests.get(image_path, stream=True)
-        pil_image = Image.open(BytesIO(response.content))
-        in_mem_image = BytesIO()
-        pil_image.save(in_mem_image, format=pil_image.format)
-        # print(f"^^^^^^ file size / image.tell(): {str(in_mem_image.tell())}")
-        in_mem_image.seek(0)
-        headers['X-Goog-Upload-Content-Type'] = pil_image.format
+        # get image from s3, post to gphotos
+        get_response = requests.get(image_path, stream=True)
+        # if get_response.status_code == 200:
+        #     with open('img_placeholder', 'wb') as out_file:
+        post_response = requests.post(GPHOTOS_UPLOAD_URL, data=get_response.content, headers=headers)
+
     else:
         in_mem_image = open(image_path, 'rb').read()
         # mime = magic.Magic(mime=True)
         # mime_type = mime.from_file(image_path)
+        # headers['X-Goog-Upload-Content-Type'] = mime_type
+        post_response = requests.post(GPHOTOS_UPLOAD_URL, data=in_mem_image, headers=headers)
 
-    response = requests.post(GPHOTOS_UPLOAD_URL, data=in_mem_image, headers=headers)
-    print(f"Upload token [{response.content.decode('utf-8')}]")
+    new_media_item = {
+        'simpleMediaItem': {
+            'uploadToken': post_response.content.decode('utf-8'),
+        }
+    }
 
-    return response
+    return new_media_item
 
 
 def map_images_to_album(gpids_to_img_data, album_id, gphotos_service=None):
