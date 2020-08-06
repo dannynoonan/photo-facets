@@ -127,6 +127,14 @@ def admin(request):
     return render(request, template, context)
 
 
+def file_uploader(request):
+    template = 'file_uploader.html'
+
+    context = {}
+    
+    return render(request, template, context)
+
+
 def album_listing(request):
     template = 'album_listing.html'
 
@@ -159,6 +167,8 @@ def album_view(request, album_id):
         album = Album.objects.get(external_id=album_id)
         mapped_media_items = album.mediaitem_set.all()
 
+        album_response = gphotosapi.get_album(album_id)
+        album_photos = gphotosapi.get_photos_for_album(album_response['id'])
         context = {
             'album': album,
             'mapped_media_items': mapped_media_items,
@@ -199,8 +209,16 @@ def album_view(request, album_id):
 
             # extract location and timestamp info
             exif_data = image_utils.get_exif_data(pil_image)
-            lat, lng = image_utils.get_lat_lng(exif_data['GPSInfo'])
-            dt_taken = datetime.strptime(exif_data['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
+            lat = 0
+            lng = 0
+            dt_taken = None
+            if exif_data:
+                if exif_data.get('GPSInfo', ''):
+                    lat, lng = image_utils.get_lat_lng(exif_data.get('GPSInfo', ''))
+                if exif_data.get('DateTimeOriginal', ''):
+                    dt_taken = datetime.strptime(exif_data['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
+            else: 
+                print(f"Failure to get exif_data for image_path [{image_path}]")
 
             # extract OCR text
             extracted_text_raw, extracted_text_formatted = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
