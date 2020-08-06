@@ -36,12 +36,13 @@ class Photo(models.Model):
 
 
 class Album(models.Model):
-    external_id = models.CharField(max_length=500, db_index=True)
+    external_id = models.CharField(max_length=500, db_index=True, null=True)
     external_resource = models.CharField(max_length=64, db_index=True, null=True)
     name = models.CharField(max_length=500)
-    description = models.CharField(max_length=500)
+    description = models.CharField(max_length=500, null=True)
     center_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     center_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
+    map_zoom_level = models.IntegerField(default=0)
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=64, db_index=True)
@@ -54,9 +55,10 @@ class MediaItem(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True)
     external_resource = models.CharField(max_length=64, db_index=True, null=True)
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
-    file_name = models.CharField(max_length=64, db_index=True)
+    file_name = models.CharField(max_length=256, db_index=True)
     mime_type = models.CharField(max_length=128, db_index=True)
-    description = models.CharField(max_length=500)
+    thumb_url = models.CharField(max_length=2048, null=True)
+    description = models.CharField(max_length=500, null=True)
     dt_taken = models.DateTimeField(null=True)
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
@@ -65,7 +67,7 @@ class MediaItem(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     facets = models.CharField(max_length=1024, null=True)
-    extracted_text = models.CharField(max_length=4096, null=True)
+    extracted_text = models.CharField(max_length=16000, null=True)
     status = models.CharField(max_length=64, db_index=True)
 
     def __str__(self):
