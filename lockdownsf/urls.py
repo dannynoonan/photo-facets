@@ -10,7 +10,10 @@ urlpatterns = [
     path('admin/file_uploader/', views.file_uploader, name='file_uploader'),
     path('admin/album_listing/', views.album_listing, name='album_listing'),
     path('admin/album_import/', views.album_import, name='album_import'),
-    path('admin/album_view/<str:album_id>', views.album_view, name='album_view'),
+    path('admin/album_view/<str:album_external_id>/', views.album_view, name='album_view'),
+    path('admin/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),
+    path('admin/mediaitem_view/<str:mediaitem_external_id>/', views.mediaitem_view, name='mediaitem_view'),
+
     path('admin/neighborhood_listing/', views.neighborhood_listing, name='neighborhood_listing'),
     path('admin/add_neighborhood/', views.add_neighborhood, name='add_neighborhood'),
     path('admin/save_neighborhood/', views.save_neighborhood, name='save_neighborhood'),

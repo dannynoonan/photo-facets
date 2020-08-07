@@ -19,7 +19,7 @@
         {% endfor %} 
         </select>
         &nbsp;&nbsp;&nbsp;<strong>Other label:</strong>&nbsp;
-        <select class="form-control" id="search-other-labels" name="photo-business-type">
+        <select class="form-control" id="search-other-labels" name="search-other-labels">
             <option value="">* other labels *</option>
         {% for other_label in all_other_labels %}
             <option value="{{ other_label }}" {% if search_criteria.other_label == other_label %} selected {% endif %}>{{ other_label }}</option>

@@ -118,8 +118,8 @@ def admin(request):
     all_albums = Album.objects.all()
 
     context = {
-        'all_albums': all_albums,
         'template': template,
+        'all_albums': all_albums,
         'all_scene_types': metadata.all_scene_types,
         'all_business_types': metadata.all_business_types,
         'all_other_labels': metadata.all_other_labels,
@@ -134,8 +134,8 @@ def file_uploader(request):
     all_albums = Album.objects.all()
 
     context = {
-        'all_albums': all_albums,
         'template': template,
+        'all_albums': all_albums,
     }
     
     return render(request, template, context)
@@ -150,8 +150,8 @@ def album_listing(request):
             album.mediaitem_count = len(album.mediaitem_set.all())
 
     context = {
-        'all_albums': all_albums,
         'template': template,
+        'all_albums': all_albums,
     }
     
     return render(request, template, context)
@@ -163,14 +163,14 @@ def album_import(request):
     all_albums = Album.objects.all()
 
     context = {
-        'all_albums': all_albums,
         'template': template,
+        'all_albums': all_albums,
     }
     
     return render(request, template, context)
 
 
-def album_view(request, album_id):
+def album_view(request, album_external_id):
     template = 'album_view.html'
 
     all_albums = Album.objects.all()
@@ -179,16 +179,16 @@ def album_view(request, album_id):
 
     # TODO why is this page being called twice?
 
-    if album_id and album_id != "_":
+    if album_external_id and album_external_id != "_":
         """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
-        album = Album.objects.get(external_id=album_id)
+        album = Album.objects.get(external_id=album_external_id)
         mapped_media_items = album.mediaitem_set.all()
 
-        album_response = gphotosapi.get_album(album_id)
+        album_response = gphotosapi.get_album(album_external_id)
         album_photos = gphotosapi.get_photos_for_album(album_response['id'])
         context = {
-            'all_albums': all_albums,
             'template': template,
+            'all_albums': all_albums,
             'album': album,
             'mapped_media_items': mapped_media_items,
         }
@@ -285,15 +285,10 @@ def album_view(request, album_id):
         album.save()
 
         # TODO: delete photos from s3
-        
-        # print(f"@@@@@ album: [{album}]")
-        # print(f"@@@@@ mapped_media_items: [{mapped_media_items}]")
-        # print(f"@@@@@ unmapped_media_items: [{unmapped_media_items}]")
-        # print(f"@@@@@ failed_media_items: [{failed_media_items}]")
 
         context = {
-            'all_albums': all_albums,
             'template': template,
+            'all_albums': all_albums,
             'album': album,
             'mapped_media_items': mapped_media_items,
             'unmapped_media_items': unmapped_media_items,
@@ -303,27 +298,52 @@ def album_view(request, album_id):
     return render(request, template, context)
 
 
-# def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items):
-#     matched_media_items = []
-#     for mapped_gpid, img_data in gpids_to_img_data.items():
-#         for media_item in media_items:
-#             if media_item.file_name == img_data.get('filename', ''):
-#                 # update db
-#                 media_item.external_id = mapped_gpid
-#                 media_item.thumb_url = img_data.get('thumb_url', '')
-#                 media_item.status = metadata.Status.LOADED_AND_MAPPED.name
-#                 media_item.save()
-#                 # add to matched_media_items
-#                 matched_media_items.append(media_item)
-#                 # remove from failed_media_items
-#                 for f_item in failed_media_items:
-#                     f_item_fn = f_item.split('/')[-1:][0]
-#                     if f_item_fn == media_item.file_name:
-#                         failed_media_items.remove(f_item)
-#                         continue
-#                 continue
+def mediaitem_search(request):
+    template = 'mediaitem_search.html'
 
-#     return matched_media_items
+    all_albums = Album.objects.all()
+
+    # bind vars to form data 
+    search_criteria = {}
+    and_filters = {}
+    or_filters = ''
+    if request.GET.get('search-facets'):
+        search_criteria['facets'] = request.GET.get('search-facets')
+        and_filters['facets__contains'] = search_criteria['facets']
+    if request.GET.get('search-text'):
+        search_criteria['search_text'] = request.GET.get('search-text')
+        or_filters = Q(extracted_text__contains = search_criteria['search_text']) | Q(external_id__contains = search_criteria['search_text']) | Q(file_name__contains = search_criteria['search_text'])
+
+    matching_mediaitems = MediaItem.objects.filter(**and_filters)
+    if or_filters:
+        matching_mediaitems = matching_mediaitems.filter(or_filters)
+
+    context = {
+        'template': template,
+        'all_albums': all_albums,
+        'all_facets': metadata.all_facets,
+        'search_criteria': search_criteria,
+        'matching_mediaitems': matching_mediaitems,
+    }
+
+    return render(request, template, context)
+
+
+def mediaitem_view(request, mediaitem_external_id):
+    template = 'mediaitem_view.html'
+
+    all_albums = Album.objects.all()
+
+    mediaitem = MediaItem.objects.get(external_id=mediaitem_external_id)
+
+    context = {
+        'template': template,
+        'all_albums': all_albums,
+        'mediaitem_external_id': mediaitem_external_id,
+        'mediaitem': mediaitem,
+    }
+
+    return render(request, template, context)
 
 
 def neighborhood_listing(request):

@@ -3,11 +3,14 @@
 {% block body %}
 
 {% if album %}
-<h4>Album: <a href="https://photos.google.com/lr/album/{{ album.external_id }}">{{ album.name }}</a></h4>
-<p>External id: {{ album.external_id }} ({{ album.external_resource }})</a></p>
+<p></p>
+<h4>Album: <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
+<p><strong>External id:</strong> {{ album.external_id }}
+<br/><strong>External resource:</strong> {{ album.external_resource }}</p>
+<p></p>
 
 {% if mapped_media_items %}
-<p>{{ mapped_media_items|length }} media items mapped to album:</p>
+<h5>{{ mapped_media_items|length }} media items mapped to album:</h5>
 <table class="table table-hover">
     <thead>
         <tr><th scope="col">Photo</th>
@@ -23,11 +26,12 @@
     <tbody>
     {% for photo in mapped_media_items %}
         <tr><th scope="row">
-                <a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}">
+                <a href="/lockdownsf/admin/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></th>
             <td>{{ photo.file_name }}</th>
             <td>{{ photo.description }}</th>    
-            <td>{{ photo.external_id|truncatechars:20 }}</td>
+            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}" target="new">
+                    {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>{{ photo.mime_type }}</td>
             <td>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</td>
             <td>{{ photo.width }} x {{ photo.height }}</td>

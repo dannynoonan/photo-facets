@@ -1,0 +1,49 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+
+{% if mediaitem %}
+<p></p>
+<img src="{{ mediaitem.thumb_url }}"/>
+
+<table class="table table-hover table-fit">
+    <tbody>
+        <tr><th scope="row">External id:</th>
+            <td><a href="https://photos.google.com/lr/album/{{ mediaitem.album.external_id }}/photo/{{ mediaitem.external_id }}" target="new">
+                    {{ mediaitem.external_id }}</a></td></tr>
+        <tr><th scope="row">File name:</th>
+            <td>{{ mediaitem.file_name }}</td></tr>
+        <tr><th scope="row">Date taken:</th>
+            <td>{{ mediaitem.dt_taken }}</td></tr>
+        <tr><th scope="row">File format:</th>
+            <td>{{ mediaitem.mime_type }}</td></tr>
+        <tr><th scope="row">Latitude:</th>
+            <td>{{ mediaitem.latitude }}</td></tr>
+        <tr><th scope="row">Longitude:</th>
+            <td>{{ mediaitem.longitude }}</td></tr>
+        <tr><th scope="row">Dimensions:</th>
+            <td>{{ mediaitem.width }} x {{ mediaitem.height }}</td></tr>
+        <tr><th scope="row">Album:</th>
+            <td>{{ mediaitem.album.name }}</td></tr>
+        <tr><th scope="row">Facets:</th>
+            <td>{{ mediaitem.facets }}</td></tr>
+        <tr><th scope="row">Extracted text:</th>
+            <td>{{ mediaitem.extracted_text }}</td></tr>
+    </tbody>
+</table>
+
+
+{% else %}
+<div class="alert alert-warning">
+    <h5>No mediaitem found matching external_id <strong>{{ mediaitem_external_id }}</strong></h5>
+</div>
+{% endif %}
+
+{% if exception %}
+<div class="alert alert-danger">
+    <h5><strong>Exception:</strong> {{ exception }}</h5>
+    <p>Data dump: {{ dump }}</p>
+</div>
+{% endif %}
+
+{% endblock %}

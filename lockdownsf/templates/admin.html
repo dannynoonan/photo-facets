@@ -3,21 +3,21 @@
 {% block content %}
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <a class="navbar-brand" href="/lockdownsf/admin/search_photos/">Photos</a>
+    <a class="navbar-brand" href="/lockdownsf/admin/mediaitem_search/">Photos</a>
     <div class="collapse navbar-collapse" id="navbarColor01">
         <ul class="navbar-nav mr-auto">
-            <li class="nav-item {% if template == 'photo_search.html' %} active {% endif %}">
-                <a class="nav-link" href="/lockdownsf/admin/search_photos/">Search</a>
+            <li class="nav-item {% if template == 'mediaitem_search.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/admin/mediaitem_search/">Search</a>
             </li>
-            <li class="nav-item {% if template == 'photo_select.html' or template == 'photo_edit.html' or template == 'photo_save.html' %} active {% endif %}">
-                <a class="nav-link" href="/lockdownsf/admin/select_photo/">Add/Edit</a>
+            <li class="nav-item {% if template == 'mediaitem_view.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/admin/album_import/">Add/Edit</a>
             </li>
             
         </ul>
     </div>
 
     <div class="collapse navbar-collapse" id="navbarColor01">
-        <form class="form-inline my-2 my-lg-0" id="goto-neighborhood-form" action="/lockdownsf/admin/edit_neighborhood/none/" method="POST">
+        <form class="form-inline my-2 my-lg-0" id="goto-album-form" action="/lockdownsf/admin/album_view/none/" method="POST">
             {% csrf_token %}
             <a class="navbar-brand" href="/lockdownsf/admin/album_listing/">Albums</a>
             <ul class="navbar-nav mr-auto">
@@ -32,7 +32,7 @@
                 </li> -->
                 <li class="nav-item nav-link">Lookup:</li>
             </ul>
-            <select class="form-control" id="select-neighborhood" name="select-neighborhood" onchange="updateNeighborhoodFormAction();">
+            <select class="form-control" id="select-album" name="select-album" onchange="updateAlbumFormAction();">
                 <option value="none">* album *</option>
             {% for album in all_albums %}
                 <option value="{{ album.external_id }}">{{ album.name }}</option>
