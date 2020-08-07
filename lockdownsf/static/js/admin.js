@@ -1,5 +1,11 @@
 const orig_dir = 'orig/';
 
+
+// https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
+let filesDone = 0
+let filesToDo = 0
+
+
 // 
 // https://devcenter.heroku.com/articles/s3-upload-python
 // (function() {
@@ -17,20 +23,120 @@ const orig_dir = 'orig/';
 /*
     Bind listeners when the page loads.
 */
-window.onload=function(){
-    // choose file button
-    document.getElementById('img-file-path').onchange = function(){
-        document.getElementById("init-upload-photo").style.visibility = 'visible';
-    };
+window.onload=function() {
 
-    // init file upload button
-    document.getElementById('init-upload-photo').onclick = initSingleUpload;
+    // https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
+    dropArea = document.getElementById('drop-area')
+    ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false)
+    })
+    ;['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false)
+    })
+    ;['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false)
+    })
+    dropArea.addEventListener('drop', handleDrop, false)
+    progressBar = document.getElementById('progress-bar')
 
-    // upload complete div operating as eventhandler flag
-    uploadedImage = document.createElement('div');
-    uploadedImage.id = "uploaded-image";
-    uploadedImage.addEventListener("click", extractImageData);
+
+
+    // // choose file button
+    // document.getElementById('img-file-path').onchange = function() {
+    //     document.getElementById("init-upload-photo").style.visibility = 'visible';
+    // };
+
+    // // init file upload button
+    // document.getElementById('init-upload-photo').onclick = initSingleUpload;
+
+    // // upload complete div operating as eventhandler flag
+    // uploadedImage = document.createElement('div');
+    // uploadedImage.id = "uploaded-image";
+    // uploadedImage.addEventListener("click", extractImageData);
 }
+
+
+
+// https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
+function preventDefaults(e) {
+    e.preventDefault()
+    e.stopPropagation()
+}
+
+function highlight(e) {
+    dropArea.classList.add('highlight')
+}
+
+function unhighlight(e) {
+    dropArea.classList.remove('highlight')
+}
+
+function handleDrop(e) {
+    let dt = e.dataTransfer
+    let files = dt.files
+
+    handleFiles(files)
+}
+
+function handleFiles(files) {
+    files = [...files]
+    initializeProgress(files.length)
+    files.forEach(uploadFile)
+    files.forEach(previewFile)
+}
+
+function uploadFile(file, i) { 
+    var url = 'YOUR URL HERE'
+    var xhr = new XMLHttpRequest()
+    var formData = new FormData()
+    xhr.open('POST', url, true)
+
+    // Add following event listener
+    xhr.upload.addEventListener("progress", function(e) {
+        updateProgress(i, (e.loaded * 100.0 / e.total) || 100)
+    })
+
+    xhr.addEventListener('readystatechange', function(e) {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            // Done. Inform the user
+        }
+        else if (xhr.readyState == 4 && xhr.status != 200) {
+            // Error. Inform the user
+        }
+    })
+
+    formData.append('file', file)
+    xhr.send(formData)
+}
+
+function previewFile(file) {
+    let reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onloadend = function() {
+        let img = document.createElement('img')
+        img.src = reader.result
+        document.getElementById('gallery').appendChild(img)
+    }
+}
+
+function initializeProgress(numFiles) {
+    progressBar.value = 0
+    uploadProgress = []
+  
+    for (let i = numFiles; i > 0; i--) {
+        uploadProgress.push(0)
+    }
+}
+  
+function updateProgress(fileNumber, percent) {
+    uploadProgress[fileNumber] = percent
+    let total = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
+    progressBar.value = total
+}
+
+
+
+
 
 
 // https://stackoverflow.com/questions/24718769/html5-javascript-how-to-get-the-selected-folder-name
@@ -65,7 +171,7 @@ function getSignedRequest(file, sequence) {
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {
                 var response = JSON.parse(xhr.responseText);
-                uploadFile(file, sequence, response.data, response.url);
+                uploadFileClassic(file, sequence, response.data, response.url);
             }
             else {
                 alert("Could not get signed URL for file [" + file.name + "] sequence [" + sequence + "]");
@@ -76,7 +182,7 @@ function getSignedRequest(file, sequence) {
 }
 
 
-function uploadFile(file, sequence, s3Data, url) {
+function uploadFileClassic(file, sequence, s3Data, url) {
     var xhr = new XMLHttpRequest();
     xhr.open("POST", s3Data.url);
   

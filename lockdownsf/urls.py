@@ -7,6 +7,7 @@ urlpatterns = [
     path('neighborhood/<str:neighborhood_slug>/', views.neighborhood, name='neighborhood'),
     path('sign_s3/', views.sign_s3, name='sign_s3'),
     path('admin/', views.admin, name='admin',),
+    path('admin/file_uploader/', views.file_uploader, name='file_uploader'),
     path('admin/album_listing/', views.album_listing, name='album_listing'),
     path('admin/album_import/', views.album_import, name='album_import'),
     path('admin/album_view/<str:album_id>', views.album_view, name='album_view'),
