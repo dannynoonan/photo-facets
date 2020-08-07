@@ -1,21 +1,35 @@
 {% extends 'admin.html' %}
 
 {% block body %}
-<h4>Album mappings to Google Photos:</h4>
+<h4>Album listing:</h4>
 
-<p>(this all needs to be refactored)</p>
-
-{% if albums %}
-<ul>
-    {% for album in albums %}
-    <form action="/lockdownsf/admin/album_view/" method="POST">
-        {% csrf_token %}
-        <input type="hidden" name="album-id" value="{{ album.id }}">
-        <input type="submit" value="Preview">
-    </form>
-    <li>{{ album.title }} [{{ album.id }}]</li>
+{% if all_albums %}
+<p>{{ all_albums|length }} albums found:</p>
+<table class="table table-hover">
+    <thead>
+        <tr><th scope="col">Name</th>
+            <th scope="col">Photos</th>
+            <th scope="col">External resource</th>
+            <th scope="col">Description</th>
+            <th scope="col">GPS location</th>
+            <th scope="col">Zoom level</th>
+            <th scope="col">Date imported / updated</th>
+            <th scope="col">Status</th></tr>
+    </thead>
+    <tbody>
+    {% for album in all_albums %}
+        <tr><th scope="row">
+                <a href="/lockdownsf/admin/album_view/{{ album.external_id }}">{{ album.name }}</a></th>
+            <td>{{ album.mediaitem_count }}</th>
+            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id|truncatechars:20 }}</a></td></th>
+            <td>{{ album.description }}</th>    
+            <td>Lat: {{ album.center_latitude }}<br/>Lng: {{ album.center_longitude }}</td>
+            <td>{{ photo.map_zoom_level }}</td>
+            <td>{{ album.dt_inserted }}<br/>{{ album.dt_updated }}</td>
+            <td>{{ album.status }}</td></tr>
     {% endfor %}
-</ul>
+    </tbody>
+</table>
 {% endif %}
     
 {% endblock %}

@@ -115,10 +115,11 @@ def sign_s3(request):
 def admin(request):
     template = 'admin.html'
 
-    all_neighborhoods = Neighborhood.objects.all()
+    all_albums = Album.objects.all()
 
     context = {
-        'all_neighborhoods': all_neighborhoods,
+        'all_albums': all_albums,
+        'template': template,
         'all_scene_types': metadata.all_scene_types,
         'all_business_types': metadata.all_business_types,
         'all_other_labels': metadata.all_other_labels,
@@ -130,7 +131,12 @@ def admin(request):
 def file_uploader(request):
     template = 'file_uploader.html'
 
-    context = {}
+    all_albums = Album.objects.all()
+
+    context = {
+        'all_albums': all_albums,
+        'template': template,
+    }
     
     return render(request, template, context)
 
@@ -138,10 +144,14 @@ def file_uploader(request):
 def album_listing(request):
     template = 'album_listing.html'
 
-    albums = get_albums()
+    all_albums = Album.objects.all()
+    if all_albums:
+        for album in all_albums:
+            album.mediaitem_count = len(album.mediaitem_set.all())
 
     context = {
-        'albums': albums,
+        'all_albums': all_albums,
+        'template': template,
     }
     
     return render(request, template, context)
@@ -150,13 +160,20 @@ def album_listing(request):
 def album_import(request):
     template = 'album_import.html'
 
-    context = {}
+    all_albums = Album.objects.all()
+
+    context = {
+        'all_albums': all_albums,
+        'template': template,
+    }
     
     return render(request, template, context)
 
 
 def album_view(request, album_id):
     template = 'album_view.html'
+
+    all_albums = Album.objects.all()
 
     # TODO some way to identify where the photos uploaded to s3 temporarily are
 
@@ -170,6 +187,8 @@ def album_view(request, album_id):
         album_response = gphotosapi.get_album(album_id)
         album_photos = gphotosapi.get_photos_for_album(album_response['id'])
         context = {
+            'all_albums': all_albums,
+            'template': template,
             'album': album,
             'mapped_media_items': mapped_media_items,
         }
@@ -273,6 +292,8 @@ def album_view(request, album_id):
         # print(f"@@@@@ failed_media_items: [{failed_media_items}]")
 
         context = {
+            'all_albums': all_albums,
+            'template': template,
             'album': album,
             'mapped_media_items': mapped_media_items,
             'unmapped_media_items': unmapped_media_items,
