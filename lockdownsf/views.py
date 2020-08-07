@@ -26,39 +26,55 @@ import ipdb
 def index(request):
     template = 'index.html'
 
-    all_neighborhoods = Neighborhood.objects.all()
-    all_photos = Photo.objects.all()
+    # fetch all albums from db
+    all_albums = Album.objects.all()
 
+    if all_albums:
+        for album in all_albums:
+            # fetch all media_items per album; ignore albums lacking media items
+            album_media_items = album.mediaitem_set.all()
+            if not album_media_items:
+                continue
+            # fetch media_items from gphotos api to populate thumb_urls
+            media_item_ids = [m_item.external_id for m_item in album_media_items]
+            gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+            for gpmi in gphotos_media_items:
+                for ami in album_media_items:
+                    if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
+                        print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
+                        continue
+                    if gpmi['mediaItem']['id'] == ami.external_id:
+                        ami.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                        continue
+            album.media_items = album_media_items
+
+    # build photo_collection json that will be passed to page js
     photo_collection_json = []
-    for neighborhood in all_neighborhoods:
-        neighborhood_photos_json = []
-        for photo in neighborhood.photo_set.all():
-            cats_json = []
-            if metadata.scene_types_to_checkboxes[photo.scene_type]:
-                print(f"photo.scene_type [{photo.scene_type}] -> scene_types_to_checkboxes[photo.scene_type] [{metadata.scene_types_to_checkboxes[photo.scene_type]}] for photo.uuid [{photo.uuid}]")
-                cats_json.append(metadata.scene_types_to_checkboxes[photo.scene_type])
-            if photo.business_type and photo.business_type != 'none': # TODO shouldn't need to be here
-                cats_json.append(photo.business_type)
-            if photo.other_labels:
-                cats_json.extend(photo.other_labels.split('|'))
-            photo_json = {
-                'uuid': photo.uuid,
-                'aspect_format': photo.aspect_format,
-                'longitude': str(photo.longitude),
-                'latitude': str(photo.latitude),
-                'cats': cats_json
+    for album in all_albums:
+        album_media_items_json = []
+        if not hasattr(album, 'media_items'):
+            continue
+        for media_item in album.media_items:
+            facets_json = []
+            if media_item.facets:
+                facets_json.extend(media_item.facets.split('|'))
+            media_item_json = {
+                'external_id': media_item.external_id,
+                'longitude': str(media_item.longitude),
+                'latitude': str(media_item.latitude),
+                'thumb_url': media_item.thumb_url,
+                'facets': facets_json
             }
-            neighborhood_photos_json.append(photo_json)
-        neighborhood_json = {
-            'neighborhood': neighborhood.slug,
-            'photos': neighborhood_photos_json,
+            album_media_items_json.append(media_item_json)
+        album_json = {
+            'external_id': album.external_id,
+            'media_items': album_media_items_json,
         }
-        photo_collection_json.append(neighborhood_json)
+        photo_collection_json.append(album_json)
 
     context = {
         'template': template,
-        'all_neighborhoods': all_neighborhoods,
-        'all_photos': all_photos,
+        'all_albums': all_albums,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4)
     }
 

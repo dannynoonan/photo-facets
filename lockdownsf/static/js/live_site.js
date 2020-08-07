@@ -1,5 +1,3 @@
-// var photoCollection = {{ photo_collection_json|safe }};
-
 var facetLabels = {
     "mural": "Murals",
     "boarded": "Boarded up",
@@ -21,20 +19,17 @@ var facetLabels = {
 };
 
 var gmap;
-// dict of photo uuids to photos loaded from photoCollection, with src urls 
-var loadedPhotos = {};
-// dict of photo uuids to domImgs
+// dict of external_ids to media_items loaded from photoCollection 
+var loadedMediaItems = {};
+// dict of media_item external_ids to domImgs
 var keysToDomImgs = {};
-// dict of photo uuids to google.maps.Marker objects
+// dict of media_item external_ids to google.maps.Marker objects
 var keysToMarkers = {};
-// dict of categories to photo keys
+// dict of categories to media_item external_ids
 var catsToKeys = {};
-// array of currently displayed keys
+// array of currently displayed media_item external_ids
 var displayedMarkerKeys = [];
 
-const imgBaseUrl = 'https://lockdownsf.s3.amazonaws.com/medium/';
-// const maxImgHeight = 450; 
-// const maxImgWidth = 600; 
 const baseLatLng = {lat: 37.773972, lng: -122.431297};
 
 // called when page first loads
@@ -58,30 +53,28 @@ function initGmap() {
 // 
 function loadPhotoCollection() {
     for (var i = 0; i < photoCollection.length; i++) {		
-        neighborhood = photoCollection[i].neighborhood;
-        for (var j = 0; j < photoCollection[i].photos.length; j++) {
-            // add to loadedPhotos
-            var photo = photoCollection[i].photos[j];
-            // photo.key = neighborhood + '_' + photo.id;
-            // photo.src = imgBaseUrl + neighborhood + '/IMG_' + photo.id + '.jpg';
-            photo.src = imgBaseUrl + photo.uuid;
-            // loadedPhotos.push(photo);
-            loadedPhotos[photo.uuid] = photo;
+        album = photoCollection[i].album;
+        for (var j = 0; j < photoCollection[i].media_items.length; j++) {
+            // add to loadedMediaItems
+            var media_item = photoCollection[i].media_items[j];
+            loadedMediaItems[media_item.external_id] = media_item;
             // add keys to catsToKeys 
-            for (var k = 0; k < photo.cats.length; k++) {
-                cat = photo.cats[k];
-                if (cat in catsToKeys) {
-                    catsToKeys[cat].push(photo.uuid);
-                }
-                else {
-                    catsToKeys[cat] = [photo.uuid];
+            if (media_item.cats) {
+                for (var k = 0; k < media_item.cats.length; k++) {
+                    cat = media_item.cats[k];
+                    if (cat in catsToKeys) {
+                        catsToKeys[cat].push(media_item.external_id);
+                    }
+                    else {
+                        catsToKeys[cat] = [media_item.external_id];
+                    }
                 }
             }
             // add to keysToDomImgs
             var domImg = document.createElement('div');
-            domImg.id = photo.uuid;
-            domImg.src = photo.src;
-            keysToDomImgs[photo.uuid] = domImg;
+            domImg.id = media_item.external_id;
+            domImg.src = media_item.thumb_url;
+            keysToDomImgs[media_item.external_id] = domImg;
             console.log(domImg);
         }			
     }
@@ -122,8 +115,8 @@ function initAndDisplayAllPhotoMarkers() {
 //
 function initAndDisplayPhotoMarker(domImg) {
     // init marker
-    var latitude = parseFloat(loadedPhotos[domImg.id].latitude);
-    var longitude = parseFloat(loadedPhotos[domImg.id].longitude);
+    var latitude = parseFloat(loadedMediaItems[domImg.id].latitude);
+    var longitude = parseFloat(loadedMediaItems[domImg.id].longitude);
     var marker = new google.maps.Marker({  
         position: {lat: latitude, lng: longitude},
         map: gmap,
@@ -135,7 +128,6 @@ function initAndDisplayPhotoMarker(domImg) {
     console.log("content for photo id [" + domImg.id + "]: " + contentDiv);          
     var markerWindow = new google.maps.InfoWindow({
         content: contentDiv,
-        //maxWidth: 1200
     });
     // add listener to marker 
     marker.addListener('click', function() {
