@@ -1,0 +1,51 @@
+{% extends 'admin.html' %}
+
+{% block body %}
+
+<div class="row justify-content-center">
+    <form class="form-inline my-2 my-lg-0" action="/lockdownsf/admin/mediaitem_search/" method="GET">
+        <strong>Facets:</strong>&nbsp;
+        <select class="form-control" id="search-facets" name="search-facets">
+            <option value="">* facets *</option>
+        {% for facet in all_facets %}
+            <option value="{{ facet }}" {% if search_criteria.facet == facet %} selected {% endif %}>{{ facet }}</option>
+        {% endfor %} 
+        </select>
+        &nbsp;&nbsp;&nbsp;<strong>Search text:</strong>&nbsp;
+        <input type="text" class="form-control mr-sm-2" id="search-text" name="search-text" value="{{ search_criteria.search_text }}" placeholder="search text">
+        <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+    </form>
+</div>
+
+<br/><br/>
+
+{% if search_criteria|length > 0 %}
+    <h4><strong>{{ matching_mediaitems|length }}</strong> photos matching criteria: 
+    {% if search_criteria.facets %} facets [<strong>{{ search_criteria.facets }}</strong>] {% endif %}
+    {% if search_criteria.search_text %} search_text [<strong>{{ search_criteria.search_text }}</strong>] {% endif %}</h4><br/><br/>
+{% endif %}
+
+{% if matching_mediaitems %}
+<table class="table table-hover table-fit">
+    <thead>
+        <tr><th scope="col">Photo</th>
+            <th scope="col">External id</th>
+            <th scope="col">File name</th>
+            <th scope="col">Facets</th>
+            <th scope="col">OCR text</th></tr>
+    </thead>
+    <tbody>
+    {% for photo in matching_mediaitems %}
+        <tr><td><a href="/lockdownsf/admin/mediaitem_view/{{ photo.external_id }}/">
+                    <img src="{{ photo.thumb_url }}"></a></td>
+            <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
+                    {{ photo.external_id|truncatechars:20 }}</a></td>
+            <td>{{ photo.file_name }}</td>
+            <td>{{ photo.facets }}</td>
+            <td>{{ photo.extracted_text|safe }}</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% endblock %}

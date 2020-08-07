@@ -387,8 +387,8 @@ function convertDMSToDD(degrees, minutes, seconds, direction) {
 }
 
 
-function updateNeighborhoodFormAction() {
-    var baseAction = "/lockdownsf/admin/edit_neighborhood/"
-    var selectedValue = document.getElementById("select-neighborhood").value;
-    document.getElementById("goto-neighborhood-form").action = baseAction + selectedValue + "/";
+function updateAlbumFormAction() {
+    var baseAction = "/lockdownsf/admin/album_view/"
+    var selectedValue = document.getElementById("select-album").value;
+    document.getElementById("goto-album-form").action = baseAction + selectedValue + "/";
 }

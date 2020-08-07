@@ -32,7 +32,8 @@ all_aspect_formats = [
     'pano_vertical',
 ]
 
-all_scene_types = [
+all_facets = [
+    # scene types
     'boarded',
     'boarded_tagged',
     'boarded_mural',
@@ -43,9 +44,7 @@ all_scene_types = [
     'slow_streets',
     'empty_street',
     'none',
-]
-
-all_business_types = [
+    # business types
     'dining',
     'bar',
     'food_market',
@@ -58,9 +57,7 @@ all_business_types = [
     'performance_venue',
     'municipal',
     'religious', 
-]
-
-all_other_labels = [
+    # other
     'open',
     'clever',
     'neighborly',
