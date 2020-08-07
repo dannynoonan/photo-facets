@@ -160,6 +160,7 @@ def album_listing(request):
 def album_import(request):
     template = 'album_import.html'
 
+    # form backing data
     all_albums = Album.objects.all()
 
     context = {
@@ -173,6 +174,7 @@ def album_import(request):
 def album_view(request, album_external_id):
     template = 'album_view.html'
 
+    # form backing data
     all_albums = Album.objects.all()
 
     # TODO some way to identify where the photos uploaded to s3 temporarily are
@@ -181,11 +183,25 @@ def album_view(request, album_external_id):
 
     if album_external_id and album_external_id != "_":
         """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
+        # fetch album and mapped media_items from db
         album = Album.objects.get(external_id=album_external_id)
         mapped_media_items = album.mediaitem_set.all()
 
-        album_response = gphotosapi.get_album(album_external_id)
-        album_photos = gphotosapi.get_photos_for_album(album_response['id'])
+        # fetch media_items from gphotos api to populate thumb_urls
+        media_item_ids = [m_item.external_id for m_item in mapped_media_items]
+        gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+        for gpmi in gphotos_media_items:
+            for mmi in mapped_media_items:
+                if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
+                    print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
+                    continue
+                if gpmi['mediaItem']['id'] == mmi.external_id:
+                    mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                    continue
+        
+        # TODO diff media_items returned by gphotos api call to those mapped to db album
+        # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
+
         context = {
             'template': template,
             'all_albums': all_albums,
@@ -301,9 +317,10 @@ def album_view(request, album_external_id):
 def mediaitem_search(request):
     template = 'mediaitem_search.html'
 
+    # form backing data
     all_albums = Album.objects.all()
 
-    # bind vars to form data 
+    # bind vars to form data and assemble query filters
     search_criteria = {}
     and_filters = {}
     or_filters = ''
@@ -314,9 +331,22 @@ def mediaitem_search(request):
         search_criteria['search_text'] = request.GET.get('search-text')
         or_filters = Q(extracted_text__contains = search_criteria['search_text']) | Q(external_id__contains = search_criteria['search_text']) | Q(file_name__contains = search_criteria['search_text'])
 
+    # fetch media_items from db
     matching_mediaitems = MediaItem.objects.filter(**and_filters)
     if or_filters:
         matching_mediaitems = matching_mediaitems.filter(or_filters)
+
+    # fetch media_items from gphotos api to populate thumb_urls 
+    media_item_ids = [m_item.external_id for m_item in matching_mediaitems]
+    gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+    for gpmi in gphotos_media_items:
+        for mmi in matching_mediaitems:
+            if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
+                print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
+                continue
+            if gpmi['mediaItem']['id'] == mmi.external_id:
+                mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                continue
 
     context = {
         'template': template,
@@ -332,9 +362,14 @@ def mediaitem_search(request):
 def mediaitem_view(request, mediaitem_external_id):
     template = 'mediaitem_view.html'
 
+    # form backing data
     all_albums = Album.objects.all()
 
+    # fetch media_item from db
     mediaitem = MediaItem.objects.get(external_id=mediaitem_external_id)
+    # fetch media_item from gphotos api to populate thumb_url 
+    gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
+    mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
 
     context = {
         'template': template,
