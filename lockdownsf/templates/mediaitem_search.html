@@ -37,7 +37,7 @@
     <tbody>
     {% for photo in matching_mediaitems %}
         <tr><td><a href="/lockdownsf/admin/mediaitem_view/{{ photo.external_id }}/">
-                    <img src="{{ photo.thumb_url }}"></a></td>
+                    <img src="{{ photo.thumb_url }}" width="200"></a></td>
             <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
                     {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>{{ photo.file_name }}</td>
