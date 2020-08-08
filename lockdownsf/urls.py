@@ -3,16 +3,16 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('neighborhood/<str:neighborhood_slug>/', views.neighborhood, name='neighborhood'),
-    path('sign_s3/', views.sign_s3, name='sign_s3'),
-    path('admin/', views.admin, name='admin',),
-    path('admin/file_uploader/', views.file_uploader, name='file_uploader'),
-    path('admin/album_listing/', views.album_listing, name='album_listing'),
-    path('admin/album_import/', views.album_import, name='album_import'),
-    path('admin/album_view/<str:album_external_id>/', views.album_view, name='album_view'),
-    path('admin/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),
-    path('admin/mediaitem_view/<str:mediaitem_external_id>/', views.mediaitem_view, name='mediaitem_view'),
+    path(r'', views.index, name='index'),
+    path(r'neighborhood/<str:neighborhood_slug>/', views.neighborhood, name='neighborhood'),
+    path(r'sign_s3/', views.sign_s3, name='sign_s3'),
+    path(r'manage/', views.manage, name='manage',),
+    path(r'file_uploader/', views.file_uploader, name='file_uploader'),
+    path(r'admin/album_listing/', views.album_listing, name='album_listing'),
+    path(r'admin/album_import/', views.album_import, name='album_import'),
+    path(r'admin/album_view/<str:album_external_id>/', views.album_view, name='album_view'),
+    path(r'admin/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),
+    path(r'admin/mediaitem_view/<str:mediaitem_external_id>/', views.mediaitem_view, name='mediaitem_view'),
 
     path('admin/neighborhood_listing/', views.neighborhood_listing, name='neighborhood_listing'),
     path('admin/add_neighborhood/', views.add_neighborhood, name='add_neighborhood'),

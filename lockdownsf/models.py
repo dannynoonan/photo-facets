@@ -36,7 +36,7 @@ class Photo(models.Model):
 
 
 class Album(models.Model):
-    external_id = models.CharField(max_length=500, db_index=True, null=True)
+    external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
     external_resource = models.CharField(max_length=64, db_index=True, null=True)
     name = models.CharField(max_length=500)
     description = models.CharField(max_length=500, null=True)
@@ -52,7 +52,7 @@ class Album(models.Model):
 
 
 class MediaItem(models.Model):
-    external_id = models.CharField(max_length=500, db_index=True, null=True)
+    external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
     external_resource = models.CharField(max_length=64, db_index=True, null=True)
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
     file_name = models.CharField(max_length=256, db_index=True)

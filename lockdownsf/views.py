@@ -20,8 +20,6 @@ from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo
 from lockdownsf.services import controller_utils, gphotosapi, image_utils, s3manager
 
-import ipdb
-
 
 def index(request):
     template = 'index.html'
@@ -128,19 +126,17 @@ def sign_s3(request):
     return HttpResponse(data, content_type='json')
 
 
-def admin(request):
-    template = 'admin.html'
+def manage(request):
+    template = 'manage.html'
 
     all_albums = Album.objects.all()
 
     context = {
         'template': template,
         'all_albums': all_albums,
-        'all_scene_types': metadata.all_scene_types,
-        'all_business_types': metadata.all_business_types,
-        'all_other_labels': metadata.all_other_labels,
+        'all_facets': metadata.all_facets,
     }
-
+    
     return render(request, template, context)
 
 
@@ -242,6 +238,10 @@ def album_view(request, album_external_id):
         # bind vars to form data 
         album_title = request.POST.get('album-title', '')
         images_to_upload = request.POST.getlist('images-to-upload', [])
+
+        # TODO workaround to the inane duplicate page request issue
+        if not images_to_upload:
+            return
 
         # insert Album into db with status PENDING and no external_id
         album = Album(name=album_title, external_resource=metadata.ExternalResource.GOOGLE_PHOTOS_V1.name, status=metadata.Status.NEWBORN.name)
