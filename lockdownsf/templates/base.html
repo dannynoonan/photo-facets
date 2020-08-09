@@ -20,12 +20,12 @@
         </script>
         <!-- end live site -->
 
-        <!-- begin admin site -->
+        <!-- begin /manage site -->
         {% else %}
         <meta name="google-signin-client_id" content="656115714274-r8mllgbe6t01iba59b2ab93un487n37i.apps.googleusercontent.com">
-        <link rel="stylesheet" href="{% static 'js/admin.js' %}">
+        <link rel="stylesheet" href="{% static 'js/manage.js' %}">
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
-        <script type="text/javascript" src="{% static 'js/admin.js' %}"></script>
+        <script type="text/javascript" src="{% static 'js/manage.js' %}"></script>
         <script src="https://apis.google.com/js/platform.js" async defer></script>
         <script>
             function onSignIn(googleUser) {
@@ -44,7 +44,7 @@
             }
         </script>
         {% endif %}
-        <!-- end admin site -->
+        <!-- end /manage site -->
 
         <link rel="shortcut icon" href="#" />
     </head>

@@ -388,7 +388,7 @@ function convertDMSToDD(degrees, minutes, seconds, direction) {
 
 
 function updateAlbumFormAction() {
-    var baseAction = "/lockdownsf/admin/album_view/"
+    var baseAction = "/lockdownsf/manage/album_view/"
     var selectedValue = document.getElementById("select-album").value;
     document.getElementById("goto-album-form").action = baseAction + selectedValue + "/";
 }

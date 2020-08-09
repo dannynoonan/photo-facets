@@ -1,4 +1,4 @@
-{% extends 'admin.html' %}
+{% extends 'manage.html' %}
 
 {% block body %}
 <h4>Album listing:</h4>
@@ -19,7 +19,7 @@
     <tbody>
     {% for album in all_albums %}
         <tr><th scope="row">
-                <a href="/lockdownsf/admin/album_view/{{ album.external_id }}/">{{ album.name }}</a></th>
+                <a href="/lockdownsf/manage/album_view/{{ album.external_id }}/">{{ album.name }}</a></th>
             <td>{{ album.mediaitem_count }}</th>
             <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id|truncatechars:20 }}</a></td></th>
             <td>{{ album.description }}</th>    
