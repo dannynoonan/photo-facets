@@ -1,10 +1,10 @@
-{% extends 'admin.html' %}
+{% extends 'manage.html' %}
 
 {% block body %}
 
 {% if album %}
 <p></p>
-<h4>Album: <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
+<h4>Album: <a href="https://photos.google.com/lr/manage/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
 <p><strong>External id:</strong> {{ album.external_id }}
 <br/><strong>External resource:</strong> {{ album.external_resource }}</p>
 <p></p>
@@ -26,7 +26,7 @@
     <tbody>
     {% for photo in mapped_media_items %}
         <tr><th scope="row">
-                <a href="/lockdownsf/admin/mediaitem_view/{{ photo.external_id }}/">
+                <a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></th>
             <td>{{ photo.file_name }}</th>
             <td>{{ photo.description }}</th>    

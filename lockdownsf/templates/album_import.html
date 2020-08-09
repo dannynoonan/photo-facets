@@ -1,4 +1,4 @@
-{% extends 'admin.html' %}
+{% extends 'manage.html' %}
 
 {% block body %}
 <h4>Import photos into a new album</h4>
@@ -13,7 +13,7 @@
 
 <div id="album-create-form" class="hidden-block">
     <h5 id="album-create-label"></h5>
-    <form action="/lockdownsf/admin/album_view/_/" method="POST">
+    <form action="/lockdownsf/manage/album_view/_/" method="POST">
         {% csrf_token %}
         <!-- <input type="hidden" id="image-count" name="image-count"> -->
         <input type="text" name="album-title" placeholder="new album title">
