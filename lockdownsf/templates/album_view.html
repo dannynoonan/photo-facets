@@ -4,30 +4,36 @@
 
 {% if album %}
 <p></p>
-<h4>Album: <a href="https://photos.google.com/lr/manage/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
+<h4>Album: <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
 <p><strong>External id:</strong> {{ album.external_id }}
 <br/><strong>External resource:</strong> {{ album.external_resource }}</p>
 <p></p>
 
 {% if mapped_media_items %}
 <h5>{{ mapped_media_items|length }} media items mapped to album:</h5>
+<form action="/lockdownsf/manage/album_media_items_delete/" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
 <table class="table table-hover">
     <thead>
-        <tr><th scope="col">Photo</th>
+        <tr><th scope="col"></th>
+            <th scope="col">Photo</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
             <th scope="col">External id</th>
             <th scope="col">Mime type</th>
-            <th scope="col">Date taken / imported / updated</th>
+            <th scope="col"><nobr>Date taken /</nobr> <nobr>imported /</nobr> updated</th>
             <th scope="col">Dimensions</th>
-            <th scope="col">Labels</th>
+            <th scope="col">Facets</th>
             <th scope="col">OCR text</th></tr>
     </thead>
     <tbody>
     {% for photo in mapped_media_items %}
-        <tr><th scope="row">
-                <a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
-                    <img src="{{ photo.thumb_url }}" width="200"></a></th>
+        <tr>
+            <th scope="row">
+                <input type="checkbox" name="media-item-external-ids" value="{{ photo.external_id }}"></th>
+            <td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
+                    <img src="{{ photo.thumb_url }}" width="200"></a></td>
             <td>{{ photo.file_name }}</th>
             <td>{{ photo.description }}</th>    
             <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}" target="new">
@@ -36,10 +42,10 @@
             <td>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</td>
             <td>{{ photo.width }} x {{ photo.height }}</td>
             <td>
-            {% if photo.labels %}
+            {% if photo.facets %}
                 <ul>
-                {% for label in photo.labels %}
-                    <li>{{ label }}</li>
+                {% for facet in photo.facets %}
+                    <li>{{ facet }}</li>
                 {% endfor %}
                 </ul>
             {% endif %}
@@ -48,6 +54,8 @@
     {% endfor %}
     </tbody>
 </table>
+<input type="submit" value="DELETE SELECTED ITEMS">
+</form>
 {% endif %}
 
 {% if unmapped_media_items %}
@@ -83,9 +91,17 @@
 </ul>
 {% endif %}
 
+<form action="/lockdownsf/manage/album_delete/" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
+    <input type="submit" value="DELETE ALBUM">
+</form>
+
 {% else %}
 <h4>No album found (TODO messaging)</h4>
 {% endif %}
+
+
     
 {% endblock %}
         
