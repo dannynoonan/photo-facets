@@ -1,4 +1,5 @@
 from lockdownsf import metadata
+from lockdownsf.services import gphotosapi
 
 
 def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status=None):
@@ -24,3 +25,17 @@ def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_m
                 continue
 
     return matched_media_items
+
+
+def populate_thumb_urls_from_gphotosapi(mapped_media_items):
+    # fetch media_items from gphotos api to populate thumb_urls
+    media_item_ids = [m_item.external_id for m_item in mapped_media_items]
+    gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+    for gpmi in gphotos_media_items:
+        for mmi in mapped_media_items:
+            if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
+                print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
+                continue
+            if gpmi['mediaItem']['id'] == mmi.external_id:
+                mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                continue

@@ -10,7 +10,10 @@ urlpatterns = [
     path(r'file_uploader/', views.file_uploader, name='file_uploader'),
     path(r'manage/album_listing/', views.album_listing, name='album_listing'),
     path(r'manage/album_import/', views.album_import, name='album_import'),
+    path(r'manage/album_create/', views.album_create, name='album_create'),
     path(r'manage/album_view/<str:album_external_id>/', views.album_view, name='album_view'),
+    path(r'manage/album_delete/', views.album_delete, name='album_delete'),
+    path(r'manage/album_media_items_delete/', views.album_media_items_delete, name='album_media_items_delete'),
     path(r'manage/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),
     path(r'manage/mediaitem_view/<str:mediaitem_external_id>/', views.mediaitem_view, name='mediaitem_view'),
 

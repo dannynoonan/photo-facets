@@ -43,6 +43,29 @@
 <div class="actual-body">
     <div class="g-signin2" data-onsuccess="onSignIn"></div>
     <a href="#" onclick="signOut();">Sign out</a>
+
+{% if success_messages %}
+{% for success_message in success_messages %}
+<div class="alert alert-success">
+    <h5><strong>{{ success_message }}</strong></h5>
+    {% if success_detail %}
+        <p>{{ success_detail }}</p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if error_messages %}
+{% for error_message in error_messages %}
+<div class="alert alert-danger">
+    <h5><strong>{{ error_message }}</strong></h5>
+    {% if error_detail %}
+        <p>{{ error_detail }}</p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+
 {% block body %}
 {% endblock %}
 </div>

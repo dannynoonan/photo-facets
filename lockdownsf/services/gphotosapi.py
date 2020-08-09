@@ -290,6 +290,9 @@ def get_photos_by_ids(image_ids, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
+    if not image_ids:
+        return []
+        
     response = gphotos_service.mediaItems().batchGet(mediaItemIds=image_ids).execute()   
 
     return response.get('mediaItemResults', [])
