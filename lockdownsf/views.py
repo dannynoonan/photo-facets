@@ -18,7 +18,8 @@ from django.template import loader
 
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
-from lockdownsf.services import controller_utils, gphotosapi, image_utils, s3manager
+from lockdownsf.services import gphotosapi, image_utils, s3manager
+from lockdownsf.services.controller_utils import extract_messages_from_storage, log_and_store_message, populate_thumb_urls_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 
@@ -36,7 +37,7 @@ def index(request):
             if not album_media_items:
                 continue
             # fetch media_items from gphotos api to populate thumb_urls
-            controller_utils.populate_thumb_urls_from_gphotosapi(album_media_items)
+            populate_thumb_urls_from_gphotosapi(album_media_items)
             album.media_items = album_media_items
 
     # build photo_collection json that will be passed to page js
@@ -150,14 +151,7 @@ def album_listing(request):
     template = 'album_listing.html'
 
     # process messages
-    all_messages = messages.get_messages(request)
-    success_messages = []
-    error_messages = []
-    for message in all_messages:
-        if message.level_tag == 'success':
-            success_messages.append(message.message)
-        if message.level_tag == 'error':
-            error_messages.append(message.message)
+    success_messages, error_messages = extract_messages_from_storage(request)
 
     all_albums = Album.objects.all()
     if all_albums:
@@ -194,22 +188,18 @@ def album_delete(request):
     album_external_id = request.POST.get('album-external-id', '')
 
     if not album_external_id:
-        error_message = 'Unable to delete album, album_external_id was not set.'
-        print(error_message)
-        messages.add_message(request, messages.ERROR, error_message)
+        log_and_store_message(request, messages.ERROR, 'Unable to delete album, album_external_id was not set.')
 
     else:
         try:
             # fetch album from db, then delete it
             album = Album.objects.get(external_id=album_external_id)
             album.delete()
-            success_message = f"Successfully deleted album with external_id [{album_external_id}]"
-            messages.add_message(request, messages.SUCCESS, success_message)
+            log_and_store_message(request, messages.SUCCESS, f"Successfully deleted album [{album_external_id}]")
 
         except Exception as ex:
-            error_message = f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}"
-            print(error_message)
-            messages.add_message(request, messages.ERROR, error_message)
+            log_and_store_message(request, messages.ERROR, 
+                f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}")
 
     return redirect(f"/lockdownsf/manage/album_listing/")
 
@@ -221,9 +211,8 @@ def album_media_items_delete(request):
     media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
 
     if not (album_external_id and media_item_external_ids):
-        error_message = f"Invalid request to delete media items [{media_item_external_ids}] from album [{album_external_id}]"
-        print(error_message)
-        messages.add_message(request, messages.ERROR, error_message)
+        log_and_store_message(request, messages.ERROR, 
+            f"Invalid request to delete media items [{media_item_external_ids}] from album [{album_external_id}]")
 
     else:
         successful_media_item_ids = []
@@ -240,17 +229,13 @@ def album_media_items_delete(request):
                 failed_media_item_ids.append(media_item_id)
 
         if successful_media_item_ids:
-            success_message = f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_external_id}]"
-            success_detail = f"Successful media item: [{successful_media_item_ids}]"
-            messages.add_message(request, messages.SUCCESS, success_message)
-            messages.add_message(request, messages.SUCCESS, success_detail)
+            log_and_store_message(request, messages.SUCCESS, 
+                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_external_id}]")
+            log_and_store_message(request, messages.SUCCESS, f"Successful media items: [{successful_media_item_ids}]")
         if failed_media_item_ids:
-            error_message = f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_external_id}]"
-            error_detail = f"Failed media items: [{failed_media_item_ids}]"
-            print(error_message)
-            print(error_detail)
-            messages.add_message(request, messages.ERROR, error_message)
-            messages.add_message(request, messages.ERROR, error_detail)
+            log_and_store_message(request, messages.ERROR, 
+                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_external_id}]")
+            log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
 
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
@@ -259,14 +244,7 @@ def album_view(request, album_external_id):
     template = 'album_view.html'
 
     # process messages
-    all_messages = messages.get_messages(request)
-    success_messages = []
-    error_messages = []
-    for message in all_messages:
-        if message.level_tag == 'success':
-            success_messages.append(message.message)
-        if message.level_tag == 'error':
-            error_messages.append(message.message)
+    success_messages, error_messages = extract_messages_from_storage(request)
 
     # form backing data
     all_albums = Album.objects.all()
@@ -280,7 +258,7 @@ def album_view(request, album_external_id):
         mapped_media_items = album.mediaitem_set.all()
 
         # fetch media_items from gphotos api to populate thumb_urls
-        controller_utils.populate_thumb_urls_from_gphotosapi(mapped_media_items)
+        populate_thumb_urls_from_gphotosapi(mapped_media_items)
         
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
@@ -294,9 +272,7 @@ def album_view(request, album_external_id):
             'mapped_media_items': mapped_media_items,
         }
     else:
-        error_message = "Failure to fetch album, no external_id was specified"
-        print(error_message)
-        error_messages.append(error_message)
+        log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no external_id was specified')
         context = {
             'template': template,
             'error_messages': error_messages,
@@ -321,22 +297,17 @@ def album_create(request):
     
     # TODO workflow is entirely dependent on filename uniqueness!!!
 
-    success_messages = []
-    error_messages = []
-
     # bind vars to form data 
     album_title = request.POST.get('album-title', '')
     images_to_upload = request.POST.getlist('images-to-upload', [])
 
     if not (album_title and images_to_upload):
         if not album_title:
-            error_message = "Failed to create album, no album title was specified."
-            print(error_message)
-            messages.add_message(request, messages.ERROR, error_message)
+            log_and_store_message(request, messages.ERROR,
+                "Failed to create album, no album title was specified.")
         if not images_to_upload:
-            error_message = "Failed to create album, no images were queued for upload. At least one image is required."
-            print(error_message)
-            messages.add_message(request, messages.ERROR, error_message)
+            log_and_store_message(request, messages.ERROR,
+                "Failed to create album, no images were queued for upload. At least one image is required.")
 
         return redirect(f"/lockdownsf/manage/album_import/")
 
@@ -367,7 +338,7 @@ def album_create(request):
             if exif_data.get('DateTimeOriginal', ''):
                 dt_taken = datetime.strptime(exif_data['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
         else: 
-            print(f"Failure to get exif_data for image_path [{image_path}]")
+            log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # extract OCR text
         extracted_text_raw, extracted_text_formatted = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
@@ -384,9 +355,7 @@ def album_create(request):
     album_response = gphotosapi.init_new_album_simple(album_title)
 
     if not album_response or not album_response['id']:
-        error_message = '@@@@@@ ERROR GRASSHOPPER DISASSEMBLE'
-        print(error_message)
-        messages.add_message(request, messages.ERROR, error_message)
+        log_and_store_message(request, messages.ERROR, "@@@@@@ ERROR GRASSHOPPER DISASSEMBLE")
 
         return redirect(f"/lockdownsf/manage/album_import/")
 
@@ -407,25 +376,27 @@ def album_create(request):
     if mapped_images_response:
         # update images mapped to an album
         if mapped_images_response.get('mapped_gpids_to_img_data', ''):
-            mapped_media_items = controller_utils.update_mediaitems_with_gphotos_data(
+            mapped_media_items = update_mediaitems_with_gphotos_data(
                 mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items)
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
-            unmapped_media_items = controller_utils.update_mediaitems_with_gphotos_data(
+            unmapped_media_items = update_mediaitems_with_gphotos_data(
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
 
     # update Album in db with status LOADED_AND_MAPPED
     album.status = metadata.Status.LOADED_AND_MAPPED.name
     album.save()
 
-    success_message = f"Successfully created album [{album.external_id}] and mapped [{len(mapped_media_items)}] media items to it"
-    messages.add_message(request, messages.SUCCESS, success_message)
+    log_and_store_message(request, messages.SUCCESS,
+        f"Successfully created album [{album.external_id}] and mapped [{len(mapped_media_items)}] media items to it")
     if unmapped_media_items:
-        error_message = f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to newly created album [{album.external_id}]"
-        messages.add_message(request, messages.ERROR, error_message)
+        log_and_store_message(request, messages.ERROR,
+            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to newly created album [{album.external_id}]")
+        log_and_store_message(request, messages.ERROR, f"Unmapped media items: [{unmapped_media_items}]")
     if failed_media_items:
-        error_message = f"Failed to load [{len(failed_media_items)}] media items into google photos library."
-        messages.add_message(request, messages.ERROR, error_message)
+        log_and_store_message(request, messages.ERROR,
+            f"Failed to load [{len(failed_media_items)}] media items into google photos library.")
+        log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_items}]")
 
     # TODO: delete photos from s3
     
@@ -455,7 +426,7 @@ def mediaitem_search(request):
         matching_mediaitems = matching_mediaitems.filter(or_filters)
 
     # fetch media_items from gphotos api to populate thumb_urls 
-    controller_utils.populate_thumb_urls_from_gphotosapi(matching_mediaitems)
+    populate_thumb_urls_from_gphotosapi(matching_mediaitems)
 
     context = {
         'template': template,
@@ -488,6 +459,9 @@ def mediaitem_view(request, mediaitem_external_id):
     }
 
     return render(request, template, context)
+
+
+
 
 
 def neighborhood_listing(request):

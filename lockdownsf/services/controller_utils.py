@@ -1,5 +1,26 @@
+from django.contrib import messages
+
 from lockdownsf import metadata
 from lockdownsf.services import gphotosapi
+
+
+def log_and_store_message(request, level, message):
+    if level in [messages.ERROR, messages.WARNING]:
+        print(message)
+    messages.add_message(request, level, message)
+
+
+def extract_messages_from_storage(request):
+    success_messages = []
+    error_messages = []
+    all_messages = messages.get_messages(request)
+    if all_messages:
+        for message in all_messages:
+            if message.level_tag == 'success':
+                success_messages.append(message.message)
+            if message.level_tag == 'error':
+                error_messages.append(message.message)
+    return success_messages, error_messages
 
 
 def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status=None):
