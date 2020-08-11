@@ -461,7 +461,82 @@ def mediaitem_view(request, mediaitem_external_id):
     return render(request, template, context)
 
 
+def tag_listing(request):
+    template = 'tag_listing.html'
 
+    # process messages
+    success_messages, error_messages = extract_messages_from_storage(request)
+
+    # form backing data
+    all_albums = Album.objects.all()
+    all_tag_statuses = [ts.name for ts in metadata.TagStatus]
+        
+    all_tags = Tag.objects.all()
+
+    context = {
+        'template': template,
+        'success_messages': success_messages,
+        'error_messages': error_messages,
+        'all_albums': all_albums,
+        'all_tag_statuses': all_tag_statuses,
+        'all_tags': all_tags,
+    }
+    
+    return render(request, template, context)
+
+
+def tag_create(request):
+
+    new_tag_name = request.POST.get('new-tag-name', '')
+    if not new_tag_name:
+        log_and_store_message(request, messages.ERROR, f"Failed to create new tag, no tag name was specified.")
+
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+    try:
+        new_tag = Tag(name=new_tag_name, status=metadata.TagStatus.ACTIVE.name, owner=OWNER)
+        new_tag.save()
+        log_and_store_message(request, messages.SUCCESS, f"Successfully created new tag [{new_tag.name}].")
+    
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR, f"Failed to create new tag [{new_tag_name}]. Exception: {ex}")
+
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+
+def tag_edit(request):
+
+    tag_id = request.POST.get('tag-id', '')
+    if not tag_id:
+        log_and_store_message(request, messages.ERROR, f"Failed to edit tag, no tag id was specified.")
+
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+    tag_status_field = f"tag-status-select-{tag_id}"
+    tag_status = request.POST.get(tag_status_field, '')
+
+    for key, value in request.POST.items():
+        print(f"key: {key} | value: {value}") 
+
+    if not tag_status:
+        log_and_store_message(request, messages.ERROR, f"Failed to update tag, no status was specified.")
+
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+    try:
+        tag = Tag.objects.get(pk=tag_id)
+        tag.status = tag_status
+        tag.save()
+        log_and_store_message(request, messages.SUCCESS, f"Successfully updated tag [{tag.name}].")
+    
+        return redirect(f"/lockdownsf/manage/tag_listing/")
+
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR, f"Failed to fetch and update tag with tag_id [{tag_id}]. Exception: {ex}")
+
+        return redirect(f"/lockdownsf/manage/tag_listing/")
 
 
 def neighborhood_listing(request):
