@@ -11,6 +11,11 @@ class Status(Enum):
     LOADED_AND_MAPPED = 'LOADED_AND_MAPPED'
 
 
+class TagStatus(Enum):
+    ACTIVE = 'ACTIVE'
+    DISABLED = 'DISABLED'
+
+
 class ExternalResource(Enum):
     GOOGLE_PHOTOS_V1 = 'GOOGLE_PHOTOS_V1'
 

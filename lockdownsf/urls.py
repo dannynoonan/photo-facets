@@ -16,6 +16,9 @@ urlpatterns = [
     path(r'manage/album_media_items_delete/', views.album_media_items_delete, name='album_media_items_delete'),
     path(r'manage/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),
     path(r'manage/mediaitem_view/<str:mediaitem_external_id>/', views.mediaitem_view, name='mediaitem_view'),
+    path(r'manage/tag_listing/', views.tag_listing, name='tag_listing'),
+    path(r'manage/tag_create/', views.tag_create, name='tag_create'),
+    path(r'manage/tag_edit/', views.tag_edit, name='tag_edit'),
 
     path('admin/neighborhood_listing/', views.neighborhood_listing, name='neighborhood_listing'),
     path('admin/add_neighborhood/', views.add_neighborhood, name='add_neighborhood'),

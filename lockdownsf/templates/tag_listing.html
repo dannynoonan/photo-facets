@@ -1,0 +1,59 @@
+{% extends 'manage.html' %}
+
+{% block body %}
+<h4>Tag listing:</h4>
+
+{% if all_tags %}
+<p>{{ all_tags|length }} tags:</p>
+
+<!-- <table class="table table-hover"> -->
+<table class="table">
+    <thead>
+        <tr><th scope="col">Tag</th>
+            <th scope="col">Photos</th>
+            <th scope="col">Date created</th>
+            <th scope="col">Status</th></tr>
+    </thead>
+    <tbody>
+    {% for tag in all_tags %}    
+    <form id="tag-form-{{ tag.id }}" action="/lockdownsf/manage/tag_edit/" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="tag-id" value="{{ tag.id }}"> 
+        <tr>
+            
+            <td id="tag-name-{{ tag.id }}">{{ tag.name }}</td>
+            <td>{{ tag.mediaitem_count }}</th>  <!-- TODO link to search page -->
+            <td>{{ tag.dt_inserted }}</td>
+            <td id="tag-status-display-cell-{{ tag.id }}">
+                <span id="tag-status-display-{{ tag.id }}" onclick="makeTagStatusEditable('{{ tag.id }}')">{{ tag.status }}</span>
+            </td>
+            <!-- inane stylesheet unavoidable-carriage-return BS forced me to shift/swap table cells and access each cell by id -->
+            <td id="tag-status-select-cell-{{ tag.id }}" class="hidden-button">
+                <select id="tag-status-select-{{ tag.id }}" class="hidden-button form-control" name="tag-status-select-{{ tag.id }}">
+                {% for tag_status in all_tag_statuses %}
+                    <option value="{{ tag_status }}" {% if tag_status == tag.status %} selected {% endif %}>
+                        {{ tag_status }}</option>
+                {% endfor %} 
+                </select>
+            </td>
+            <td id="tag-submit-cell-{{ tag.id }}" class="hidden-button">
+                <input id="tag-submit-{{ tag.id }}" class="hidden-button" type="submit" value="Update"></td>    
+        </tr> 
+    </form>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% else %}
+<p>No tags found.</p>
+{% endif %}
+
+<h5>Create new tag:</h5>
+<form action="/lockdownsf/manage/tag_create/" method="POST">
+    {% csrf_token %}
+    <input type="text" name="new-tag-name" placeholder="new tag">
+    <input type="submit" value="Create tag">
+</form>
+
+    
+{% endblock %}

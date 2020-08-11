@@ -138,6 +138,62 @@ function updateProgress(fileNumber, percent) {
 
 
 
+function makeTagStatusEditable(tag_id) {
+    // TODO replace this with metadata or function argument
+    var all_tag_statuses = ["ACTIVE", "DISABLED"];
+    // get tag status element we're modifying
+    var tagStatusDisplayCellEl = document.getElementById("tag-status-display-cell-" + tag_id);
+    var tagStatusDisplayEl = document.getElementById("tag-status-display-" + tag_id);
+    //var curr_status = tagStatusDisplayEl.innerHTML;
+    // tagStatusDisplayEl.style.visibility = 'hidden';
+    // tagStatusDisplayEl.onclick = '';
+    tagStatusDisplayEl.remove();
+    tagStatusDisplayCellEl.remove();
+
+    // display hidden elements
+    document.getElementById("tag-status-select-cell-" + tag_id).style.visibility = 'visible';
+    document.getElementById("tag-status-select-" + tag_id).style.visibility = 'visible';
+    document.getElementById("tag-submit-cell-" + tag_id).style.visibility = 'visible';
+    document.getElementById("tag-submit-" + tag_id).style.visibility = 'visible';
+
+    // Leaving the rest of this swill to remind myself to avoid gratutitous HTML-JS fuckstick sidework any and every time I can
+    // Apparently adding an input element (via js) to the middle of a (html) form isn't sufficient to have the contents of that
+    // input element posted along with the other contents of the form. Or if it is, the solution eluded me for hours.
+    // YGBFKM this is what I'm doing with my life. 
+
+    // add status dropdown, with curr_status selected
+    // var tagStatusSelectEl = document.createElement("select");
+    // tagStatusSelectEl.id = "tag-status-select-" + tag_id;
+    // tagStatusSelectEl.name = "tag-status-select-" + tag_id;
+    // tagStatusSelectEl.setAttribute("class", "form-control");
+    // for (var i=0; i<all_tag_statuses.length; i++) {
+    //     var optionEl = document.createElement('option');
+    //     optionEl.value = all_tag_statuses[i];
+    //     optionEl.innerHTML = all_tag_statuses[i];
+    //     if (curr_status == all_tag_statuses[i]) {
+    //         optionEl.selected = true;
+    //     }
+    //     tagStatusSelectEl.appendChild(optionEl);
+    // }
+    // tagStatusCellEl.appendChild(tagStatusSelectEl);
+
+    // append submit button
+    // var tagSubmitEl = document.getElementById("tag-submit-" + tag_id);
+    // var submitEl = document.createElement('input');
+    // submitEl.setAttribute("type", "submit");
+    // submitEl.value = "Update";
+    // tagSubmitEl.appendChild(submitEl);
+
+    // create for within js, unable to get html form to acknowledge js-created input button
+    // var formEl = document.createElement('form');
+    // formEl.action = "/lockdownsf/manage/tag_edit/";
+    // formEl.method = "POST";
+
+    // var formEl = document.getElementById('tag-form-' + tag_id);
+    // formEl.appendChild(submitEl);
+    // var formHtml = formEl.innerHTML;
+}
+
 
 // https://stackoverflow.com/questions/24718769/html5-javascript-how-to-get-the-selected-folder-name
 function selectFolder(e) {
@@ -244,7 +300,6 @@ function uploadFileClassic(file, sequence, s3Data, url) {
     };
     xhr.send(postData);
 }
-
 
 
 
