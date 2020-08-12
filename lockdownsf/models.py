@@ -44,6 +44,20 @@ class User(models.Model):
     def __str__(self):
         return self.email
 
+    
+class Tag(models.Model):
+    name = models.CharField(max_length=256, db_index=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    dt_inserted = models.DateTimeField(auto_now_add=True)
+    # media_items = models.ManyToManyField(MediaItem)
+    status = models.CharField(max_length=64, db_index=True)
+
+    class Meta:
+        unique_together = ('name', 'owner')
+
+    def __str__(self):
+        return self.name
+
 
 class Album(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
@@ -79,23 +93,10 @@ class MediaItem(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     facets = models.CharField(max_length=1024, null=True)  # chopping block
+    tags = models.ManyToManyField(Tag)
     extracted_text = models.CharField(max_length=16000, null=True)
     status = models.CharField(max_length=64, db_index=True)
 
     def __str__(self):
         return f"{self.file_name}|{self.external_id}"
-
-
-class Tag(models.Model):
-    name = models.CharField(max_length=256, db_index=True)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    dt_inserted = models.DateTimeField(auto_now_add=True)
-    media_items = models.ManyToManyField(MediaItem)
-    status = models.CharField(max_length=64, db_index=True)
-
-    class Meta:
-        unique_together = ('name', 'owner')
-
-    def __str__(self):
-        return self.name
     
