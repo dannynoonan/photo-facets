@@ -32,8 +32,8 @@
         <!-- <script type="text/javascript" src="https://twitter.github.io/typeahead.js/releases/latest/typeahead.bundle.js"></script> -->
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
         <script type="text/javascript" src="{% static 'js/manage.js' %}"></script>
-        
         <script src="https://apis.google.com/js/platform.js" async defer></script>
+            
         <script>
             function onSignIn(googleUser) {
                 var profile = googleUser.getBasicProfile();
@@ -50,6 +50,20 @@
                 });
             }
         </script>
+        
+            <!-- {% if mediaitem %}
+            <link rel="stylesheet" href="{% static 'js/mediaitem.js' %}">
+            <script>
+                mediaitemLocationJson = {{ mediaitem_location_json|safe }};
+                photoTitle = '{{ mediaitem.file_name }}';
+            </script>
+            <script type="text/javascript" src="{% static 'js/mediaitem.js' %}"></script>
+            <script async defer 
+                src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ&callback=initMiniGmap">
+            </script>
+            {% endif %} -->
+        
+        
         {% endif %}
         <!-- end /manage site -->
 

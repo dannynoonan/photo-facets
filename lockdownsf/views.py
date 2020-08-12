@@ -459,6 +459,11 @@ def mediaitem_view(request, mediaitem_external_id):
     gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
     mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
 
+    # mediaitem_location = { 
+    #     'lat': str(mediaitem.latitude), 
+    #     'lng': str(mediaitem.longitude) 
+    # }
+
     display_tags = []
     for tag in mediaitem.tags.all():
         display_tags.append(tag)
@@ -469,6 +474,7 @@ def mediaitem_view(request, mediaitem_external_id):
         'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
         'mediaitem': mediaitem,
+        # 'mediaitem_location_json': json.dumps(mediaitem_location, indent=4),
         'display_tags': display_tags,
     }
 

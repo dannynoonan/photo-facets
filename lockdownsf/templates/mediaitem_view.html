@@ -5,6 +5,7 @@
 {% if mediaitem %}
 <p></p>
 <img src="{{ mediaitem.thumb_url }}"/>
+<!-- <div id="miniGmap"></div> -->
 
 <form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
     {% csrf_token %}
@@ -47,11 +48,13 @@
                 [+]
                 {% endif %}
                 </div></td>
-            <td id="tag-checkbox-cell" class="hidden-button">
+            <td id="tag-checkbox-cell" class="hidden-block">
             {% for tag in all_tags %}
-                <input type="checkbox" id="tag-{{ tag.id }}" name="tag_ids" value="{{ tag.id }}"
-                {% if tag in display_tags %} checked {% endif %}>
-                <label for="tag-{{ tag.id }}">{{ tag.name }}</label>
+            <div class="form-group custom-control custom-checkbox">
+                <input type="checkbox" id="tag-{{ tag.id }}" class="custom-control-input" name="tag_ids" value="{{ tag.id }}"
+                {% if tag in display_tags %} checked="" {% endif %}>
+                <label class="custom-control-label" for="tag-{{ tag.id }}">{{ tag.name }}</label>
+            </div>
             {% endfor %} 
             </td>
         </tr>

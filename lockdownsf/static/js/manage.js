@@ -1,9 +1,9 @@
-const orig_dir = 'orig/';
+// const orig_dir = 'orig/';
 
 
 // https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
-let filesDone = 0
-let filesToDo = 0
+// let filesDone = 0
+// let filesToDo = 0
 
 
 // 
@@ -23,21 +23,21 @@ let filesToDo = 0
 /*
     Bind listeners when the page loads.
 */
-window.onload=function() {
+//window.onload=function() {
 
     // https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
-    dropArea = document.getElementById('drop-area')
-    ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false)
-    })
-    ;['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, false)
-    })
-    ;['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, false)
-    })
-    dropArea.addEventListener('drop', handleDrop, false)
-    progressBar = document.getElementById('progress-bar')
+    // dropArea = document.getElementById('drop-area')
+    // ;['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    //     dropArea.addEventListener(eventName, preventDefaults, false)
+    // })
+    // ;['dragenter', 'dragover'].forEach(eventName => {
+    //     dropArea.addEventListener(eventName, highlight, false)
+    // })
+    // ;['dragleave', 'drop'].forEach(eventName => {
+    //     dropArea.addEventListener(eventName, unhighlight, false)
+    // })
+    // dropArea.addEventListener('drop', handleDrop, false)
+    // progressBar = document.getElementById('progress-bar')
 
 
 
@@ -53,86 +53,86 @@ window.onload=function() {
     // uploadedImage = document.createElement('div');
     // uploadedImage.id = "uploaded-image";
     // uploadedImage.addEventListener("click", extractImageData);
-}
+//}
 
 
 
 // https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/
-function preventDefaults(e) {
-    e.preventDefault()
-    e.stopPropagation()
-}
+// function preventDefaults(e) {
+//     e.preventDefault()
+//     e.stopPropagation()
+// }
 
-function highlight(e) {
-    dropArea.classList.add('highlight')
-}
+// function highlight(e) {
+//     dropArea.classList.add('highlight')
+// }
 
-function unhighlight(e) {
-    dropArea.classList.remove('highlight')
-}
+// function unhighlight(e) {
+//     dropArea.classList.remove('highlight')
+// }
 
-function handleDrop(e) {
-    let dt = e.dataTransfer
-    let files = dt.files
+// function handleDrop(e) {
+//     let dt = e.dataTransfer
+//     let files = dt.files
 
-    handleFiles(files)
-}
+//     handleFiles(files)
+// }
 
-function handleFiles(files) {
-    files = [...files]
-    initializeProgress(files.length)
-    files.forEach(uploadFile)
-    files.forEach(previewFile)
-}
+// function handleFiles(files) {
+//     files = [...files]
+//     initializeProgress(files.length)
+//     files.forEach(uploadFile)
+//     files.forEach(previewFile)
+// }
 
-function uploadFile(file, i) { 
-    var url = 'YOUR URL HERE'
-    var xhr = new XMLHttpRequest()
-    var formData = new FormData()
-    xhr.open('POST', url, true)
+// function uploadFile(file, i) { 
+//     var url = 'YOUR URL HERE'
+//     var xhr = new XMLHttpRequest()
+//     var formData = new FormData()
+//     xhr.open('POST', url, true)
 
-    // Add following event listener
-    xhr.upload.addEventListener("progress", function(e) {
-        updateProgress(i, (e.loaded * 100.0 / e.total) || 100)
-    })
+//     // Add following event listener
+//     xhr.upload.addEventListener("progress", function(e) {
+//         updateProgress(i, (e.loaded * 100.0 / e.total) || 100)
+//     })
 
-    xhr.addEventListener('readystatechange', function(e) {
-        if (xhr.readyState == 4 && xhr.status == 200) {
-            // Done. Inform the user
-        }
-        else if (xhr.readyState == 4 && xhr.status != 200) {
-            // Error. Inform the user
-        }
-    })
+//     xhr.addEventListener('readystatechange', function(e) {
+//         if (xhr.readyState == 4 && xhr.status == 200) {
+//             // Done. Inform the user
+//         }
+//         else if (xhr.readyState == 4 && xhr.status != 200) {
+//             // Error. Inform the user
+//         }
+//     })
 
-    formData.append('file', file)
-    xhr.send(formData)
-}
+//     formData.append('file', file)
+//     xhr.send(formData)
+// }
 
-function previewFile(file) {
-    let reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onloadend = function() {
-        let img = document.createElement('img')
-        img.src = reader.result
-        document.getElementById('gallery').appendChild(img)
-    }
-}
+// function previewFile(file) {
+//     let reader = new FileReader()
+//     reader.readAsDataURL(file)
+//     reader.onloadend = function() {
+//         let img = document.createElement('img')
+//         img.src = reader.result
+//         document.getElementById('gallery').appendChild(img)
+//     }
+// }
 
-function initializeProgress(numFiles) {
-    progressBar.value = 0
-    uploadProgress = []
+// function initializeProgress(numFiles) {
+//     progressBar.value = 0
+//     uploadProgress = []
   
-    for (let i = numFiles; i > 0; i--) {
-        uploadProgress.push(0)
-    }
-}
+//     for (let i = numFiles; i > 0; i--) {
+//         uploadProgress.push(0)
+//     }
+// }
   
-function updateProgress(fileNumber, percent) {
-    uploadProgress[fileNumber] = percent
-    let total = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
-    progressBar.value = total
-}
+// function updateProgress(fileNumber, percent) {
+//     uploadProgress[fileNumber] = percent
+//     let total = uploadProgress.reduce((tot, curr) => tot + curr, 0) / uploadProgress.length
+//     progressBar.value = total
+// }
 
 
 
@@ -197,22 +197,12 @@ function makeTagStatusEditable(tag_id) {
 
 
 function makeTagsEditable() {
-    // get tag status element we're modifying
-    // var tagDisplayCellEl = document.getElementById("tag-display-cell");
-    // var tagDisplayEl = document.getElementById("tag-display");
-    // tagDisplayCellEl.remove();
-    // tagDisplayEl.remove();
+    // remove display elements
     document.getElementById("tag-display-cell").remove();
 
     // display hidden elements
-    document.getElementById("tag-checkbox-cell").style.visibility = 'visible';
-    document.getElementById("submit-cell").setAttribute("class", "")
-
-    // document.getElementById("tag-checkbox").style.visibility = 'visible';
-    // var sc = document.getElementById("submit-cell");
-    // sc.setAttribute("class", "")
-    // sc.display = 'block';
-    // sc.style.visibility = 'visible';
+    document.getElementById("tag-checkbox-cell").setAttribute("class", "");
+    document.getElementById("submit-cell").setAttribute("class", "");
 }
 
 
