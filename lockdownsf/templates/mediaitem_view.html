@@ -6,6 +6,9 @@
 <p></p>
 <img src="{{ mediaitem.thumb_url }}"/>
 
+<form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="media-item-external-id" value="{{ mediaitem.external_id }}">
 <table class="table table-hover table-fit">
     <tbody>
         <tr><th scope="row">External id:</th>
@@ -13,6 +16,10 @@
                     {{ mediaitem.external_id }}</a></td></tr>
         <tr><th scope="row">File name:</th>
             <td>{{ mediaitem.file_name }}</td></tr>
+        <tr><th scope="row">Album:</th>
+            <td>{{ mediaitem.album.name }}</td></tr>
+            <tr><th scope="row">Description:</th>
+            <td>{{ mediaitem.description }}</td></tr>
         <tr><th scope="row">Date taken:</th>
             <td>{{ mediaitem.dt_taken }}</td></tr>
         <tr><th scope="row">File format:</th>
@@ -25,12 +32,38 @@
             <td>{{ mediaitem.width }} x {{ mediaitem.height }}</td></tr>
         <tr><th scope="row">Album:</th>
             <td>{{ mediaitem.album.name }}</td></tr>
-        <tr><th scope="row">Facets:</th>
-            <td>{{ mediaitem.facets }}</td></tr>
+        <!-- <tr><th scope="row">Tags:</th>
+            <td>{{ display_tags }}</td></tr> -->
+        <tr><th scope="row">Tags:</th>
+            <td id="tag-display-cell">
+                <div id="tag-display" onclick="makeTagsEditable()">
+                {% if display_tags %}
+                <ul>
+                    {% for display_tag in display_tags %}
+                    <li>{{ display_tag.name }}</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                [+]
+                {% endif %}
+                </div></td>
+            <td id="tag-checkbox-cell" class="hidden-button">
+            {% for tag in all_tags %}
+                <input type="checkbox" id="tag-{{ tag.id }}" name="tag_ids" value="{{ tag.id }}"
+                {% if tag in display_tags %} checked {% endif %}>
+                <label for="tag-{{ tag.id }}">{{ tag.name }}</label>
+            {% endfor %} 
+            </td>
+        </tr>
         <tr><th scope="row">Extracted text:</th>
             <td>{{ mediaitem.extracted_text }}</td></tr>
+        <tr><th scope="row">Status:</th>
+            <td>{{ mediaitem.status }}</td></tr>
+        <tr><td id="submit-cell" class="hidden-block" colspan="2">
+                <input id="submit-buttom" type="submit" value="Update"></td></tr>
     </tbody>
 </table>
+</form>
 
 
 {% else %}

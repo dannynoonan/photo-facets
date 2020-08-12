@@ -444,21 +444,81 @@ def mediaitem_view(request, mediaitem_external_id):
 
     # form backing data
     all_albums = Album.objects.all()
+    all_tags = Tag.objects.all()
 
     # fetch media_item from db
-    mediaitem = MediaItem.objects.get(external_id=mediaitem_external_id)
+    try:
+        mediaitem = MediaItem.objects.get(external_id=mediaitem_external_id)
+    except Exception as ex:
+        log_and_store_message(request, messages.SUCCESS,
+            f"Failure to fetch media item, no match for external_id [{mediaitem_external_id}]")
+        
+        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+
     # fetch media_item from gphotos api to populate thumb_url 
     gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
     mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
 
+    display_tags = []
+    for tag in mediaitem.tags.all():
+        display_tags.append(tag)
+
     context = {
         'template': template,
         'all_albums': all_albums,
+        'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
         'mediaitem': mediaitem,
+        'display_tags': display_tags,
     }
 
     return render(request, template, context)
+
+
+def mediaitem_edit(request):
+
+    # bind vars to form data 
+    media_item_external_id = request.POST.get('media-item-external-id', '')
+    new_tag_ids = request.POST.getlist('tag_ids', [])
+
+    # TODO incorporate other editable fields
+
+    # process form data
+    new_tag_ids = [int(tag_id) for tag_id in new_tag_ids]
+
+    # handle missing data
+    if not media_item_external_id:
+        log_and_store_message(request, messages.ERROR, f"Failure to update media item, external_id was not set")
+        
+        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+
+    # fetch media_item from db
+    try:
+        media_item = MediaItem.objects.get(external_id=media_item_external_id)
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failure to update media item, no match for external_id [{media_item_external_id}]")
+        
+        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+
+    # update media item with form data
+    old_tag_ids = [old_tag.id for old_tag in media_item.tags.all()]
+    tag_ids_to_remove = list(set(old_tag_ids) - set(new_tag_ids))
+    tag_ids_to_add = list(set(new_tag_ids) - set(old_tag_ids))
+
+    # delete old tags that aren't in new list
+    for tag_id_to_remove in tag_ids_to_remove:
+        tag_to_remove = Tag.objects.get(pk=tag_id_to_remove)
+        media_item.tags.remove(tag_to_remove)
+        media_item.save()
+
+    # add new tags that aren't in old list
+    for tag_id_to_add in tag_ids_to_add:
+        tag_to_add = Tag.objects.get(pk=tag_id_to_add)
+        media_item.tags.add(tag_to_add)
+        media_item.save()
+
+    return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
 
 
 def tag_listing(request):

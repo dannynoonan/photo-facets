@@ -140,7 +140,8 @@ function updateProgress(fileNumber, percent) {
 
 function makeTagStatusEditable(tag_id) {
     // TODO replace this with metadata or function argument
-    var all_tag_statuses = ["ACTIVE", "DISABLED"];
+    //var all_tag_statuses = ["ACTIVE", "DISABLED"];
+
     // get tag status element we're modifying
     var tagStatusDisplayCellEl = document.getElementById("tag-status-display-cell-" + tag_id);
     var tagStatusDisplayEl = document.getElementById("tag-status-display-" + tag_id);
@@ -192,6 +193,26 @@ function makeTagStatusEditable(tag_id) {
     // var formEl = document.getElementById('tag-form-' + tag_id);
     // formEl.appendChild(submitEl);
     // var formHtml = formEl.innerHTML;
+}
+
+
+function makeTagsEditable() {
+    // get tag status element we're modifying
+    // var tagDisplayCellEl = document.getElementById("tag-display-cell");
+    // var tagDisplayEl = document.getElementById("tag-display");
+    // tagDisplayCellEl.remove();
+    // tagDisplayEl.remove();
+    document.getElementById("tag-display-cell").remove();
+
+    // display hidden elements
+    document.getElementById("tag-checkbox-cell").style.visibility = 'visible';
+    document.getElementById("submit-cell").setAttribute("class", "")
+
+    // document.getElementById("tag-checkbox").style.visibility = 'visible';
+    // var sc = document.getElementById("submit-cell");
+    // sc.setAttribute("class", "")
+    // sc.display = 'block';
+    // sc.style.visibility = 'visible';
 }
 
 
