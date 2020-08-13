@@ -31,7 +31,7 @@
         <tr><th scope="col">Photo</th>
             <th scope="col">External id</th>
             <th scope="col">File name</th>
-            <th scope="col">Facets</th>
+            <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
     <tbody>
@@ -40,9 +40,13 @@
                     <img src="{{ photo.thumb_url }}" width="200"></a></td>
             <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
                     {{ photo.external_id|truncatechars:20 }}</a></td>
-            <td>{{ photo.file_name }}</td>
-            <td>{{ photo.facets }}</td>
-            <td>{{ photo.extracted_text|safe }}</td></tr>
+            <td>{{ photo.file_name }}</td>   
+            <td>
+            {% for tag in photo.tags.all %}
+                {{ tag.name }}, 
+            {% endfor %}
+            </td>
+            <td>{{ photo.extracted_text_display|linebreaks }}</td></tr>
     {% endfor %}
     </tbody>
 </table>

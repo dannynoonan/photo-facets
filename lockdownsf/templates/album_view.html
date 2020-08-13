@@ -50,7 +50,7 @@
                 </ul>
             {% endif %}
             </td>
-            <td>{{ photo.extracted_text }}</td></tr>
+            <td>{{ photo.extracted_text_display|linebreaks }}</td></tr>
     {% endfor %}
     </tbody>
 </table>
