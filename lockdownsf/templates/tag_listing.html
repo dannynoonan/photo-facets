@@ -22,7 +22,7 @@
         <tr>
             
             <td id="tag-name-{{ tag.id }}">{{ tag.name }}</td>
-            <td>{{ tag.mediaitem_count }}</th>  <!-- TODO link to search page -->
+            <td><a href="/lockdownsf/manage/mediaitem_search/?search-tag={{ tag.name }}">{{ tag.mediaitem_count }}</a></th>
             <td>{{ tag.dt_inserted }}</td>
             <td id="tag-status-display-cell-{{ tag.id }}">
                 <span id="tag-status-display-{{ tag.id }}" onclick="makeTagStatusEditable('{{ tag.id }}')">{{ tag.status }}</span>
