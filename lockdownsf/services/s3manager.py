@@ -7,8 +7,8 @@ from lockdownsf import metadata
 
 
 def extract_text(img_file_name, bucket):
-    extracted_text_raw = ''
-    extracted_text_formatted = ''
+    extracted_text_search = ''
+    extracted_text_display = ''
 
     # TODO automatically process personalized signs with textract? 
     # TODO compare output of both and keep whatever is distinctive?  Thep example
@@ -28,12 +28,12 @@ def extract_text(img_file_name, bucket):
         print(f"parsing rekognition detect_text response for image [{img_file_name}]")
         for text in text_detections:
             if text['Type'] == 'LINE':
-                if extracted_text_raw:
-                    extracted_text_raw = f"{extracted_text_raw} {text['DetectedText']}"
-                    extracted_text_formatted = f"{extracted_text_formatted}<br/>{text['DetectedText']}"
+                if extracted_text_search:
+                    extracted_text_search = f"{extracted_text_search} {text['DetectedText'].lower()}"
+                    extracted_text_display = f"{extracted_text_display}\n{text['DetectedText']}"
                 else:
-                    extracted_text_raw = text['DetectedText']
-                    extracted_text_formatted = text['DetectedText']
+                    extracted_text_search = text['DetectedText'].lower()
+                    extracted_text_display = text['DetectedText']
 
     # otherwise use AWS textract's detect_document_text (more costly, only use if 50 word threshold met)
     else:
@@ -47,15 +47,20 @@ def extract_text(img_file_name, bucket):
         blocks = response['Blocks']
         for block in blocks:
             if 'Text' in block and block['BlockType'] == 'LINE':
-                extracted_text_raw = f"{extracted_text_raw} {block['Text']}"
-                extracted_text_formatted = f"{extracted_text_formatted}<br/>{block['Text']}"
+                if extracted_text_search:
+                    extracted_text_search = f"{extracted_text_search} {block['Text'].lower()}"
+                    extracted_text_display = f"{extracted_text_display}\n{block['Text']}"
+                else:
+                    extracted_text_search = block['Text'].lower()
+                    extracted_text_display = block['Text']
+
 
     print('extracted_text_raw')
-    print(extracted_text_raw)
+    print(extracted_text_search)
     print('extracted_text_formatted')
-    print(extracted_text_formatted)
+    print(extracted_text_display)
 
-    return extracted_text_raw, extracted_text_formatted
+    return extracted_text_search, extracted_text_display
 
 
 def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):

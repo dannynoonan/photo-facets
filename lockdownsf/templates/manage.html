@@ -3,19 +3,6 @@
 {% block content %}
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <a class="navbar-brand" href="/lockdownsf/manage/mediaitem_search/">Photos</a>
-    <div class="collapse navbar-collapse" id="navbarColor01">
-        <ul class="navbar-nav mr-auto">
-            <li class="nav-item {% if template == 'mediaitem_search.html' %} active {% endif %}">
-                <a class="nav-link" href="/lockdownsf/manage/mediaitem_search/">Search</a>
-            </li>
-            <li class="nav-item {% if template == 'mediaitem_view.html' %} active {% endif %}">
-                <a class="nav-link" href="/lockdownsf/manage/album_import/">Add/Edit</a>
-            </li>
-            
-        </ul>
-    </div>
-
     <div class="collapse navbar-collapse" id="navbarColor01">
         <form class="form-inline my-2 my-lg-0" id="goto-album-form" action="/lockdownsf/manage/album_view/none/" method="POST">
             {% csrf_token %}
@@ -37,6 +24,28 @@
             </select>
             <button class="btn btn-secondary my-2 my-sm-0" type="submit">Go</button>
         </form>
+    </div>
+
+    <a class="navbar-brand" href="/lockdownsf/manage/mediaitem_search/">Photos</a>
+    <div class="collapse navbar-collapse" id="navbarColor01">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item {% if template == 'mediaitem_search.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/manage/mediaitem_search/">Search</a>
+            </li>
+            <li class="nav-item {% if template == 'mediaitem_view.html' %} active {% endif %}">
+                <a class="nav-link">Edit</a>
+            </li>
+            
+        </ul>
+    </div>
+
+    <a class="navbar-brand" href="/lockdownsf/manage/tag_listing/">Tags</a>
+    <div class="collapse navbar-collapse" id="navbarColor01">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item {% if template == 'tag_listing.html' %} active {% endif %}">
+                <a class="nav-link" href="/lockdownsf/manage/tag_listing/">Manage</a>
+            </li>
+        </ul>
     </div>
 </nav>
 

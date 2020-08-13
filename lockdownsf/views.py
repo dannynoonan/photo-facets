@@ -341,13 +341,14 @@ def album_create(request):
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # extract OCR text
-        extracted_text_raw, extracted_text_formatted = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
+        extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
 
         # init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
         media_item = MediaItem(
             file_name=image_file_name, owner=OWNER, external_resource=metadata.ExternalResource.GOOGLE_PHOTOS_V1.name, 
             album=album, mime_type=pil_image.format, dt_taken=dt_taken, width=width, height=height, 
-            latitude=lat, longitude=lng, extracted_text=extracted_text_raw, status=metadata.Status.NEWBORN.name)
+            latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name,
+            extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
         media_items.append(media_item)
 
@@ -417,8 +418,9 @@ def mediaitem_search(request):
         search_criteria['facets'] = request.GET.get('search-facets')
         and_filters['facets__contains'] = search_criteria['facets']
     if request.GET.get('search-text'):
-        search_criteria['search_text'] = request.GET.get('search-text')
-        or_filters = Q(extracted_text__contains = search_criteria['search_text']) | Q(external_id__contains = search_criteria['search_text']) | Q(file_name__contains = search_criteria['search_text'])
+        search_text = request.GET.get('search-text').lower()
+        search_criteria['search_text'] = search_text
+        or_filters = Q(extracted_text_search__contains = search_text) | Q(external_id__contains = search_text) | Q(file_name__contains = search_text)
 
     # fetch media_items from db
     matching_mediaitems = MediaItem.objects.filter(**and_filters)
@@ -810,8 +812,8 @@ def save_photo(request):
 
     # photo_edit workflow: process additional form vars, fetch and update photo
     if request_origin_template == "photo_edit.html":
-        extracted_text_formatted = request.POST.get('photo-extracted-text', '')
-        extracted_text_raw = extracted_text_formatted.replace('<br/>', ' ')
+        extracted_text_display = request.POST.get('photo-extracted-text', '')
+        extracted_text_search = extracted_text_display.replace('<br/>', ' ')
         try:
             photo = Photo.objects.get(uuid=uuid)
             # update properties
@@ -819,8 +821,8 @@ def save_photo(request):
             photo.scene_type = scene_type
             photo.business_type = business_type
             photo.other_labels = other_labels
-            photo.extracted_text_formatted = extracted_text_formatted
-            photo.extracted_text_raw = extracted_text_raw
+            photo.extracted_text_formatted = extracted_text_display
+            photo.extracted_text_raw = extracted_text_search
             photo.save()
 
             file_path = ''
@@ -860,14 +862,14 @@ def save_photo(request):
             height = 0
 
         # analyze photo
-        extracted_text_raw, extracted_text_formatted = s3manager.extract_text(uuid, metadata.S3_BUCKET)
+        extracted_text_search, extracted_text_display = s3manager.extract_text(uuid, metadata.S3_BUCKET)
 
         # init and save photo
         photo = Photo(uuid=uuid, source_file_name=source_file_name, neighborhood=neighborhood, 
             dt_taken=dt_taken, file_format=file_format, latitude=latitude, longitude=longitude, 
             width_pixels=width, height_pixels=height, aspect_format=aspect_format,
             scene_type=scene_type, business_type=business_type, other_labels=other_labels,
-            extracted_text_raw=extracted_text_raw, extracted_text_formatted=extracted_text_formatted)
+            extracted_text_raw=extracted_text_search, extracted_text_formatted=extracted_text_display)
         photo.save()
 
         # resize photos for s3 upload

@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
@@ -94,7 +95,8 @@ class MediaItem(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     facets = models.CharField(max_length=1024, null=True)  # chopping block
     tags = models.ManyToManyField(Tag)
-    extracted_text = models.CharField(max_length=16000, null=True)
+    extracted_text_search = models.CharField(max_length=16000, null=True)
+    extracted_text_display = models.CharField(max_length=16000, null=True)
     status = models.CharField(max_length=64, db_index=True)
 
     def __str__(self):
