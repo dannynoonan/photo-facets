@@ -1,10 +1,9 @@
 {% extends 'manage.html' %}
 
 {% block body %}
-<h4>Album listing:</h4>
 
 {% if all_albums %}
-<p>{{ all_albums|length }} albums found:</p>
+<h5>{{ all_albums|length }} album(s) found:</h5>
 <table class="table table-hover">
     <thead>
         <tr><th scope="col">Name</th>

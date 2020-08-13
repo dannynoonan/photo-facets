@@ -28,7 +28,7 @@ def index(request):
     template = 'index.html'
 
     # fetch all albums from db
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     if all_albums:
         for album in all_albums:
@@ -123,7 +123,7 @@ def sign_s3(request):
 def manage(request):
     template = 'manage.html'
 
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     context = {
         'template': template,
@@ -137,7 +137,7 @@ def manage(request):
 def file_uploader(request):
     template = 'file_uploader.html'
 
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     context = {
         'template': template,
@@ -149,17 +149,19 @@ def file_uploader(request):
 
 def album_listing(request):
     template = 'album_listing.html'
+    page_title = 'Album listing'
 
     # process messages
     success_messages, error_messages = extract_messages_from_storage(request)
 
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     if all_albums:
         for album in all_albums:
             album.mediaitem_count = len(album.mediaitem_set.all())
 
     context = {
         'template': template,
+        'page_title': page_title,
         'success_messages': success_messages,
         'error_messages': error_messages,
         'all_albums': all_albums,
@@ -167,87 +169,16 @@ def album_listing(request):
     
     return render(request, template, context)
 
-
-def album_import(request):
-    template = 'album_import.html'
-
-    # form backing data
-    all_albums = Album.objects.all()
-
-    context = {
-        'template': template,
-        'all_albums': all_albums,
-    }
-    
-    return render(request, template, context)
-
-
-def album_delete(request):
-
-    # bind vars to form data 
-    album_external_id = request.POST.get('album-external-id', '')
-
-    if not album_external_id:
-        log_and_store_message(request, messages.ERROR, 'Unable to delete album, album_external_id was not set.')
-
-    else:
-        try:
-            # fetch album from db, then delete it
-            album = Album.objects.get(external_id=album_external_id)
-            album.delete()
-            log_and_store_message(request, messages.SUCCESS, f"Successfully deleted album [{album_external_id}]")
-
-        except Exception as ex:
-            log_and_store_message(request, messages.ERROR, 
-                f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}")
-
-    return redirect(f"/lockdownsf/manage/album_listing/")
-
-
-def album_media_items_delete(request):
-
-    # bind vars to form data 
-    album_external_id = request.POST.get('album-external-id', '')
-    media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
-
-    if not (album_external_id and media_item_external_ids):
-        log_and_store_message(request, messages.ERROR, 
-            f"Invalid request to delete media items [{media_item_external_ids}] from album [{album_external_id}]")
-
-    else:
-        successful_media_item_ids = []
-        failed_media_item_ids = []
-
-        # fetch media_items from db, then delete them
-        for media_item_id in media_item_external_ids:
-            try:
-                media_item = MediaItem.objects.get(external_id=media_item_id)
-                media_item.delete()
-                successful_media_item_ids.append(media_item_id)
-
-            except Exception as ex:
-                failed_media_item_ids.append(media_item_id)
-
-        if successful_media_item_ids:
-            log_and_store_message(request, messages.SUCCESS, 
-                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_external_id}]")
-            log_and_store_message(request, messages.SUCCESS, f"Successful media items: [{successful_media_item_ids}]")
-        if failed_media_item_ids:
-            log_and_store_message(request, messages.ERROR, 
-                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_external_id}]")
-            log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
-
-    return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
-
     
 def album_view(request, album_external_id):
     template = 'album_view.html'
+    page_title = 'Album page'
 
     # process messages
     success_messages, error_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     # TODO some way to identify where the photos uploaded to s3 temporarily are
 
@@ -263,8 +194,11 @@ def album_view(request, album_external_id):
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
 
+        page_title = f"{page_title} for [{album.name}]"
+
         context = {
             'template': template,
+            'page_title': page_title,
             'success_messages': success_messages,
             'error_messages': error_messages,
             'all_albums': all_albums,
@@ -275,10 +209,27 @@ def album_view(request, album_external_id):
         log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no external_id was specified')
         context = {
             'template': template,
+            'page_title': page_title,
             'error_messages': error_messages,
             'all_albums': all_albums,
         }
 
+    return render(request, template, context)
+
+
+def album_import(request):
+    template = 'album_import.html'
+    page_title = 'Import photos into a new album'
+
+    # form backing data
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+
+    context = {
+        'template': template,
+        'page_title': page_title,
+        'all_albums': all_albums,
+    }
+    
     return render(request, template, context)
 
 
@@ -404,12 +355,71 @@ def album_create(request):
     return redirect(f"/lockdownsf/manage/album_view/{album.external_id}/")
 
 
+def album_delete(request):
+
+    # bind vars to form data 
+    album_external_id = request.POST.get('album-external-id', '')
+
+    if not album_external_id:
+        log_and_store_message(request, messages.ERROR, 'Unable to delete album, album_external_id was not set.')
+
+    else:
+        try:
+            # fetch album from db, then delete it
+            album = Album.objects.get(external_id=album_external_id)
+            album.delete()
+            log_and_store_message(request, messages.SUCCESS, f"Successfully deleted album [{album_external_id}]")
+
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR, 
+                f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}")
+
+    return redirect(f"/lockdownsf/manage/album_listing/")
+
+
+def album_media_items_delete(request):
+
+    # bind vars to form data 
+    album_external_id = request.POST.get('album-external-id', '')
+    media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
+
+    if not (album_external_id and media_item_external_ids):
+        log_and_store_message(request, messages.ERROR, 
+            f"Invalid request to delete media items [{media_item_external_ids}] from album [{album_external_id}]")
+
+    else:
+        successful_media_item_ids = []
+        failed_media_item_ids = []
+
+        # fetch media_items from db, then delete them
+        for media_item_id in media_item_external_ids:
+            try:
+                media_item = MediaItem.objects.get(external_id=media_item_id)
+                media_item.delete()
+                successful_media_item_ids.append(media_item_id)
+
+            except Exception as ex:
+                failed_media_item_ids.append(media_item_id)
+
+        if successful_media_item_ids:
+            log_and_store_message(request, messages.SUCCESS, 
+                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_external_id}]")
+            log_and_store_message(request, messages.SUCCESS, f"Successful media items: [{successful_media_item_ids}]")
+        if failed_media_item_ids:
+            log_and_store_message(request, messages.ERROR, 
+                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_external_id}]")
+            log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
+
+    return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+
+
 def mediaitem_search(request):
     template = 'mediaitem_search.html'
+    page_title = 'Search for photos'
 
     # form backing data
-    all_albums = Album.objects.all()
-    all_tags = Tag.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_tags = Tag.objects.filter(owner=OWNER)
 
     # bind vars to form data and assemble query filters
     search_criteria = {}
@@ -434,6 +444,7 @@ def mediaitem_search(request):
 
     context = {
         'template': template,
+        'page_title': page_title,
         'all_albums': all_albums,
         'all_tags': all_tags,
         'all_facets': metadata.all_facets,
@@ -446,10 +457,11 @@ def mediaitem_search(request):
 
 def mediaitem_view(request, mediaitem_external_id):
     template = 'mediaitem_view.html'
+    page_title = 'Photo details'
 
     # form backing data
-    all_albums = Album.objects.all()
-    all_tags = Tag.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_tags = Tag.objects.filter(owner=OWNER)
 
     # fetch media_item from db
     try:
@@ -469,18 +481,14 @@ def mediaitem_view(request, mediaitem_external_id):
     #     'lng': str(mediaitem.longitude) 
     # }
 
-    display_tags = []
-    for tag in mediaitem.tags.all():
-        display_tags.append(tag)
-
     context = {
         'template': template,
+        'page_title': page_title,
         'all_albums': all_albums,
         'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
         'mediaitem': mediaitem,
         # 'mediaitem_location_json': json.dumps(mediaitem_location, indent=4),
-        'display_tags': display_tags,
     }
 
     return render(request, template, context)
@@ -534,12 +542,13 @@ def mediaitem_edit(request):
 
 def tag_listing(request):
     template = 'tag_listing.html'
+    page_title = 'Tag listing'
 
     # process messages
     success_messages, error_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.all()
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tag_statuses = [ts.name for ts in metadata.TagStatus]
         
     all_tags = Tag.objects.all()
@@ -548,6 +557,7 @@ def tag_listing(request):
         
     context = {
         'template': template,
+        'page_title': page_title,
         'success_messages': success_messages,
         'error_messages': error_messages,
         'all_albums': all_albums,

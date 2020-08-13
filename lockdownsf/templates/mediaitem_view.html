@@ -20,10 +20,10 @@
         <tr><th scope="row">Tags:</th>
                 <td id="tag-display-cell">
                     <div id="tag-display" onclick="makeTagsEditable()">
-                    {% if display_tags %}
+                    {% if mediaitem.tags.all %}
                     <ul>
-                        {% for display_tag in display_tags %}
-                        <li>{{ display_tag.name }}</li>
+                        {% for tag in mediaitem.tags.all %}
+                        <li>{{ tag.name }}</li>
                         {% endfor %}
                     </ul>
                     {% else %}
@@ -34,7 +34,7 @@
                 {% for tag in all_tags %}
                 <div class="form-group custom-control custom-checkbox">
                     <input type="checkbox" id="tag-{{ tag.id }}" class="custom-control-input" name="tag_ids" value="{{ tag.id }}"
-                    {% if tag in display_tags %} checked="" {% endif %}>
+                    {% if tag in mediaitem.tags.all %} checked="" {% endif %}>
                     <label class="custom-control-label" for="tag-{{ tag.id }}">{{ tag.name }}</label>
                 </div>
                 {% endfor %} 

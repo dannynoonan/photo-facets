@@ -3,11 +3,8 @@
 {% block body %}
 
 {% if album %}
-<p></p>
-<h4>Album: <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.name }}</a></h4>
-<p><strong>External id:</strong> {{ album.external_id }}
-<br/><strong>External resource:</strong> {{ album.external_resource }}</p>
-<p></p>
+<p><strong>External id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></p>
+<p>&nbsp;</p>
 
 {% if mapped_media_items %}
 <h5>{{ mapped_media_items|length }} media items mapped to album:</h5>
@@ -24,7 +21,7 @@
             <th scope="col">Mime type</th>
             <th scope="col"><nobr>Date taken /</nobr> <nobr>imported /</nobr> updated</th>
             <th scope="col">Dimensions</th>
-            <th scope="col">Facets</th>
+            <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
     <tbody>
@@ -42,13 +39,9 @@
             <td>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</td>
             <td>{{ photo.width }} x {{ photo.height }}</td>
             <td>
-            {% if photo.facets %}
-                <ul>
-                {% for facet in photo.facets %}
-                    <li>{{ facet }}</li>
-                {% endfor %}
-                </ul>
-            {% endif %}
+            {% for tag in photo.tags.all %}
+                {{ tag.name }}<br/>
+            {% endfor %}
             </td>
             <td>{{ photo.extracted_text_display|linebreaks }}</td></tr>
     {% endfor %}
