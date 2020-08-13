@@ -409,14 +409,16 @@ def mediaitem_search(request):
 
     # form backing data
     all_albums = Album.objects.all()
+    all_tags = Tag.objects.all()
 
     # bind vars to form data and assemble query filters
     search_criteria = {}
     and_filters = {}
     or_filters = ''
-    if request.GET.get('search-facets'):
-        search_criteria['facets'] = request.GET.get('search-facets')
-        and_filters['facets__contains'] = search_criteria['facets']
+    if request.GET.get('search-tag'):
+        search_criteria['search_tag_name'] = request.GET.get('search-tag')
+        search_tag = Tag.objects.get(name=search_criteria['search_tag_name'])
+        and_filters['tags'] = search_tag.id
     if request.GET.get('search-text'):
         search_text = request.GET.get('search-text').lower()
         search_criteria['search_text'] = search_text
@@ -433,6 +435,7 @@ def mediaitem_search(request):
     context = {
         'template': template,
         'all_albums': all_albums,
+        'all_tags': all_tags,
         'all_facets': metadata.all_facets,
         'search_criteria': search_criteria,
         'matching_mediaitems': matching_mediaitems,
@@ -540,7 +543,9 @@ def tag_listing(request):
     all_tag_statuses = [ts.name for ts in metadata.TagStatus]
         
     all_tags = Tag.objects.all()
-
+    for tag in all_tags:
+        tag.mediaitem_count = len(tag.mediaitem_set.all())
+        
     context = {
         'template': template,
         'success_messages': success_messages,
