@@ -43,10 +43,10 @@
             <td>{{ photo.file_name }}</td>   
             <td>
             {% for tag in photo.tags.all %}
-                {{ tag.name }}, 
+                {{ tag.name }}<br/>
             {% endfor %}
             </td>
-            <td>{{ photo.extracted_text_display|linebreaks }}</td></tr>
+            <td>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</td></tr>
     {% endfor %}
     </tbody>
 </table>

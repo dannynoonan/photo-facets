@@ -59,6 +59,13 @@
     </div>
 </nav>
 
+{% if page_title %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <span class="navbar-brand" href="#">{{ page_title }}</span>
+</nav>
+{% endif %}
+
+
 <div class="actual-body">
     <!-- <div class="g-signin2" data-onsuccess="onSignIn"></div> -->
     <!-- <a href="#" onclick="signOut();">Sign out</a> -->
