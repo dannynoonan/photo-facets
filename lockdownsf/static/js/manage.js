@@ -202,6 +202,20 @@ function makeTagsEditable() {
 
     // display hidden elements
     document.getElementById("tag-checkbox-cell").setAttribute("class", "");
+
+    // display submit button
+    document.getElementById("submit-cell").setAttribute("class", "");
+}
+
+
+function makeDescriptionEditable() {
+    // remove display elements
+    document.getElementById("description-display-cell").remove();
+
+    // display hidden elements
+    document.getElementById("description-input-cell").setAttribute("class", "");
+
+    // display submit button
     document.getElementById("submit-cell").setAttribute("class", "");
 }
 
