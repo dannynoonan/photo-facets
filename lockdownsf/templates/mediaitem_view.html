@@ -14,23 +14,34 @@
     <input type="hidden" name="media-item-external-id" value="{{ mediaitem.external_id }}">
     <table class="table table-hover table-fit">
         <tr><th scope="row">Description:</th>
-            <td>{{ mediaitem.description }}</td></tr>
+            <td id="description-display-cell">
+                <div id="description-display" onclick="makeDescriptionEditable()">
+                {% if mediaitem.description %}
+                    {{ mediaitem.description }}
+                {% else %}
+                    [+]
+                {% endif %}
+                </div></td>
+            <td id="description-input-cell" class="hidden-block">
+                <input type="text" id="description-input" class="form-control" name="description" value="{{ mediaitem.description }}">
+            </td>
+        </tr>
         <tr><th scope="row">Extracted text:</th>
             <td>{{ mediaitem.extracted_text_display|linebreaks }}</td></tr>
         <tr><th scope="row">Tags:</th>
-                <td id="tag-display-cell">
-                    <div id="tag-display" onclick="makeTagsEditable()">
-                    {% if mediaitem.tags.all %}
+            <td id="tag-display-cell">
+                <div id="tag-display" onclick="makeTagsEditable()">
+                {% if mediaitem.tags.all %}
                     <ul>
-                        {% for tag in mediaitem.tags.all %}
+                    {% for tag in mediaitem.tags.all %}
                         <li>{{ tag.name }}</li>
-                        {% endfor %}
+                    {% endfor %}
                     </ul>
-                    {% else %}
+                {% else %}
                     [+]
-                    {% endif %}
-                    </div></td>
-                <td id="tag-checkbox-cell" class="hidden-block">
+                {% endif %}
+                </div></td>
+            <td id="tag-checkbox-cell" class="hidden-block">
                 {% for tag in all_tags %}
                 <div class="form-group custom-control custom-checkbox">
                     <input type="checkbox" id="tag-{{ tag.id }}" class="custom-control-input" name="tag_ids" value="{{ tag.id }}"
@@ -38,8 +49,8 @@
                     <label class="custom-control-label" for="tag-{{ tag.id }}">{{ tag.name }}</label>
                 </div>
                 {% endfor %} 
-                </td>
-            </tr>
+            </td>
+        </tr>
         <tr><td id="submit-cell" class="hidden-block" colspan="2">
             <input id="submit-buttom" type="submit" value="Update"></td></tr>
     </table>
@@ -59,6 +70,8 @@
                     {{ mediaitem.album.name }}</a></td></tr>
         <tr><th scope="row">Date taken:</th>
             <td>{{ mediaitem.dt_taken }}</td></tr>
+        <tr><th scope="row">Date added:</th>
+            <td>{{ mediaitem.dt_inserted }}</td></tr>
         <tr><th scope="row">Date updated:</th>
             <td>{{ mediaitem.dt_updated }}</td></tr>
         <tr><th scope="row">File format:</th>

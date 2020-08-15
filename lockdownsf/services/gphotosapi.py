@@ -30,7 +30,11 @@ TOKEN_PICKLE_FILE = 'token.pickle'
 #     'https://www.googleapis.com/auth/photoslibrary.appendonly',
 #     'https://www.googleapis.com/auth/photoslibrary.readonly'
 # ]
-SCOPES = ['https://www.googleapis.com/auth/photoslibrary']
+SCOPES = [
+    'https://www.googleapis.com/auth/photoslibrary',
+    'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata'
+]
+
 
 
 def init_gphotos_service():
@@ -52,7 +56,7 @@ def init_gphotos_service():
     return gphotos_service
 
 
-def init_new_album_simple(album_title, gphotos_service=None):
+def init_new_album(album_title, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
@@ -182,6 +186,30 @@ def upload_image(image_path, token, from_cloud=False):
     }
 
     return new_media_item
+
+
+def update_image_description(image_id, image_description, gphotos_service=None):
+    if not gphotos_service:
+        gphotos_service = init_gphotos_service()
+    
+    # get image by id
+    gphotos_mediaitem = gphotos_service.mediaItems().get(mediaItemId=image_id).execute()
+
+    if not gphotos_mediaitem:
+        # TODO handle error
+        return
+
+    request_body = { 
+        'description': image_description,
+    }
+    
+    try:
+        response = gphotos_service.mediaItems().patch(id=image_id, updateMask='description', body=request_body).execute()
+        print(f"response: {response}")
+    except Exception as ex:
+        print(f"ex: {ex}")
+
+    return
 
 
 def map_images_to_album(gpids_to_img_data, album_id, gphotos_service=None):
