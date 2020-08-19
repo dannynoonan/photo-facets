@@ -28,8 +28,6 @@
                 <input type="text" id="description-input" class="form-control" name="description" value="{{ mediaitem.description }}">
             </td>
         </tr>
-        <tr><th scope="row">Extracted text:</th>
-            <td>{{ mediaitem.extracted_text_display|linebreaks }}</td></tr>
         <tr><th scope="row">Tags:</th>
             <td id="tag-display-cell">
                 <div id="tag-display" onclick="makeTagsEditable()">
@@ -61,7 +59,7 @@
 <h4>Automagic fields:</h4>
 <table class="table table-hover table-fit">
     <tbody>
-        <tr><th scope="row">External id:</th>
+        <tr><th scope="row">Google photos id:</th>
             <td><a href="https://photos.google.com/lr/album/{{ mediaitem.album.external_id }}/photo/{{ mediaitem.external_id }}" target="new">
                     {{ mediaitem.external_id }}</a></td></tr>
         <tr><th scope="row">File name:</th>
@@ -86,6 +84,8 @@
             <td>{{ mediaitem.width }} x {{ mediaitem.height }}</td></tr>
         <tr><th scope="row">Status:</th>
             <td>{{ mediaitem.status }}</td></tr>
+        <tr><th scope="row">Extracted text:</th>
+            <td><small>{{ mediaitem.extracted_text_display|linebreaks }}</small></td></tr>
     </tbody>
 </table>
 

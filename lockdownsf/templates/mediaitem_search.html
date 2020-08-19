@@ -29,8 +29,9 @@
 <table class="table table-hover table-fit">
     <thead>
         <tr><th scope="col">Photo</th>
-            <th scope="col">External id</th>
             <th scope="col">File name</th>
+            <th scope="col">Description</th>
+            <th scope="col">External id</th>
             <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
@@ -38,15 +39,16 @@
     {% for photo in matching_mediaitems %}
         <tr><td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></td>
-            <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
-                    {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>{{ photo.file_name }}</td>   
+            <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>
+            <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
+                {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>
             {% for tag in photo.tags.all %}
                 {{ tag.name }}<br/>
             {% endfor %}
             </td>
-            <td>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</td></tr>
+            <td><small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small></td></tr>
     {% endfor %}
     </tbody>
 </table>
