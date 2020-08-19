@@ -48,15 +48,45 @@ def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_m
     return matched_media_items
 
 
-def populate_thumb_urls_from_gphotosapi(mapped_media_items):
-    # fetch media_items from gphotos api to populate thumb_urls
+# def populate_thumb_urls_from_gphotosapi(mapped_media_items):
+#     # fetch media_items from gphotos api to populate thumb_urls
+#     media_item_ids = [m_item.external_id for m_item in mapped_media_items]
+#     gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+#     for gpmi in gphotos_media_items:
+#         for mmi in mapped_media_items:
+#             if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
+#                 print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
+#                 continue
+#             if gpmi['mediaItem']['id'] == mmi.external_id:
+#                 mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+#                 continue
+
+
+def populate_fields_from_gphotosapi(mapped_media_items, fields):
+    # fetch media_items from gphotos api 
     media_item_ids = [m_item.external_id for m_item in mapped_media_items]
     gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
+    # populate media_item fields from gphotos media_items
     for gpmi in gphotos_media_items:
         for mmi in mapped_media_items:
             if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
                 print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
-                continue
+                continue            
             if gpmi['mediaItem']['id'] == mmi.external_id:
-                mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                for field in fields:
+                    if field == 'thumb_url':
+                        mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
+                    if field == 'mime_type':
+                        mmi.mime_type = gpmi['mediaItem'].get('mimeType', '')
+                    if field == 'description':
+                        mmi.description = gpmi['mediaItem'].get('description', '')
+                    if field == 'width':
+                        if gpmi['mediaItem'].get('mediaMetadata', ''):
+                            mmi.width = gpmi['mediaItem']['mediaMetadata'].get('width', '')
+                    if field == 'height':
+                        if gpmi['mediaItem'].get('mediaMetadata', ''):
+                            mmi.height = gpmi['mediaItem']['mediaMetadata'].get('height', '')
+                    # if field == 'dt_taken':
+                    #     if gpmi['mediaItem'].get('mediaMetadata', '')
+                    #         mmi.dt_taken = gpmi['mediaItem']['mediaMetadata'].get('creationTime', '')                
                 continue

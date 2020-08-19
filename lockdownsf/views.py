@@ -19,7 +19,7 @@ from django.template import loader
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
-from lockdownsf.services.controller_utils import extract_messages_from_storage, log_and_store_message, populate_thumb_urls_from_gphotosapi, update_mediaitems_with_gphotos_data
+from lockdownsf.services.controller_utils import extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 
@@ -36,8 +36,9 @@ def index(request):
             album_media_items = album.mediaitem_set.all()
             if not album_media_items:
                 continue
-            # fetch media_items from gphotos api to populate thumb_urls
-            populate_thumb_urls_from_gphotosapi(album_media_items)
+            # fetch media_items from gphotos api to populate image metadata
+            fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+            populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
             album.media_items = album_media_items
 
     # build photo_collection json that will be passed to page js
@@ -188,8 +189,9 @@ def album_view(request, album_external_id):
         album = Album.objects.get(external_id=album_external_id)
         mapped_media_items = album.mediaitem_set.all()
 
-        # fetch media_items from gphotos api to populate thumb_urls
-        populate_thumb_urls_from_gphotosapi(mapped_media_items)
+        # fetch media_items from gphotos api to populate image metadata
+        fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+        populate_fields_from_gphotosapi(mapped_media_items, fields_to_populate)
         
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
@@ -297,8 +299,7 @@ def album_create(request):
         # init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
         media_item = MediaItem(
             file_name=image_file_name, owner=OWNER, external_resource=metadata.ExternalResource.GOOGLE_PHOTOS_V1.name, 
-            album=album, mime_type=pil_image.format, dt_taken=dt_taken, width=width, height=height, 
-            latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name,
+            album=album, mime_type=pil_image.format, dt_taken=dt_taken, latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name,
             extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
         media_items.append(media_item)
@@ -432,15 +433,16 @@ def mediaitem_search(request):
     if request.GET.get('search-text'):
         search_text = request.GET.get('search-text').lower()
         search_criteria['search_text'] = search_text
-        or_filters = Q(extracted_text_search__contains = search_text) | Q(external_id__contains = search_text) | Q(file_name__contains = search_text)
+        or_filters = Q(extracted_text_search__contains = search_text) | Q(external_id__contains = search_text) | Q(file_name__contains = search_text) | Q(description__contains = search_text)
 
     # fetch media_items from db
     matching_mediaitems = MediaItem.objects.filter(**and_filters)
     if or_filters:
         matching_mediaitems = matching_mediaitems.filter(or_filters)
 
-    # fetch media_items from gphotos api to populate thumb_urls 
-    populate_thumb_urls_from_gphotosapi(matching_mediaitems)
+    # fetch media_items from gphotos api to populate image metadata
+    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+    populate_fields_from_gphotosapi(matching_mediaitems, fields_to_populate)
 
     context = {
         'template': template,
@@ -475,10 +477,14 @@ def mediaitem_view(request, mediaitem_external_id):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
-    # fetch media_item from gphotos api to populate thumb_url, description
-    gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
-    mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
-    mediaitem.description = gphotos_mediaitem.get('description', '')
+    # # fetch media_item from gphotos api to populate thumb_url, description
+    # gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
+    # mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
+    # mediaitem.description = gphotos_mediaitem.get('description', '')
+
+    # fetch media_items from gphotos api to populate image metadata
+    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+    populate_fields_from_gphotosapi([mediaitem], fields_to_populate)
 
     # mediaitem_location = { 
     #     'lat': str(mediaitem.latitude), 

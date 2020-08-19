@@ -32,7 +32,7 @@
             <td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></td>
             <td>{{ photo.file_name }}</th>
-            <td>{{ photo.description }}</th>    
+            <td>{% if photo.description %} {{ photo.description }} {% endif %}</th>    
             <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}" target="new">
                     {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>{{ photo.mime_type }}</td>
@@ -43,7 +43,7 @@
                 {{ tag.name }}<br/>
             {% endfor %}
             </td>
-            <td>{{ photo.extracted_text_display|linebreaks }}</td></tr>
+            <td><small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small></td></tr>
     {% endfor %}
     </tbody>
 </table>
