@@ -459,6 +459,9 @@ def mediaitem_view(request, mediaitem_external_id):
     template = 'mediaitem_view.html'
     page_title = 'Photo details'
 
+    # process messages
+    success_messages, error_messages = extract_messages_from_storage(request)
+
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=OWNER)
@@ -485,6 +488,8 @@ def mediaitem_view(request, mediaitem_external_id):
     context = {
         'template': template,
         'page_title': page_title,
+        'success_messages': success_messages,
+        'error_messages': error_messages,
         'all_albums': all_albums,
         'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
@@ -499,10 +504,10 @@ def mediaitem_edit(request):
 
     # bind vars to form data 
     media_item_external_id = request.POST.get('media-item-external-id', '')
+    update_description_flag = request.POST.get('update-description-flag', '')
     new_description = request.POST.get('description', '')
+    update_tags_flag = request.POST.get('update-tags-flag', '')
     new_tag_ids = request.POST.getlist('tag_ids', [])
-
-    # TODO incorporate other editable fields
 
     # handle missing data
     if not media_item_external_id:
@@ -510,46 +515,71 @@ def mediaitem_edit(request):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
-    # description updates require gphotos api call
-    if new_description:
+    if not (update_description_flag or update_tags_flag):
+        # javascript should prevent this scenario, but...
+        log_and_store_message(request, messages.ERROR, 
+            f"Failure to update media item, no data changes were submitted")
+        
+        return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
+
+    # fetch media_item from db
+    try:
+        media_item = MediaItem.objects.get(external_id=media_item_external_id)
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failure to update media item, no match for external_id [{media_item_external_id}]")
+        
+        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+
+    # description updates - update db object and gphotos api field
+    if update_description_flag:
+        # db object update
+        media_item.description = new_description
+
+        # gphotos api update
         try:
             response = gphotosapi.update_image_description(media_item_external_id, new_description)
             log_and_store_message(request, messages.SUCCESS,
-                f"Successfully updated media item [{media_item_external_id}] with description [{new_description}]")
+                f"Successfully updated media item [{media_item_external_id}] with new description [{new_description}] in google photos api")
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
-                f"Failure to update media item [{media_item_external_id}] with description [{new_description}]. Exception: {ex}")
+                f"Failure to update media item [{media_item_external_id}] with description [{new_description}] in google photos api. Exception: {ex}")
 
-    # tag updates require db write
-    if new_tag_ids:
+    # tags updates - update db object
+    if update_tags_flag:
         # process form data
-        new_tag_ids = [int(tag_id) for tag_id in new_tag_ids]
-
-        # fetch media_item from db
-        try:
-            media_item = MediaItem.objects.get(external_id=media_item_external_id)
-        except Exception as ex:
-            log_and_store_message(request, messages.ERROR,
-                f"Failure to update media item, no match for external_id [{media_item_external_id}]")
-            
-            return redirect(f"/lockdownsf/manage/mediaitem_search/")
-
-        # update media item with form data
+        if new_tag_ids:
+            new_tag_ids = [int(tag_id) for tag_id in new_tag_ids]
         old_tag_ids = [old_tag.id for old_tag in media_item.tags.all()]
         tag_ids_to_remove = list(set(old_tag_ids) - set(new_tag_ids))
         tag_ids_to_add = list(set(new_tag_ids) - set(old_tag_ids))
 
         # delete old tags that aren't in new list
         for tag_id_to_remove in tag_ids_to_remove:
-            tag_to_remove = Tag.objects.get(pk=tag_id_to_remove)
-            media_item.tags.remove(tag_to_remove)
-            media_item.save()
+            try:
+                tag_to_remove = Tag.objects.get(pk=tag_id_to_remove)
+                media_item.tags.remove(tag_to_remove)
+            except Exception as ex:
+                log_and_store_message(request, messages.ERROR,
+                    f"Failure to remove tag, no tag with id [{tag_id_to_remove}] found in db")
 
         # add new tags that aren't in old list
         for tag_id_to_add in tag_ids_to_add:
-            tag_to_add = Tag.objects.get(pk=tag_id_to_add)
-            media_item.tags.add(tag_to_add)
-            media_item.save()
+            try:
+                tag_to_add = Tag.objects.get(pk=tag_id_to_add)
+                media_item.tags.add(tag_to_add)
+            except Exception as ex:
+                log_and_store_message(request, messages.ERROR,
+                    f"Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
+
+    # write accumulated changes to db
+    try:
+        media_item.save()
+        log_and_store_message(request, messages.SUCCESS,
+            f"Successfully updated media item [{media_item_external_id}] to db") 
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failure to update media item [{media_item_external_id}] to db. Exception: {ex}")
 
     return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
 

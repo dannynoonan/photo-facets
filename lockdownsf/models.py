@@ -85,7 +85,7 @@ class MediaItem(models.Model):
     file_name = models.CharField(max_length=256, db_index=True)
     mime_type = models.CharField(max_length=128, db_index=True)  # chopping block
     thumb_url = models.CharField(max_length=2048, null=True)  # chopping block
-    description = models.CharField(max_length=500, null=True)  # chopping block
+    description = models.CharField(max_length=500, null=True)
     dt_taken = models.DateTimeField(null=True)  # chopping block
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
