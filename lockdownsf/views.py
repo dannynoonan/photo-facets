@@ -123,11 +123,19 @@ def sign_s3(request):
 
 def manage(request):
     template = 'manage.html'
+    page_title = 'Management console'
 
+    # process messages
+    success_messages, error_messages = extract_messages_from_storage(request)
+
+    # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     context = {
         'template': template,
+        'page_title': page_title,
+        'success_messages': success_messages,
+        'error_messages': error_messages,
         'all_albums': all_albums,
         'all_facets': metadata.all_facets,
     }
@@ -138,6 +146,7 @@ def manage(request):
 def file_uploader(request):
     template = 'file_uploader.html'
 
+    # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     context = {
@@ -250,7 +259,7 @@ def album_create(request):
     
     # TODO workflow is entirely dependent on filename uniqueness!!!
 
-    # bind vars to form data 
+    # assign form data to vars and validate input
     album_title = request.POST.get('album-title', '')
     images_to_upload = request.POST.getlist('images-to-upload', [])
 
@@ -358,7 +367,7 @@ def album_create(request):
 
 def album_delete(request):
 
-    # bind vars to form data 
+    # assign form data to vars and validate input
     album_external_id = request.POST.get('album-external-id', '')
 
     if not album_external_id:
@@ -380,7 +389,7 @@ def album_delete(request):
 
 def album_media_items_delete(request):
 
-    # bind vars to form data 
+    # assign form data to vars and validate input 
     album_external_id = request.POST.get('album-external-id', '')
     media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
 
@@ -422,10 +431,14 @@ def mediaitem_search(request):
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=OWNER)
 
-    # bind vars to form data and assemble query filters
+    # assign form data to vars and assemble query filters
     search_criteria = {}
     and_filters = {}
     or_filters = ''
+    if request.GET.get('search-album'):
+        search_criteria['search_album_id'] = request.GET.get('search-album')
+        search_album = Album.objects.get(external_id=search_criteria['search_album_id'])
+        and_filters['album'] = search_album.id
     if request.GET.get('search-tag'):
         search_criteria['search_tag_name'] = request.GET.get('search-tag')
         search_tag = Tag.objects.get(name=search_criteria['search_tag_name'])
@@ -508,7 +521,7 @@ def mediaitem_view(request, mediaitem_external_id):
 
 def mediaitem_edit(request):
 
-    # bind vars to form data 
+    # assign form data to vars 
     media_item_external_id = request.POST.get('media-item-external-id', '')
     update_description_flag = request.POST.get('update-description-flag', '')
     new_description = request.POST.get('description', '')
@@ -620,6 +633,7 @@ def tag_listing(request):
 
 def tag_create(request):
 
+    # assign form data to vars and validate input
     new_tag_name = request.POST.get('new-tag-name', '')
     if not new_tag_name:
         log_and_store_message(request, messages.ERROR, f"Failed to create new tag, no tag name was specified.")
@@ -641,6 +655,7 @@ def tag_create(request):
 
 def tag_edit(request):
 
+    # assign form data to vars and validate input
     tag_id = request.POST.get('tag-id', '')
     if not tag_id:
         log_and_store_message(request, messages.ERROR, f"Failed to edit tag, no tag id was specified.")
@@ -670,6 +685,67 @@ def tag_edit(request):
         log_and_store_message(request, messages.ERROR, f"Failed to fetch and update tag with tag_id [{tag_id}]. Exception: {ex}")
 
         return redirect(f"/lockdownsf/manage/tag_listing/")
+
+
+def extract_ocr_text(request):
+
+    # assign form data to vars and validate input
+    request_scope = request.POST.get('request-scope', '')
+    external_id = request.POST.get('external-id', '')
+
+    if not (request_scope and external_id):
+        log_and_store_message(request, messages.ERROR, 
+            "Failure to extract OCR text, both request_scope and external_id are required")
+
+        return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
+
+    if request_scope not in ['album', 'media_item']:
+        log_and_store_message(request, messages.ERROR, 
+            "Failure to extract OCR text, request_scope must be 'album' or 'media_item'")
+
+        return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
+    
+    if request_scope == 'media_item':
+        # fetch media item from gphotos api
+        gphotos_image_response = gphotosapi.get_photo_by_id(image_id=external_id)
+
+        if not (gphotos_image_response and gphotos_image_response.get('baseUrl', '')):
+            log_and_store_message(request, messages.ERROR, 
+                "Failure to extract OCR text, no google photos image returned matching external_id [{external_id}]")
+            return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
+
+        # fetch media item from db
+        db_media_item = MediaItem.objects.get(external_id=external_id)
+
+        if not db_media_item:
+            log_and_store_message(request, messages.ERROR, 
+                "Failure to extract OCR text, no image found in db matching external_id [{external_id}]")
+            return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
+
+        # upload gphotos image to s3
+        # assemble image file path url 
+        img_file_path = gphotos_image_response['baseUrl']
+
+        # append width & height data if available
+        if gphotos_image_response.get('mediaMetadata', ''):
+            width = gphotos_image_response['mediaMetadata'].get('width')
+            height = gphotos_image_response['mediaMetadata'].get('height')
+            if width and height:
+                img_file_path = f"{img_file_path}=w{width}-h{height}"
+
+        s3manager.upload_image_to_s3(img_file_path, external_id)
+
+        # extract OCR text from image on s3
+        extracted_text_search, extracted_text_display = s3manager.extract_text(external_id, metadata.S3_BUCKET)
+
+        # add extracted text to db_media_item and save 
+        db_media_item.extracted_text_search = extracted_text_search
+        db_media_item.extracted_text_display = extracted_text_display
+        db_media_item.save()
+
+        # TODO remove image from s3
+
+        return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
 
 def neighborhood_listing(request):

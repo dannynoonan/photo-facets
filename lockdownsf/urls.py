@@ -20,6 +20,7 @@ urlpatterns = [
     path(r'manage/tag_listing/', views.tag_listing, name='tag_listing'),
     path(r'manage/tag_create/', views.tag_create, name='tag_create'),
     path(r'manage/tag_edit/', views.tag_edit, name='tag_edit'),
+    path(r'manage/extract_ocr_text/', views.extract_ocr_text, name='extract_ocr_text'),
 
     path('admin/neighborhood_listing/', views.neighborhood_listing, name='neighborhood_listing'),
     path('admin/add_neighborhood/', views.add_neighborhood, name='add_neighborhood'),

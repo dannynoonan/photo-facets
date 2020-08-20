@@ -4,7 +4,14 @@
 
 <div class="row justify-content-center">
     <form class="form-inline my-2 my-lg-0" action="/lockdownsf/manage/mediaitem_search/" method="GET">
-        <strong>Tags:</strong>&nbsp;
+        <strong>Album:</strong>&nbsp;
+        <select class="form-control" id="search-album" name="search-album">
+            <option value="">* album *</option>
+        {% for album in all_albums %}
+            <option value="{{ album.external_id }}" {% if search_criteria.search_album_id == album.external_id %} selected {% endif %}>{{ album.name }}</option>
+        {% endfor %} 
+        </select>
+        &nbsp;&nbsp;&nbsp;<strong>Tags:</strong>&nbsp;
         <select class="form-control" id="search-tag" name="search-tag">
             <option value="">* tags *</option>
         {% for tag in all_tags %}
@@ -29,9 +36,10 @@
 <table class="table table-hover table-fit">
     <thead>
         <tr><th scope="col">Photo</th>
+            <th scope="col">Album</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
-            <th scope="col">External id</th>
+            <th scope="col">Google id</th>
             <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
@@ -39,6 +47,8 @@
     {% for photo in matching_mediaitems %}
         <tr><td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></td>
+            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
+                    {{ photo.album.name }}</a></td>
             <td>{{ photo.file_name }}</td>   
             <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>
             <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">

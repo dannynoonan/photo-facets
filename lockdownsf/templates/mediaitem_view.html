@@ -85,7 +85,20 @@
         <tr><th scope="row">Status:</th>
             <td>{{ mediaitem.status }}</td></tr>
         <tr><th scope="row">Extracted text:</th>
-            <td><small>{{ mediaitem.extracted_text_display|linebreaks }}</small></td></tr>
+            <form action="/lockdownsf/manage/extract_ocr_text/" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="request-scope" value="media_item">
+                <input type="hidden" name="external-id" value="{{ mediaitem.external_id }}">
+                <td>
+                    {% if mediaitem.extracted_text_display %}
+                    <small>{{ mediaitem.extracted_text_display|linebreaks }}</small>
+                    <input type="submit" value="Regenerate OCR text">
+                    {% else %}
+                    <input type="submit" value="Extract OCR text">
+                    {% endif %}
+                </td>
+            </form>
+        </tr>
     </tbody>
 </table>
 
