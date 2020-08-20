@@ -62,7 +62,6 @@ class Tag(models.Model):
 
 class Album(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
-    # external_resource = models.CharField(max_length=64, db_index=True, null=True)  # chopping block
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=500)  # chopping block
     description = models.CharField(max_length=500, null=True)  # chopping block
@@ -79,21 +78,16 @@ class Album(models.Model):
 
 class MediaItem(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
-    # external_resource = models.CharField(max_length=64, db_index=True, null=True)  # chopping block
     album = models.ForeignKey(Album, on_delete=models.CASCADE)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     file_name = models.CharField(max_length=256, db_index=True)
     mime_type = models.CharField(max_length=128, db_index=True)  # chopping block
-    # thumb_url = models.CharField(max_length=2048, null=True)  # chopping block
     description = models.CharField(max_length=500, null=True)
     dt_taken = models.DateTimeField(null=True)  # chopping block
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
-    # width = models.IntegerField(default=0)  # chopping block
-    # height = models.IntegerField(default=0)  # chopping block
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
-    # facets = models.CharField(max_length=1024, null=True)  # chopping block
     tags = models.ManyToManyField(Tag)
     extracted_text_search = models.CharField(max_length=16000, null=True)
     extracted_text_display = models.CharField(max_length=16000, null=True)

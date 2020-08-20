@@ -10,13 +10,16 @@
 </div>
 
 <div id="album-create-form" class="hidden-block">
-    <h5 id="album-create-label"></h5>
+    <!-- <h5 id="album-create-label"></h5> -->
+    <div id="s3-upload-success" class="hidden-button alert alert-success"></div>
+    <div id="s3-upload-failure" class="hidden-button alert alert-danger"></div>
     <form action="/lockdownsf/manage/album_create/" method="POST">
         {% csrf_token %}
         <!-- <input type="hidden" id="image-count" name="image-count"> -->
-        <input type="text" name="album-title" placeholder="new album title">
-        <input type="submit" value="Create album">
-
+        <div id="album-create-submit" class="hidden-button">
+            <input type="text" name="album-title" placeholder="new album title">
+            <input type="submit" value="Create album">
+        </div>
         <table id="image-preview-table" class="table table-hover hidden-block">
             <thead>
                 <tr><th scope="col"></th>
@@ -29,6 +32,10 @@
     </form>
 </div>
 
+<!-- <div>
+    <button onclick="authenticate().then(loadClient)">authorize and load</button>
+    <button onclick="execute()">execute</button>
+</div> -->
     
 {% endblock %}
         
