@@ -100,7 +100,9 @@ def sign_s3(request):
     file_name = request.GET['file_name']
     file_type = request.GET['file_type']
 
-    s3 = boto3.client('s3')
+    s3 = boto3.client('s3',
+         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
 
     presigned_post = s3.generate_presigned_post(
         Bucket = metadata.S3_BUCKET,
@@ -115,7 +117,7 @@ def sign_s3(request):
 
     data = json.dumps({
         'data': presigned_post,
-        'url': 'https://' + metadata.S3_BUCKET + '.s3.amazonaws.com/' +  file_name,
+        'url': f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{file_name}",
     })
 
     return HttpResponse(data, content_type='json')
@@ -182,7 +184,7 @@ def album_listing(request):
     
 def album_view(request, album_external_id):
     template = 'album_view.html'
-    page_title = 'Album page'
+    page_title = 'Album details'
 
     # process messages
     success_messages, error_messages = extract_messages_from_storage(request)
@@ -205,7 +207,7 @@ def album_view(request, album_external_id):
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
 
-        page_title = f"{page_title} for [{album.name}]"
+        page_title = f"{page_title}: {album.name}"
 
         context = {
             'template': template,
@@ -274,8 +276,7 @@ def album_create(request):
         return redirect(f"/lockdownsf/manage/album_import/")
 
     # insert Album into db with status PENDING and no external_id
-    album = Album(name=album_title, owner=OWNER, external_resource=metadata.ExternalResource.GOOGLE_PHOTOS_V1.name, 
-        status=metadata.Status.NEWBORN.name)
+    album = Album(name=album_title, owner=OWNER, status=metadata.Status.NEWBORN.name)
     album.save()
 
     media_items = []
@@ -303,13 +304,13 @@ def album_create(request):
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # extract OCR text
-        extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
+        # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
 
         # init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
         media_item = MediaItem(
-            file_name=image_file_name, owner=OWNER, external_resource=metadata.ExternalResource.GOOGLE_PHOTOS_V1.name, 
-            album=album, mime_type=pil_image.format, dt_taken=dt_taken, latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name,
-            extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
+            file_name=image_file_name, owner=OWNER, album=album, mime_type=pil_image.format, 
+            dt_taken=dt_taken, latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name)
+            # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
         media_items.append(media_item)
 

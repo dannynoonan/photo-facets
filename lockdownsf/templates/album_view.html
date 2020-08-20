@@ -3,7 +3,7 @@
 {% block body %}
 
 {% if album %}
-<p><strong>External id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></p>
+<p><strong>Google photos id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></p>
 <p>&nbsp;</p>
 
 {% if mapped_media_items %}
@@ -17,7 +17,7 @@
             <th scope="col">Photo</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
-            <th scope="col">Google id</th>
+            <th scope="col">Google photos id</th>
             <th scope="col">Mime type</th>
             <th scope="col"><nobr>Date taken /</nobr> <nobr>imported /</nobr> updated</th>
             <th scope="col">Dimensions</th>
