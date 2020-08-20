@@ -2,6 +2,7 @@ import boto3
 from datetime import datetime, timedelta
 from io import BytesIO
 from PIL import Image
+import requests
 
 from lockdownsf import metadata
 
@@ -16,7 +17,10 @@ def extract_text(img_file_name, bucket):
     # use AWS rekognition's detect_text for first pass at extracting text from image
     # https://docs.aws.amazon.com/rekognition/latest/dg/text-detecting-text-procedure.html
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.detect_text
-    rekognition_client = boto3.client('rekognition', region_name=metadata.AWS_REGION_NAME)
+    rekognition_client = boto3.client('rekognition', 
+        region_name=metadata.AWS_REGION_NAME,
+        aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
     response = rekognition_client.detect_text(
         Image = {'S3Object': {'Bucket': bucket, 'Name': img_file_name}})
     text_detections = response['TextDetections']
@@ -41,7 +45,10 @@ def extract_text(img_file_name, bucket):
         # https://docs.aws.amazon.com/textract/latest/dg/API_DetectDocumentText.html
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/textract.html
         print(f"parsing textract detect_document_text response for image [{img_file_name}]")
-        textract_client = boto3.client('textract', region_name=metadata.AWS_REGION_NAME)
+        textract_client = boto3.client('textract', 
+            region_name=metadata.AWS_REGION_NAME, 
+            aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
         response = textract_client.detect_document_text(
             Document = {'S3Object': {'Bucket': bucket, 'Name': img_file_name}})
         blocks = response['Blocks']
@@ -54,13 +61,39 @@ def extract_text(img_file_name, bucket):
                     extracted_text_search = block['Text'].lower()
                     extracted_text_display = block['Text']
 
-
-    print('extracted_text_raw')
-    print(extracted_text_search)
-    print('extracted_text_formatted')
-    print(extracted_text_display)
+    print(f"extracted_text_search: {extracted_text_search}")
+    print(f"extracted_text_display: {extracted_text_display}")
 
     return extracted_text_search, extracted_text_display
+
+
+def upload_image_to_s3(img_file_path, img_file_name):
+    response = requests.get(img_file_path, stream=True)
+    orig_img = Image.open(BytesIO(response.content))
+
+    in_mem_file = BytesIO()
+    orig_img.save(in_mem_file, format=orig_img.format)
+    in_mem_file.seek(0)
+
+    # Upload image to s3
+    client_s3 = boto3.client('s3',
+         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+
+    response = client_s3.put_object( 
+        ACL="public-read",
+        Bucket=metadata.S3_BUCKET,
+        Body=in_mem_file,
+        # ContentType='image/jpeg',
+        ContentType=orig_img.format,
+        Key=img_file_name,
+        Expires = datetime.now() + timedelta(minutes = 6),
+    )
+
+    s3_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{img_file_name}"
+
+    return s3_img_file_path
+
 
 
 def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):

@@ -1,6 +1,8 @@
 from enum import Enum
 
 
+AWS_ACCESS_KEY_ID = 'AKIAJWPHJKUXK7PPFFKA'
+AWS_SECRET_ACCESS_KEY = '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' 
 AWS_REGION_NAME = 'us-west-1'
 S3_BUCKET = 'lockdownsf'
 

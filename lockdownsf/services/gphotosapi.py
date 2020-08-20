@@ -17,8 +17,6 @@ from google.auth.transport.requests import Request
 # from lockdownsf import metadata
 from lockdownsf.services import image_utils
 
-import ipdb
-
 
 API_NAME = 'photoslibrary'
 API_VERSION = 'v1'
