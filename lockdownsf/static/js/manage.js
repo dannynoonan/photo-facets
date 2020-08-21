@@ -263,11 +263,11 @@ function getSignedRequest(file, sequence, retryCount) {
             failure_message += "<li>" + failed_files[i] + "</li>";
         }
         failure_message += "</ul>";
-        document.getElementById("s3-upload-failure").style.visibility = 'visible';
+        document.getElementById("s3-upload-failure").style.display = 'block';
         document.getElementById("s3-upload-failure").innerHTML = failure_message;
         if (success_file_count + failed_files.length == total_file_count) {
             // alert("Total retry count: " + totalRetryCount);
-            document.getElementById("album-create-submit").style.visibility = 'visible';
+            document.getElementById("album-create-submit").style.display = 'block';
         }
     }
     var xhr = new XMLHttpRequest();
@@ -337,13 +337,13 @@ function uploadFileClassic(file, sequence, s3Data, url) {
 
                 // increment the image counter - TODO have this interact with sequence value and a slider widget
                 //var image_count = tableEl.rows.length - 1;
-                document.getElementById("s3-upload-success").style.visibility = 'visible';
+                document.getElementById("s3-upload-success").style.display = 'block';
                 success_file_count++;
-                document.getElementById("s3-upload-success").innerHTML = success_file_count + " images staged and ready for import";
+                document.getElementById("s3-upload-success").innerHTML = success_file_count + " images staged and ready for import.";
 
                 if (success_file_count + failed_files.length == total_file_count) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-create-submit").style.visibility = 'visible';
+                    document.getElementById("album-create-submit").style.display = 'block';
                 }
 
                 // // extract and set properties using EXIF
@@ -360,11 +360,11 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                     failure_message += "<li>" + failed_files[i] + "</li>";
                 }
                 failure_message += "</ul>";
-                document.getElementById("s3-upload-failure").style.visibility = 'visible';
+                document.getElementById("s3-upload-failure").style.display = 'block';
                 document.getElementById("s3-upload-failure").innerHTML = failure_message;
                 if (success_file_count + failed_files.length == total_file_count) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-create-submit").style.visibility = 'visible';
+                    document.getElementById("album-create-submit").style.display = 'block';
                 }
             }
         }

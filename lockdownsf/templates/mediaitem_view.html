@@ -52,7 +52,7 @@
             </td>
         </tr>
         <tr><td id="submit-cell" class="hidden-block" colspan="2">
-            <input id="submit-buttom" type="submit" value="Update"></td></tr>
+            <input id="submit-buttom" type="submit" value="Update" class="btn btn-secondary"></td></tr>
     </table>
 </form>
 
@@ -92,9 +92,9 @@
                 <td>
                     {% if mediaitem.extracted_text_display %}
                     <small>{{ mediaitem.extracted_text_display|linebreaks }}</small>
-                    <input type="submit" value="Regenerate OCR text">
+                    <input type="submit" value="Regenerate OCR text" class="btn btn-secondary">
                     {% else %}
-                    <input type="submit" value="Extract OCR text">
+                    <input type="submit" value="Extract OCR text" class="btn btn-secondary">
                     {% endif %}
                 </td>
             </form>

@@ -3,15 +3,30 @@
 {% block body %}
 
 {% if album %}
-<strong>Google photos id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a><br/>
-<strong>Center latitude:</strong> {{ album.center_latitude}}<br/>
-<strong>Center longitude:</strong> {{ album.center_longitude}}<br/>
-<strong>Map zoom level:</strong> {{ album.map_zoom_level}}<br/>
-<p>&nbsp;</p>
+<table class="table table-hover table-fit">
+    <tbody>
+        <tr><th scope="row">Google photos id:</th>
+            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></td></tr>
+        <!-- <tr><th scope="row">Description:</th>
+            <td>{% if album.description %} {{ album.description }} {% endif %}</td></tr> -->
+        <tr><th scope="row">Date added:</th>
+            <td>{{ album.dt_inserted }}</td></tr>
+        <tr><th scope="row">Date updated:</th>
+            <td>{{ album.dt_updated }}</td></tr>
+        <tr><th scope="row">Center latitude:</th>
+            <td>{{ album.center_latitude }}</td></tr>
+        <tr><th scope="row">Center longitude:</th>
+            <td>{{ album.center_longitude }}</td></tr>
+        <tr><th scope="row">Map zoom level:</th>
+            <td>{{ album.map_zoom_level }}</td></tr>
+        <tr><th scope="row">Status:</th>
+            <td>{{ album.status }}</td></tr>
+    </tbody>
+</table>
 
 {% if mapped_media_items %}
-<h5>{{ mapped_media_items|length }} media items mapped to album:</h5>
-<form action="/lockdownsf/manage/album_media_items_delete/" method="POST">
+<h4>{{ mapped_media_items|length }} media items mapped to album:</h4>
+<form action="/lockdownsf/manage/album_media_items_delete/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
 <table class="table table-hover">
@@ -50,7 +65,7 @@
     {% endfor %}
     </tbody>
 </table>
-<input type="submit" value="DELETE SELECTED ITEMS">
+<input type="submit" value="DELETE SELECTED ITEMS" class="btn btn-secondary">
 </form>
 {% endif %}
 
@@ -87,10 +102,10 @@
 </ul>
 {% endif %}
 
-<form action="/lockdownsf/manage/album_delete/" method="POST">
+<form action="/lockdownsf/manage/album_delete/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
-    <input type="submit" value="DELETE ALBUM">
+    <input type="submit" value="DELETE ALBUM" class="btn btn-secondary">
 </form>
 
 {% else %}
