@@ -281,14 +281,11 @@ def album_create(request):
 
     media_items = []
     for image_path in images_to_upload:
-        image_file_name = image_path.split('/')[-1:][0]   
+        image_file_name = image_path.split('/')[-1:][0]
 
         # download the photos from s3
         response = requests.get(image_path, stream=True)
         pil_image = Image.open(BytesIO(response.content))
-
-        # bind vars to image metadata
-        width, height = pil_image.size
 
         # extract location and timestamp info
         exif_data = image_utils.get_exif_data(pil_image)
@@ -306,10 +303,10 @@ def album_create(request):
         # extract OCR text
         # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
 
-        # init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
+        # init and save MediaItems to db, with status PENDING, no external_id, and not yet mapped to Album
         media_item = MediaItem(
-            file_name=image_file_name, owner=OWNER, album=album, mime_type=pil_image.format, 
-            dt_taken=dt_taken, latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name)
+            file_name=image_file_name, owner=OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
+            latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name)
             # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
         media_items.append(media_item)
@@ -322,9 +319,7 @@ def album_create(request):
 
         return redirect(f"/lockdownsf/manage/album_import/")
 
-    # TODO calculate album lat/lng and zoom
-
-    # update Album in db with status LOADED, lat/lng, and external_id set
+    # update Album in db with status LOADED and external_id set
     album.external_id = album_response['id']
     album.status = metadata.Status.LOADED.name
     album.save()
@@ -340,21 +335,27 @@ def album_create(request):
         # update images mapped to an album
         if mapped_images_response.get('mapped_gpids_to_img_data', ''):
             mapped_media_items = update_mediaitems_with_gphotos_data(
-                mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items)
+                mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED_AND_MAPPED)
+            # set album and save to db
+            for mapped_media_item in mapped_media_items:
+                mapped_media_item.album = album
+                mapped_media_item.save()
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
             unmapped_media_items = update_mediaitems_with_gphotos_data(
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
+
+    # TODO calculate album lat/lng and zoom
 
     # update Album in db with status LOADED_AND_MAPPED
     album.status = metadata.Status.LOADED_AND_MAPPED.name
     album.save()
 
     log_and_store_message(request, messages.SUCCESS,
-        f"Successfully created album [{album.external_id}] and mapped [{len(mapped_media_items)}] media items to it")
+        f"Successfully created album [{album.name}] and mapped [{len(mapped_media_items)}] media items to it")
     if unmapped_media_items:
         log_and_store_message(request, messages.ERROR,
-            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to newly created album [{album.external_id}]")
+            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to newly created album [{album.name}]")
         log_and_store_message(request, messages.ERROR, f"Unmapped media items: [{unmapped_media_items}]")
     if failed_media_items:
         log_and_store_message(request, messages.ERROR,

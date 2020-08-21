@@ -78,7 +78,7 @@ class Album(models.Model):
 
 class MediaItem(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
-    album = models.ForeignKey(Album, on_delete=models.CASCADE)
+    album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     file_name = models.CharField(max_length=256, db_index=True)
     mime_type = models.CharField(max_length=128, db_index=True)  # chopping block
