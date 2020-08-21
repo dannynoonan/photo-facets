@@ -3,22 +3,23 @@
 {% block body %}
 <div id="file-upload-selector" class="form-group">
     <h5>Select folder containing image files to import:</h5>
-    <input type="file" name="multi-file-upload" id="multi-file-upload" aria-describedby="fileHelp"
-        onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
+    <label class="custom-file-upload">Select folder
+        <input id="file-upload" type="file" name="multi-file-upload" id="multi-file-upload" aria-describedby="fileHelp"
+            onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
+    </label>
     <small id="fileHelp" class="form-text text-muted">
         This will generate a preview of photos. You will then have the option to process and import these into a new album.</small>
 </div>
 
-<div id="album-create-form" class="hidden-block">
-    <!-- <h5 id="album-create-label"></h5> -->
-    <div id="s3-upload-success" class="hidden-button alert alert-success"></div>
-    <div id="s3-upload-failure" class="hidden-button alert alert-danger"></div>
+<div id="album-create-form" class="hidden-block form-group">
+    <div id="s3-upload-success" class="hidden-block alert alert-success"></div>
+    <div id="s3-upload-failure" class="hidden-block alert alert-danger"></div>
     <form action="/lockdownsf/manage/album_create/" method="POST">
         {% csrf_token %}
         <!-- <input type="hidden" id="image-count" name="image-count"> -->
-        <div id="album-create-submit" class="hidden-button">
-            <input type="text" name="album-title" placeholder="new album title">
-            <input type="submit" value="Create album">
+        <div id="album-create-submit" class="hidden-block form-group">
+            <input type="text" name="album-title" placeholder="new album title" class="form-control form-control-inline-lg">
+            <input type="submit" value="Create album" class="btn btn-secondary">
         </div>
         <table id="image-preview-table" class="table table-hover hidden-block">
             <thead>

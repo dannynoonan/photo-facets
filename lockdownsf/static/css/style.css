@@ -49,49 +49,68 @@ table.table-fit tbody td, table.table-fit tfoot td {
 }
 .form-inline {
     margin:5px 3px;
- }
+}
+.form-control-inline-lg {
+    min-width: 0;
+    width: 600px;
+    display: inline;
+}
+.form-control-inline-auto {
+  min-width: 0;
+  width: auto;
+  display: inline;
+}
 
 
+input[type="file"] {
+    display: none;
+}
+.custom-file-upload {
+    border: 1px solid #ccc;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+}
 
 
 /* https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/ */
- #drop-area {
+#drop-area {
     border: 2px dashed #ccc;
     border-radius: 20px;
     width: 480px;
     font-family: sans-serif;
     margin: 100px auto;
     padding: 20px;
-  }
-  #drop-area.highlight {
+}
+#drop-area.highlight {
     border-color: purple;
-  }
-  p {
+}
+p {
     margin-top: 0;
-  }
-  .my-form {
+}
+.my-form {
     margin-bottom: 10px;
-  }
-  #gallery {
+}
+#gallery {
     margin-top: 10px;
-  }
-  #gallery img {
+}
+#gallery img {
     width: 150px;
     margin-bottom: 10px;
     margin-right: 10px;
     vertical-align: middle;
-  }
-  .button {
+}
+.button {
     display: inline-block;
     padding: 10px;
     background: #ccc;
     cursor: pointer;
     border-radius: 5px;
     border: 1px solid #ccc;
-  }
-  .button:hover {
+}
+.button:hover {
     background: #ddd;
-  }
-  #fileElem {
+}
+#fileElem {
     display: none;
-  }
+}

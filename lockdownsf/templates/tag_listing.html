@@ -50,8 +50,8 @@
 <h5>Create new tag:</h5>
 <form action="/lockdownsf/manage/tag_create/" method="POST">
     {% csrf_token %}
-    <input type="text" name="new-tag-name" placeholder="new tag">
-    <input type="submit" value="Create tag">
+    <input type="text" name="new-tag-name" placeholder="new tag" class="form-control form-control-inline-auto">
+    <input type="submit" value="Create tag" class="btn btn-secondary">
 </form>
 
     
