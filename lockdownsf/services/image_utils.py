@@ -111,9 +111,28 @@ def convert_to_degress(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
+def calculate_center_and_distance(media_items):
+    all_lat = [float(mi.latitude) for mi in media_items if mi.latitude]
+    all_lng = [float(mi.longitude) for mi in media_items if mi.longitude]
+    ctr_lat = None
+    ctr_lng = None
+    furthest_dist = 0
+    if all_lat:
+        ctr_lat = sum(all_lat) / len(all_lat)
+        sorted_lat = sorted(all_lat)
+        furthest_dist = abs(sorted_lat[0] - sorted_lat[-1])
+    if all_lng:
+        ctr_lng = sum(all_lng) / len(all_lng)
+        sorted_lng = sorted(all_lng)
+        furthest_lng = abs(sorted_lng[0] - sorted_lng[-1])
+        if furthest_lng > furthest_dist:
+            furthest_dist = furthest_lng
+    return ctr_lat, ctr_lng, furthest_dist
 
 
-
+def optimal_zoom_for_distance(distance):
+    # TODO
+    return 14
 
 
 

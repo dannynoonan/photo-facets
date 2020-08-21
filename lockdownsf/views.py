@@ -345,9 +345,14 @@ def album_create(request):
             unmapped_media_items = update_mediaitems_with_gphotos_data(
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
 
-    # TODO calculate album lat/lng and zoom
+    # calculate album lat/lng and furthest N-S or E-W distance between points
+    ctr_lat, ctr_lng, furthest_dist = image_utils.calculate_center_and_distance(mapped_media_items)
+    zoom_level = image_utils.optimal_zoom_for_distance(furthest_dist)
 
-    # update Album in db with status LOADED_AND_MAPPED
+    # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
+    album.center_latitude = ctr_lat
+    album.center_longitude = ctr_lng
+    album.map_zoom_level = zoom_level
     album.status = metadata.Status.LOADED_AND_MAPPED.name
     album.save()
 
