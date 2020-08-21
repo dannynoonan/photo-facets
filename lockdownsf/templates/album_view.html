@@ -3,7 +3,10 @@
 {% block body %}
 
 {% if album %}
-<p><strong>Google photos id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></p>
+<strong>Google photos id:</strong> <a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a><br/>
+<strong>Center latitude:</strong> {{ album.center_latitude}}<br/>
+<strong>Center longitude:</strong> {{ album.center_longitude}}<br/>
+<strong>Map zoom level:</strong> {{ album.map_zoom_level}}<br/>
 <p>&nbsp;</p>
 
 {% if mapped_media_items %}
