@@ -43,7 +43,7 @@
                 {{ tag.name }}<br/>
             {% endfor %}
             </td>
-            <td><small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small></td></tr>
+            <td>{% if photo.extracted_text_display %}<small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
 </table>

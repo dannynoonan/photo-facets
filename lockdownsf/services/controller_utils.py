@@ -23,18 +23,15 @@ def extract_messages_from_storage(request):
     return success_messages, error_messages
 
 
-def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status=None):
-    if not status:
-        status = metadata.Status.LOADED_AND_MAPPED
+def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status):
     matched_media_items = []
-    for mapped_gpid, img_data in gpids_to_img_data.items():
+    for gpid, img_data in gpids_to_img_data.items():
         for media_item in media_items:
+            # TODO this matching is problematic if a preexisting version of the same image is returned by gphotos api but that version has a different filename 
             if media_item.file_name == img_data.get('filename', ''):
                 # update db
-                media_item.external_id = mapped_gpid
-                media_item.thumb_url = img_data.get('thumb_url', '')
+                media_item.external_id = gpid
                 media_item.status = status.name
-                media_item.save()
                 # add to matched_media_items
                 matched_media_items.append(media_item)
                 # remove from failed_media_items
@@ -64,7 +61,7 @@ def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_m
 
 def populate_fields_from_gphotosapi(mapped_media_items, fields):
     # fetch media_items from gphotos api 
-    media_item_ids = [m_item.external_id for m_item in mapped_media_items]
+    media_item_ids = [m_item.external_id for m_item in mapped_media_items if m_item.external_id]
     gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
     # populate media_item fields from gphotos media_items
     for gpmi in gphotos_media_items:

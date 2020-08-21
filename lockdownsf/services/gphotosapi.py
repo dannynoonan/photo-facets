@@ -97,13 +97,13 @@ def upload_and_map_images_to_album(album_response, image_list=None, image_dir_pa
         # app_created_photos = get_app_created_photos_for_album(album_response['id'])
 
     # fetch gphotos images mapped to album in order to get baseUrl thumbnails (incredibly inefficient)
-    if result.get('mapped_gpids_to_img_data', ''):
-        album_photos_response = get_photos_for_album(album_response['id']) 
-        for response_photo in album_photos_response:
-            for mapped_gpid, img_data in result['mapped_gpids_to_img_data'].items():
-                if response_photo['id'] == mapped_gpid:
-                    img_data['thumb_url'] = response_photo['baseUrl']
-                    continue
+    # if result.get('mapped_gpids_to_img_data', ''):
+    #     album_photos_response = get_photos_for_album(album_response['id']) 
+    #     for response_photo in album_photos_response:
+    #         for mapped_gpid, img_data in result['mapped_gpids_to_img_data'].items():
+    #             if response_photo['id'] == mapped_gpid:
+    #                 img_data['thumb_url'] = response_photo['baseUrl']
+    #                 continue
 
     return result
 
