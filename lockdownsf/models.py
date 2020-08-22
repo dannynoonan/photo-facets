@@ -68,6 +68,7 @@ class Album(models.Model):
     center_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     center_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     map_zoom_level = models.IntegerField(default=0)
+    photos_having_gps = models.IntegerField(default=0)
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=64, db_index=True)

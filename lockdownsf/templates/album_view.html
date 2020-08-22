@@ -13,12 +13,8 @@
             <td>{{ album.dt_inserted }}</td></tr>
         <tr><th scope="row">Date updated:</th>
             <td>{{ album.dt_updated }}</td></tr>
-        <tr><th scope="row">Center latitude:</th>
-            <td>{{ album.center_latitude }}</td></tr>
-        <tr><th scope="row">Center longitude:</th>
-            <td>{{ album.center_longitude }}</td></tr>
-        <tr><th scope="row">Map zoom level:</th>
-            <td>{{ album.map_zoom_level }}</td></tr>
+        <tr><th scope="row">Map location:</th>
+            <td>Avg lat: {{ album.center_latitude }} / Avg lng: {{ album.center_longitude }} / Zoom level: {{ album.map_zoom_level }} (averaging {{ album.photos_having_gps }} photos)</td></tr>
         <tr><th scope="row">Status:</th>
             <td>{{ album.status }}</td></tr>
     </tbody>
@@ -65,7 +61,7 @@
     {% endfor %}
     </tbody>
 </table>
-<input type="submit" value="DELETE SELECTED ITEMS" class="btn btn-secondary">
+<input type="submit" value="Delete selected photos" class="btn btn-secondary">
 </form>
 {% endif %}
 
@@ -101,6 +97,13 @@
 {% endfor %}
 </ul>
 {% endif %}
+
+<form action="/lockdownsf/manage/extract_ocr_text/" method="POST" class="form-group">
+    {% csrf_token %}
+    <input type="hidden" name="request-scope" value="album">
+    <input type="hidden" name="external-id" value="{{ album.external_id }}">
+    <input type="submit" value="Extract OCR text (entire album)" class="btn btn-secondary">
+</form>
 
 <form action="/lockdownsf/manage/album_delete/" method="POST" class="form-group">
     {% csrf_token %}
