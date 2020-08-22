@@ -347,13 +347,13 @@ def album_create(request):
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
 
     # calculate album lat/lng and furthest N-S or E-W distance between points
-    ctr_lat, ctr_lng, furthest_dist = image_utils.calculate_center_and_distance(mapped_media_items)
-    zoom_level = image_utils.optimal_zoom_for_distance(furthest_dist)
+    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(mapped_media_items)
 
     # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
     album.center_latitude = ctr_lat
     album.center_longitude = ctr_lng
     album.map_zoom_level = zoom_level
+    album.photos_having_gps = photos_having_gps
     album.status = metadata.Status.LOADED_AND_MAPPED.name
     album.save()
 
@@ -408,43 +408,60 @@ def album_media_items_delete(request):
     album_external_id = request.POST.get('album-external-id', '')
     media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
 
-    if not (album_external_id and media_item_external_ids):
+    if not album_external_id:
         log_and_store_message(request, messages.ERROR, 
-            f"Invalid request to delete media items [{media_item_external_ids}] from album [{album_external_id}]")
+            f"Failure to delete media items from album, no album_external_id was specified")
+        return redirect(f"/lockdownsf/manage/album_listing/")
 
-    else:
-        successful_media_item_ids = []
-        failed_media_item_ids = []
-        album_name = ''
+    if not media_item_external_ids:
+        log_and_store_message(request, messages.ERROR, 
+            f"Failure to delete media items from album [{album_external_id}], no media items were specified")
+        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
-        # fetch media_items from db, then delete them
-        for media_item_id in media_item_external_ids:
-            try:
-                media_item = MediaItem.objects.get(external_id=media_item_id)
-                media_item.delete()
-                successful_media_item_ids.append(media_item_id)
-                if not album_name:
-                    album_name = media_item.album.name
+    successful_media_item_ids = []
+    failed_media_item_ids = []
+    album_label = album_external_id
 
-            except Exception as ex:
-                failed_media_item_ids.append(media_item_id)
+    # fetch media_items from db, delete them, and track deleted items in list 
+    for media_item_id in media_item_external_ids:
+        try:
+            media_item = MediaItem.objects.get(external_id=media_item_id)
+            media_item.delete()
+            successful_media_item_ids.append(media_item_id)
 
-        # generate success and failure messages
-        if successful_media_item_ids:
-            log_and_store_message(request, messages.SUCCESS, 
-                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_name}]")
-            # build html containing links to deleted Google Photos media
-            # doing this here to leverage the simple text limitations of messages framework 
-            links_to_deleted_media_items = "<ul>"
-            for media_item_id in successful_media_item_ids:
-                links_to_deleted_media_items = f"{links_to_deleted_media_items}<li><a href=\"https://photos.google.com/lr/album/{album_external_id}/photo/{media_item_id}\" target=\"new\">{media_item_id}</a></li>"
-            links_to_deleted_media_items = f"{links_to_deleted_media_items}</ul>"
-            log_and_store_message(request, messages.SUCCESS, 
-                f"Note that these media items still exist in Google Photos. To also delete them there, visit these links: {links_to_deleted_media_items}")
-        if failed_media_item_ids:
-            log_and_store_message(request, messages.ERROR, 
-                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_name}]")
-            log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
+        except Exception as ex:
+            failed_media_item_ids.append(media_item_id)
+
+    # fetch album and update GPS data based on remaining media items
+    try:
+        album = Album.objects.get(external_id=album_external_id)
+        album_label = album.name  
+        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(album.mediaitem_set.all())
+        album.center_latitude = ctr_lat
+        album.center_longitude = ctr_lng
+        album.map_zoom_level = zoom_level
+        album.photos_having_gps = photos_having_gps
+        album.save()
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR, 
+            f"After deleting media items from album [{album_external_id}], failure to fetch album or update its GPS info in db. Details: {ex}")
+        
+    # generate success and failure messages
+    if successful_media_item_ids:
+        log_and_store_message(request, messages.SUCCESS, 
+            f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_label}]")
+        # build html containing links to deleted Google Photos media
+        # doing this here to leverage the simple text limitations of messages framework 
+        links_to_deleted_media_items = "<ul>"
+        for media_item_id in successful_media_item_ids:
+            links_to_deleted_media_items = f"{links_to_deleted_media_items}<li><a href=\"https://photos.google.com/lr/album/{album_external_id}/photo/{media_item_id}\" target=\"new\">{media_item_id}</a></li>"
+        links_to_deleted_media_items = f"{links_to_deleted_media_items}</ul>"
+        log_and_store_message(request, messages.SUCCESS, 
+            f"Note that these media items still exist in Google Photos. To also delete them there, visit these links: {links_to_deleted_media_items}")
+    if failed_media_item_ids:
+        log_and_store_message(request, messages.ERROR, 
+            f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_label}]")
+        log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
 
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
@@ -796,6 +813,11 @@ def extract_ocr_text(request):
 
         return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
+    if request_scope == "album":
+
+        # TODO
+
+        return redirect(f"/lockdownsf/manage/album_view/{external_id}/")
 
 def neighborhood_listing(request):
     template = 'neighborhood_listing.html'

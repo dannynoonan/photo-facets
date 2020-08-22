@@ -111,7 +111,7 @@ def convert_to_degress(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
-def calculate_center_and_distance(media_items):
+def calculate_album_gps_info(media_items):
     all_lat = [float(mi.latitude) for mi in media_items if mi.latitude]
     all_lng = [float(mi.longitude) for mi in media_items if mi.longitude]
     ctr_lat = None
@@ -127,7 +127,9 @@ def calculate_center_and_distance(media_items):
         furthest_lng = abs(sorted_lng[0] - sorted_lng[-1])
         if furthest_lng > furthest_dist:
             furthest_dist = furthest_lng
-    return ctr_lat, ctr_lng, furthest_dist
+    zoom_level = optimal_zoom_for_distance(furthest_dist)
+
+    return ctr_lat, ctr_lng, zoom_level, len(all_lat)
 
 
 def optimal_zoom_for_distance(distance):
