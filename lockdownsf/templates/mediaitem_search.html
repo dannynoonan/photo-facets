@@ -26,14 +26,61 @@
 
 <br/><br/>
 
-{% if search_criteria|length > 0 %}
-    <h4><strong>{{ matching_mediaitems|length }}</strong> photos matching criteria: 
-    {% if search_criteria.search_tag_name %} Tag [<strong>{{ search_criteria.search_tag_name }}</strong>] {% endif %}
-    {% if search_criteria.search_text %} Search text [<strong>{{ search_criteria.search_text }}</strong>] {% endif %}</h4><br/><br/>
+<h4>
+{% if page_results %}
+    {% if total_results_count > page_results|length %}    
+        Showing results <strong>{{ page_results_start_index }}</strong> - <strong>{{ page_results_end_index }}</strong> of 
+    {% endif %}
+    <strong>{{ total_results_count }}</strong> photos
+{% else %}
+    No photos
 {% endif %}
+{% if search_criteria|length > 0 %}
+    matching criteria: 
+    {% if search_criteria.search_album_name %} Album [<strong>{{ search_criteria.search_album_name }}</strong>] {% endif %}
+    {% if search_criteria.search_tag_name %} Tag [<strong>{{ search_criteria.search_tag_name }}</strong>] {% endif %}
+    {% if search_criteria.search_text %} Search text [<strong>{{ search_criteria.search_text }}</strong>] {% endif %}
+{% endif %}
+</h4>
 
-{% if matching_mediaitems %}
-<table class="table table-hover table-fit">
+<br/><br/>
+
+{% if page_results %} 
+
+    {% if prev_page_number or next_page_number %}
+    <div>
+        <ul class="pagination">
+            <!-- previous page -->
+            {% if prev_page_number %}
+            <li class="page-item">
+                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ prev_page_number }}">&laquo;</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#">&laquo;</a>
+            </li>
+            {% endif %}
+            <!-- numbered pages -->
+            {% for i in page_count_iterator %}
+            <li class="page-item {% if page_number == i %} active {% endif %}">
+                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ i }}">{{ i }}</a>
+            </li>
+            {% endfor %}
+            <!-- next page -->
+            {% if next_page_number %}
+            <li class="page-item">
+                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ next_page_number }}">&raquo;</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <a class="page-link" href="#">&raquo;</a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+    {% endif %}
+
+<table class="table table-hover">
     <thead>
         <tr><th scope="col">Photo</th>
             <th scope="col">Album</th>
@@ -44,7 +91,7 @@
             <th scope="col">OCR text</th></tr>
     </thead>
     <tbody>
-    {% for photo in matching_mediaitems %}
+    {% for photo in page_results %}
         <tr><td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="200"></a></td>
             <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
@@ -58,7 +105,7 @@
                 {{ tag.name }}<br/>
             {% endfor %}
             </td>
-            <td><small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small></td></tr>
+            <td>{% if photo.extracted_text_display %}<small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
 </table>

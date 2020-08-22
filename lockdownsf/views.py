@@ -4,6 +4,7 @@ import exifread
 from inspect import getmembers
 from io import BytesIO
 import json
+import math
 import os
 from PIL import Image, ExifTags
 import requests
@@ -11,6 +12,7 @@ from pprint import pprint
 import uuid
 
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -139,7 +141,6 @@ def manage(request):
         'success_messages': success_messages,
         'error_messages': error_messages,
         'all_albums': all_albums,
-        'all_facets': metadata.all_facets,
     }
     
     return render(request, template, context)
@@ -385,7 +386,14 @@ def album_delete(request):
             # fetch album from db, then delete it
             album = Album.objects.get(external_id=album_external_id)
             album.delete()
-            log_and_store_message(request, messages.SUCCESS, f"Successfully deleted album [{album_external_id}]")
+
+            # generate success and failure messages
+            log_and_store_message(request, messages.SUCCESS, f"Successfully deleted album [{album.name}]")
+            # build html containing link to deleted Google Photos album
+            # doing this here to leverage the simple text limitations of messages framework 
+            link_to_deleted_album = f"<ul><li><a href=\"https://photos.google.com/lr/album/{album_external_id}\" target=\"new\">{album.name}</a></li></ul>"
+            log_and_store_message(request, messages.SUCCESS, 
+                f"Note this album still exists in Google Photos. To also delete it there, visit this link: {link_to_deleted_album}")
 
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
@@ -407,6 +415,7 @@ def album_media_items_delete(request):
     else:
         successful_media_item_ids = []
         failed_media_item_ids = []
+        album_name = ''
 
         # fetch media_items from db, then delete them
         for media_item_id in media_item_external_ids:
@@ -414,17 +423,27 @@ def album_media_items_delete(request):
                 media_item = MediaItem.objects.get(external_id=media_item_id)
                 media_item.delete()
                 successful_media_item_ids.append(media_item_id)
+                if not album_name:
+                    album_name = media_item.album.name
 
             except Exception as ex:
                 failed_media_item_ids.append(media_item_id)
 
+        # generate success and failure messages
         if successful_media_item_ids:
             log_and_store_message(request, messages.SUCCESS, 
-                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_external_id}]")
-            log_and_store_message(request, messages.SUCCESS, f"Successful media items: [{successful_media_item_ids}]")
+                f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_name}]")
+            # build html containing links to deleted Google Photos media
+            # doing this here to leverage the simple text limitations of messages framework 
+            links_to_deleted_media_items = "<ul>"
+            for media_item_id in successful_media_item_ids:
+                links_to_deleted_media_items = f"{links_to_deleted_media_items}<li><a href=\"https://photos.google.com/lr/album/{album_external_id}/photo/{media_item_id}\" target=\"new\">{media_item_id}</a></li>"
+            links_to_deleted_media_items = f"{links_to_deleted_media_items}</ul>"
+            log_and_store_message(request, messages.SUCCESS, 
+                f"Note that these media items still exist in Google Photos. To also delete them there, visit these links: {links_to_deleted_media_items}")
         if failed_media_item_ids:
             log_and_store_message(request, messages.ERROR, 
-                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_external_id}]")
+                f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_name}]")
             log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
 
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
@@ -434,6 +453,8 @@ def mediaitem_search(request):
     template = 'mediaitem_search.html'
     page_title = 'Search for photos'
 
+    MAX_RESULTS_PER_PAGE = 40
+
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=OWNER)
@@ -442,36 +463,57 @@ def mediaitem_search(request):
     search_criteria = {}
     and_filters = {}
     or_filters = ''
+    page_number = 1
+    if request.GET.get('page-number'):
+        page_number = int(request.GET.get('page-number'))
     if request.GET.get('search-album'):
-        search_criteria['search_album_id'] = request.GET.get('search-album')
-        search_album = Album.objects.get(external_id=search_criteria['search_album_id'])
+        search_album = Album.objects.get(external_id=request.GET.get('search-album'))
         and_filters['album'] = search_album.id
+        search_criteria['search_album_name'] = search_album.name
+        search_criteria['search_album_id'] = search_album.external_id
     if request.GET.get('search-tag'):
-        search_criteria['search_tag_name'] = request.GET.get('search-tag')
-        search_tag = Tag.objects.get(name=search_criteria['search_tag_name'])
+        search_tag = Tag.objects.get(name=request.GET.get('search-tag'))
         and_filters['tags'] = search_tag.id
+        search_criteria['search_tag_name'] = search_tag.name
     if request.GET.get('search-text'):
         search_text = request.GET.get('search-text').lower()
+        or_filters = Q(extracted_text_search__icontains = search_text) | Q(external_id__icontains = search_text) | Q(file_name__icontains = search_text) | Q(description__icontains = search_text)
         search_criteria['search_text'] = search_text
-        or_filters = Q(extracted_text_search__contains = search_text) | Q(external_id__contains = search_text) | Q(file_name__contains = search_text) | Q(description__contains = search_text)
 
     # fetch media_items from db
-    matching_mediaitems = MediaItem.objects.filter(**and_filters)
+    matching_mediaitems = MediaItem.objects.filter(**and_filters).order_by('-dt_taken')
     if or_filters:
-        matching_mediaitems = matching_mediaitems.filter(or_filters)
+        matching_mediaitems = matching_mediaitems.filter(or_filters).order_by('-dt_taken')
+    
+    # pagination
+    total_results_count = len(matching_mediaitems)
+    paginator = Paginator(matching_mediaitems, MAX_RESULTS_PER_PAGE)
+    page_results = paginator.page(page_number) 
+    prev_page_number = None
+    next_page_number = None
+    if page_results.has_previous():
+        prev_page_number = page_number - 1
+    if page_results.has_next():
+        next_page_number = page_number + 1
 
     # fetch media_items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    populate_fields_from_gphotosapi(matching_mediaitems, fields_to_populate)
+    populate_fields_from_gphotosapi(page_results, fields_to_populate)
 
     context = {
         'template': template,
         'page_title': page_title,
         'all_albums': all_albums,
         'all_tags': all_tags,
-        'all_facets': metadata.all_facets,
         'search_criteria': search_criteria,
-        'matching_mediaitems': matching_mediaitems,
+        'page_number': page_number,
+        'prev_page_number': prev_page_number,
+        'next_page_number': next_page_number,
+        'page_count_iterator': range(1, paginator.num_pages+1),
+        'page_results': page_results,
+        'page_results_start_index': page_results.start_index(),
+        'page_results_end_index': page_results.end_index(),
+        'total_results_count': total_results_count,
     }
 
     return render(request, template, context)

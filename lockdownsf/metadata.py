@@ -39,37 +39,37 @@ all_aspect_formats = [
     'pano_vertical',
 ]
 
-all_facets = [
-    # scene types
-    'boarded',
-    'boarded_tagged',
-    'boarded_mural',
-    'sign_generic',
-    'sign_distinctive',
-    'sign_personal',
-    'park',
-    'slow_streets',
-    'empty_street',
-    'none',
-    # business types
-    'dining',
-    'bar',
-    'food_market',
-    'non_food_shop',
-    'laundry',
-    'salon',
-    'exercise',
-    'medical',
-    'financial',
-    'performance_venue',
-    'municipal',
-    'religious', 
-    # other
-    'open',
-    'clever',
-    'neighborly',
-    'black_lives_matter',
-]
+# all_facets = [
+#     # scene types
+#     'boarded',
+#     'boarded_tagged',
+#     'boarded_mural',
+#     'sign_generic',
+#     'sign_distinctive',
+#     'sign_personal',
+#     'park',
+#     'slow_streets',
+#     'empty_street',
+#     'none',
+#     # business types
+#     'dining',
+#     'bar',
+#     'food_market',
+#     'non_food_shop',
+#     'laundry',
+#     'salon',
+#     'exercise',
+#     'medical',
+#     'financial',
+#     'performance_venue',
+#     'municipal',
+#     'religious', 
+#     # other
+#     'open',
+#     'clever',
+#     'neighborly',
+#     'black_lives_matter',
+# ]
 
 
 image_file_types = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'heic', 'ico', 'tiff', 'webp']
