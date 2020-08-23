@@ -1,7 +1,7 @@
 from django.contrib import messages
 
 from lockdownsf import metadata
-from lockdownsf.services import gphotosapi
+from lockdownsf.services import gphotosapi, s3manager
 
 
 def log_and_store_message(request, level, message):
@@ -87,3 +87,29 @@ def populate_fields_from_gphotosapi(mapped_media_items, fields):
                     #     if gpmi['mediaItem'].get('mediaMetadata', '')
                     #         mmi.dt_taken = gpmi['mediaItem']['mediaMetadata'].get('creationTime', '')                
                 continue
+
+
+def copy_gphotos_image_to_s3(media_item_external_id):
+    # fetch image data from gphotos api
+    gphotos_image_response = gphotosapi.get_photo_by_id(image_id=media_item_external_id)
+
+    if not (gphotos_image_response and gphotos_image_response.get('baseUrl', '')):
+        raise Exception("Failure to extract OCR text, no google photos image returned matching external_id [{media_item_external_id}]")
+
+    # assemble gphotos image file path
+    img_file_path = gphotos_image_response['baseUrl']
+
+    # append width & height data if available
+    if gphotos_image_response.get('mediaMetadata', ''):
+        width = gphotos_image_response['mediaMetadata'].get('width')
+        height = gphotos_image_response['mediaMetadata'].get('height')
+        if width and height:
+            img_file_path = f"{img_file_path}=w{width}-h{height}"
+
+    # upload gphotos image to s3
+    try:
+        s3manager.upload_image_to_s3(img_file_path, media_item_external_id)
+        return 
+    except Exception as ex:
+        raise Exception("Failure to extract OCR text, google photos image could not be uploaded to s3 for google external_id [{media_item_external_id}]. Details: {ex}")
+    

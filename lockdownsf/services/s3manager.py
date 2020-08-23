@@ -11,7 +11,6 @@ def extract_text(img_file_name, bucket):
     extracted_text_search = ''
     extracted_text_display = ''
 
-    # TODO automatically process personalized signs with textract? 
     # TODO compare output of both and keep whatever is distinctive?  Thep example
 
     # use AWS rekognition's detect_text for first pass at extracting text from image
