@@ -24,7 +24,7 @@ from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
-
+MAX_RESULTS_PER_PAGE = 40
 
 def index(request):
     template = 'index.html'
@@ -183,7 +183,7 @@ def album_listing(request):
     return render(request, template, context)
 
     
-def album_view(request, album_external_id):
+def album_view(request, album_external_id, page_number=None):
     template = 'album_view.html'
     page_title = 'Album details'
 
@@ -199,16 +199,31 @@ def album_view(request, album_external_id):
         """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
         # fetch album and mapped media_items from db
         album = Album.objects.get(external_id=album_external_id)
-        mapped_media_items = album.mediaitem_set.all()
-
-        # fetch media_items from gphotos api to populate image metadata
-        fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        populate_fields_from_gphotosapi(mapped_media_items, fields_to_populate)
+        mapped_media_items = album.mediaitem_set.all().order_by('-dt_taken')
         
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
 
         page_title = f"{page_title}: {album.name}"
+
+        # pagination
+        if page_number:
+            page_number = int(page_number)
+        else:
+            page_number = 1
+        total_results_count = len(mapped_media_items)
+        paginator = Paginator(mapped_media_items, MAX_RESULTS_PER_PAGE)
+        page_results = paginator.page(page_number) 
+        prev_page_number = None
+        next_page_number = None
+        if page_results.has_previous():
+            prev_page_number = page_number - 1
+        if page_results.has_next():
+            next_page_number = page_number + 1
+
+        # fetch media_items from gphotos api to populate image metadata
+        fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+        populate_fields_from_gphotosapi(page_results, fields_to_populate)
 
         context = {
             'template': template,
@@ -217,7 +232,14 @@ def album_view(request, album_external_id):
             'error_messages': error_messages,
             'all_albums': all_albums,
             'album': album,
-            'mapped_media_items': mapped_media_items,
+            'page_number': page_number,
+            'prev_page_number': prev_page_number,
+            'next_page_number': next_page_number,
+            'page_count_iterator': range(1, paginator.num_pages+1),
+            'page_results': page_results,
+            'page_results_start_index': page_results.start_index(),
+            'page_results_end_index': page_results.end_index(),
+            'total_results_count': total_results_count,
         }
     else:
         log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no external_id was specified')
@@ -470,8 +492,6 @@ def mediaitem_search(request):
     template = 'mediaitem_search.html'
     page_title = 'Search for photos'
 
-    MAX_RESULTS_PER_PAGE = 40
-
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=OWNER)
@@ -555,11 +575,6 @@ def mediaitem_view(request, mediaitem_external_id):
             f"Failure to fetch media item, no match for external_id [{mediaitem_external_id}]")
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
-
-    # # fetch media_item from gphotos api to populate thumb_url, description
-    # gphotos_mediaitem = gphotosapi.get_photo_by_id(mediaitem_external_id)
-    # mediaitem.thumb_url = gphotos_mediaitem.get('baseUrl', '')
-    # mediaitem.description = gphotos_mediaitem.get('description', '')
 
     # fetch media_items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
