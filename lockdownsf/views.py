@@ -21,7 +21,7 @@ from django.template import loader
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
-from lockdownsf.services.controller_utils import extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
+from lockdownsf.services.controller_utils import copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 
@@ -772,52 +772,68 @@ def extract_ocr_text(request):
         return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
     
     if request_scope == 'media_item':
-        # fetch media item from gphotos api
-        gphotos_image_response = gphotosapi.get_photo_by_id(image_id=external_id)
-
-        if not (gphotos_image_response and gphotos_image_response.get('baseUrl', '')):
-            log_and_store_message(request, messages.ERROR, 
-                "Failure to extract OCR text, no google photos image returned matching external_id [{external_id}]")
-            return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
-
         # fetch media item from db
-        db_media_item = MediaItem.objects.get(external_id=external_id)
-
-        if not db_media_item:
+        try:
+            media_item = MediaItem.objects.get(external_id=external_id)
+        except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
                 "Failure to extract OCR text, no image found in db matching external_id [{external_id}]")
             return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
 
-        # upload gphotos image to s3
-        # assemble image file path url 
-        img_file_path = gphotos_image_response['baseUrl']
-
-        # append width & height data if available
-        if gphotos_image_response.get('mediaMetadata', ''):
-            width = gphotos_image_response['mediaMetadata'].get('width')
-            height = gphotos_image_response['mediaMetadata'].get('height')
-            if width and height:
-                img_file_path = f"{img_file_path}=w{width}-h{height}"
-
-        s3manager.upload_image_to_s3(img_file_path, external_id)
+        # copy image from gphotos to s3 for OCR extraction
+        try:
+            copy_gphotos_image_to_s3(external_id)
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR, ex)
+            return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
         # extract OCR text from image on s3
         extracted_text_search, extracted_text_display = s3manager.extract_text(external_id, metadata.S3_BUCKET)
 
-        # add extracted text to db_media_item and save 
-        db_media_item.extracted_text_search = extracted_text_search
-        db_media_item.extracted_text_display = extracted_text_display
-        db_media_item.save()
+        # add extracted text to media_item and save 
+        media_item.extracted_text_search = extracted_text_search
+        media_item.extracted_text_display = extracted_text_display
+        media_item.save()
 
         # TODO remove image from s3
 
         return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
     if request_scope == "album":
+        # fetch media items mapped to album from db
+        try:
+            album = Album.objects.get(external_id=external_id)
+            album_media_items = album.mediaitem_set.all()
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR, 
+                "Failure to extract OCR text, problem fetching images associated to album with external_id [{external_id}]")
+            return redirect(f"/lockdownsf/manage/album_view/{external_id}/")  # should this redirect to another url?
 
-        # TODO
+        for media_item in album_media_items:
+            # copy image from gphotos to s3 for OCR extraction
+            try:
+                copy_gphotos_image_to_s3(media_item.external_id)
+            except Exception as ex:
+                log_and_store_message(request, messages.ERROR, ex)
+                continue
+
+            # extract OCR text from image on s3
+            extracted_text_search, extracted_text_display = s3manager.extract_text(media_item.external_id, metadata.S3_BUCKET)
+
+            # add extracted text to media_item and save 
+            media_item.extracted_text_search = extracted_text_search
+            media_item.extracted_text_display = extracted_text_display
+            media_item.save()
+
+            # TODO remove image from s3
 
         return redirect(f"/lockdownsf/manage/album_view/{external_id}/")
+
+
+
+
+
+
 
 def neighborhood_listing(request):
     template = 'neighborhood_listing.html'
