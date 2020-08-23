@@ -4,7 +4,14 @@
 
 {% if mediaitem %}
 <p></p>
+{% if prev_media_item_id %}
+    <a href="/lockdownsf/manage/mediaitem_view/{{ prev_media_item_id }}/" class="navigate">&#8249;</a>
+{% endif %}
 <img src="{{ mediaitem.thumb_url }}"/>
+{% if next_media_item_id %}
+    <a href="/lockdownsf/manage/mediaitem_view/{{ next_media_item_id }}/" class="navigate">&#8250;</a>
+{% endif %}
+
 <!-- <div id="miniGmap"></div> -->
 <p></p>
 

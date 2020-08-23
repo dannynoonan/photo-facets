@@ -26,6 +26,7 @@ from lockdownsf.services.controller_utils import copy_gphotos_image_to_s3, extra
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
 
+
 def index(request):
     template = 'index.html'
 
@@ -576,6 +577,21 @@ def mediaitem_view(request, mediaitem_external_id):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
+    # fetch album from db to determine previous and next media_items for sequential navigation
+    mapped_media_items = mediaitem.album.mediaitem_set.all().order_by('-dt_taken')
+
+    # store all mapped media_item_ids to list, get index of current media item
+    album_media_item_ids = [m.external_id for m in mapped_media_items]
+    curr_index = album_media_item_ids.index(mediaitem_external_id)
+
+    # get media item ids for previous and next index
+    prev_media_item_id = None
+    next_media_item_id = None
+    if curr_index > 0:
+        prev_media_item_id = album_media_item_ids[curr_index - 1]
+    if curr_index < len(album_media_item_ids) - 1:
+        next_media_item_id = album_media_item_ids[curr_index + 1]
+
     # fetch media_items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
     populate_fields_from_gphotosapi([mediaitem], fields_to_populate)
@@ -594,6 +610,8 @@ def mediaitem_view(request, mediaitem_external_id):
         'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
         'mediaitem': mediaitem,
+        'prev_media_item_id': prev_media_item_id,
+        'next_media_item_id': next_media_item_id,
         # 'mediaitem_location_json': json.dumps(mediaitem_location, indent=4),
     }
 
