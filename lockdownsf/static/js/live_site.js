@@ -1,22 +1,22 @@
-var facetLabels = {
-    "mural": "Murals",
-    "boarded": "Boarded up",
-    "sign": "Signs/Messages",
-    "park": "Parks",
-    "slow_streets": "Slow streets",
-    "dining": "Restaurants",
-    "bar": "Bars",
-    "food_market": "Food markets",
-    "non_food_shop": "Shops (non food)",
-    "salon": "Salons",
-    "exercise": "Gyms/Yoga studios",
-    "laundry": "Laundry",
-    "medical": "Medical",
-    "financial": "Banks/Finance",
-    "municipal": "Municipal",
-    "performance_venue": "Performance venue",
-    "religious": "Religious",
-};
+// var facetLabels = {
+//     "mural": "Murals",
+//     "boarded": "Boarded up",
+//     "sign": "Signs/Messages",
+//     "park": "Parks",
+//     "slow_streets": "Slow streets",
+//     "dining": "Restaurants",
+//     "bar": "Bars",
+//     "food_market": "Food markets",
+//     "non_food_shop": "Shops (non food)",
+//     "salon": "Salons",
+//     "exercise": "Gyms/Yoga studios",
+//     "laundry": "Laundry",
+//     "medical": "Medical",
+//     "financial": "Banks/Finance",
+//     "municipal": "Municipal",
+//     "performance_venue": "Performance venue",
+//     "religious": "Religious",
+// };
 
 var gmap;
 // dict of external_ids to media_items loaded from photoCollection 
@@ -59,9 +59,9 @@ function loadPhotoCollection() {
             var media_item = photoCollection[i].media_items[j];
             loadedMediaItems[media_item.external_id] = media_item;
             // add keys to catsToKeys 
-            if (media_item.cats) {
-                for (var k = 0; k < media_item.cats.length; k++) {
-                    cat = media_item.cats[k];
+            if (media_item.facets) {
+                for (var k = 0; k < media_item.facets.length; k++) {
+                    cat = media_item.facets[k];
                     if (cat in catsToKeys) {
                         catsToKeys[cat].push(media_item.external_id);
                     }
@@ -91,7 +91,7 @@ function addFacetsToNav() {
         // add listener for adding/removing markers to map for category
         facetCheckbox.onclick = toggleMarkersForCategory;
         // create textNode and span element for displaying facet label and counts
-        var facetLabel = document.createTextNode(facetLabels[cat]);     
+        var facetLabel = document.createTextNode(cat);     
         var facetCount = document.createElement('span');
         facetCount.innerHTML = catsToKeys[cat].length;
         facetCount.className = 'badge badge-primary badge-pill';

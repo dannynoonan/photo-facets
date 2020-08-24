@@ -52,9 +52,7 @@ def index(request):
         if not hasattr(album, 'media_items'):
             continue
         for media_item in album.media_items:
-            facets_json = []
-            if media_item.facets:
-                facets_json.extend(media_item.facets.split('|'))
+            facets_json = [tag.name for tag in media_item.tags.all()]
             media_item_json = {
                 'external_id': media_item.external_id,
                 'longitude': str(media_item.longitude),
