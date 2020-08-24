@@ -132,6 +132,9 @@ def convert_album_to_json(album):
         
     album_json = {
         'external_id': album.external_id,
+        'longitude': str(album.center_longitude),
+        'latitude': str(album.center_latitude),
+        'zoom_level': str(album.map_zoom_level),
         'media_items': media_items_json,
     }
 

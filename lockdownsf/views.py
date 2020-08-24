@@ -45,17 +45,24 @@ def index(request):
             populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
             album.media_items = album_media_items
 
-    # build photo_collection json that will be passed to page js
+    # build photo_collection json to be passed to page js
     photo_collection_json = []
     for album in all_albums:
         album_json = convert_album_to_json(album)
         photo_collection_json.append(album_json)
+    # build map meta json to be passed to page js
+    map_meta_json = {}
+    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(all_albums)
+    map_meta_json['latitude'] = ctr_lat
+    map_meta_json['longitude'] = ctr_lng
+    map_meta_json['zoom_level'] = zoom_level
 
     context = {
         'template': template,
         'page_title': page_title,
         'all_albums': all_albums,
-        'photo_collection_json': json.dumps(photo_collection_json, indent=4)
+        'photo_collection_json': json.dumps(photo_collection_json, indent=4),
+        'map_meta_json': json.dumps(map_meta_json, indent=4),
     }
 
     return render(request, template, context)
@@ -82,15 +89,21 @@ def album_map(request, album_id):
         populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
         album.media_items = album_media_items
 
-    # build single album photo_collection json that will be passed to page js
+    # build single album photo_collection json to be passed to page js
     album_json = convert_album_to_json(album)
     photo_collection_json = [album_json]
+    # build map meta json to be passed to page js
+    map_meta_json = {}
+    map_meta_json['latitude'] = str(album.center_latitude)
+    map_meta_json['longitude'] = str(album.center_longitude)
+    map_meta_json['zoom_level'] = album.map_zoom_level
 
     context = {
         'template': template,
         'page_title': page_title,
         'all_albums': all_albums,
-        'photo_collection_json': json.dumps(photo_collection_json, indent=4)
+        'photo_collection_json': json.dumps(photo_collection_json, indent=4),
+        'map_meta_json': json.dumps(map_meta_json, indent=4),
     }
 
     return render(request, template, context)
@@ -405,7 +418,7 @@ def album_import_new_media(request):
     # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
     # freshly fetch album to get all of its mappings - technically unnecessary for new albums, but just cleaner/streamlined this way
     album = Album.objects.get(external_id=album.external_id)
-    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(album.mediaitem_set.all())
+    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.mediaitem_set.all())
     # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
     album.center_latitude = ctr_lat
     album.center_longitude = ctr_lng
@@ -495,7 +508,7 @@ def album_media_items_delete(request):
     try:
         album = Album.objects.get(external_id=album_external_id)
         album_label = album.name  
-        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(album.mediaitem_set.all())
+        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.mediaitem_set.all())
         album.center_latitude = ctr_lat
         album.center_longitude = ctr_lng
         album.map_zoom_level = zoom_level

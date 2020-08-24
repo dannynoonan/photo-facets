@@ -30,15 +30,18 @@ var catsToKeys = {};
 // array of currently displayed media_item external_ids
 var displayedMarkerKeys = [];
 
-const baseLatLng = {lat: 37.773972, lng: -122.431297};
+// const baseLatLng = {lat: 37.773972, lng: -122.431297};
 
 // called when page first loads
 function initGmap() {
     console.log(photoCollection);
     // init gmap
     gmap = new google.maps.Map(document.getElementById('gmap'), {
-        zoom: 14,
-        center: baseLatLng,
+        zoom: mapMeta['zoom_level'],
+        center: {
+            lat: parseFloat(mapMeta['latitude']), 
+            lng: parseFloat(mapMeta['longitude'])
+        },
         mapTypeId: 'terrain'
     });
     // load locations from images
