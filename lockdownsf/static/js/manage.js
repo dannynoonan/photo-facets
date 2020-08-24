@@ -305,7 +305,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 // display new image table and album creation form, hide file selector 
                 var tableEl = document.getElementById("image-preview-table");
                 tableEl.style.display = "block"; 
-                document.getElementById("album-create-form").style.display = "block";
+                document.getElementById("album-import-media-form").style.display = "block";
                 document.getElementById("file-upload-selector").style.display = "none";
 
                 // add row to image preview table for each image added to s3
@@ -343,7 +343,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
 
                 if (success_file_count + failed_files.length == total_file_count) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-create-submit").style.display = 'block';
+                    document.getElementById("album-import-media-submit").style.display = 'block';
                 }
 
                 // // extract and set properties using EXIF
@@ -364,12 +364,23 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 document.getElementById("s3-upload-failure").innerHTML = failure_message;
                 if (success_file_count + failed_files.length == total_file_count) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-create-submit").style.display = 'block';
+                    document.getElementById("album-import-media-submit").style.display = 'block';
                 }
             }
         }
     };
     xhr.send(postData);
+}
+
+
+function showOrHideAlbumTitleInput() {
+    var selectedAlbum = document.getElementById("select-album-external-id").value;
+    if (selectedAlbum == 0) {
+        document.getElementById("new-album-name").style.display = "block";
+    }
+    else {
+        document.getElementById("new-album-name").style.display = "none";
+    }
 }
 
 

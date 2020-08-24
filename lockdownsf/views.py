@@ -29,6 +29,7 @@ MAX_RESULTS_PER_PAGE = 40
 
 def index(request):
     template = 'index.html'
+    page_title = 'Photo facets home'
 
     # fetch all albums from db
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
@@ -70,6 +71,7 @@ def index(request):
 
     context = {
         'template': template,
+        'page_title': page_title,
         'all_albums': all_albums,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4)
     }
@@ -141,20 +143,6 @@ def manage(request):
         'page_title': page_title,
         'success_messages': success_messages,
         'error_messages': error_messages,
-        'all_albums': all_albums,
-    }
-    
-    return render(request, template, context)
-
-
-def file_uploader(request):
-    template = 'file_uploader.html'
-
-    # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
-
-    context = {
-        'template': template,
         'all_albums': all_albums,
     }
     
@@ -254,9 +242,12 @@ def album_view(request, album_external_id, page_number=None):
     return render(request, template, context)
 
 
-def album_import(request):
-    template = 'album_import.html'
-    page_title = 'Import photos into a new album'
+def album_select_new_media(request):
+    template = 'album_select_new_media.html'
+    page_title = 'Select photos for import into album'
+
+    # assign form data to vars and validate input
+    add_to_album_external_id = request.POST.get('add-to-album-external-id', '')
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
@@ -265,53 +256,81 @@ def album_import(request):
         'template': template,
         'page_title': page_title,
         'all_albums': all_albums,
+        'add_to_album_external_id': add_to_album_external_id,
     }
     
     return render(request, template, context)
 
 
-def album_create(request):
-    """Upload photos and create new album: 
-    - init and save Album to db with status PENDING and no external_id
+def album_import_new_media(request):
+    """Extract data from s3 photos and add them to gphotos and db: 
+    - if new album:
+    -   init and save Album to db with status NEWBORN and no external_id
+    - else:
+    -   fetch album from db
     - download the photos from s3
-    - extract location and OCR text info from photos
-    - init and save MediaItems to db, mapped to Album but with status PENDING and no external_id
-    - create gphotos album
-    - update Album in db with status ACTIVE, lat/lng, and external_id set
+    - extract GPS and timestamp info from photos
+    - init and save MediaItems to db, with status NEWBORN, no external_id, and not mapped to album
+    - if new album:
+    -   create gphotos album
+    -   update Album in db with external_id and set status to LOADED
+    - else:
+    -   fetch album from gphotos
     - upload and map gphotos mediaItems to gphotos album
-    - update MediaItems in db with statuses ACTIVE and external_ids set
+    - update MediaItems in db...
+    -   if gphotos upload success: update external_ids and set status to LOADED_AND_MAPPED  
+    -   if gphotos loading failed: set status to LOADED (and no external_id to set)
+    - calculate GPS
+    - if new album:
+    -   update Album in db with gps data and set status to LOADED_AND_MAPPED
+    - else:
+    -   update Album in db with new gps data
     - delete photos from s3
     """
     
-    # TODO workflow is entirely dependent on filename uniqueness!!!
+    # TODO workflow is dependent on filename uniqueness, which is one reason it's best to stick with 
+    # folder upload rather than drag-and-drop
 
     # assign form data to vars and validate input
-    album_title = request.POST.get('album-title', '')
     images_to_upload = request.POST.getlist('images-to-upload', [])
+    album_external_id = request.POST.get('select-album-external-id', '')
+    album_name = request.POST.get('new-album-name', '')
+    
+    if not images_to_upload:
+        log_and_store_message(request, messages.ERROR,
+            "Failed to import photos, no photos were queued for upload. At least one photo is required.")
+        return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
-    if not (album_title and images_to_upload):
-        if not album_title:
+    # if adding photos to existing album: fetch album from db
+    if album_external_id:
+        try:
+            album = Album.objects.get(external_id=album_external_id)
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR,
+                "Failed to import photos, no album found matching external id [{album_external_id}].")
+            return redirect(f"/lockdownsf/manage/album_select_new_media/")
+    
+    # if adding photos to new album: create new album in db
+    else:
+        if not album_name:
             log_and_store_message(request, messages.ERROR,
                 "Failed to create album, no album title was specified.")
-        if not images_to_upload:
-            log_and_store_message(request, messages.ERROR,
-                "Failed to create album, no images were queued for upload. At least one image is required.")
+            return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
-        return redirect(f"/lockdownsf/manage/album_import/")
+        # insert Album into db with status NEWBORN and no external_id
+        album = Album(name=album_name, owner=OWNER, status=metadata.Status.NEWBORN.name)
+        album.save()
 
-    # insert Album into db with status PENDING and no external_id
-    album = Album(name=album_title, owner=OWNER, status=metadata.Status.NEWBORN.name)
-    album.save()
-
+    # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
     media_items = []
     for image_path in images_to_upload:
         image_file_name = image_path.split('/')[-1:][0]
 
-        # download the photos from s3
+        # download each photo from s3
         response = requests.get(image_path, stream=True)
         pil_image = Image.open(BytesIO(response.content))
 
-        # extract location and timestamp info
+        # extract GPS and timestamp info
         exif_data = image_utils.get_exif_data(pil_image)
         lat = 0
         lng = 0
@@ -327,7 +346,7 @@ def album_create(request):
         # extract OCR text
         # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
 
-        # init and save MediaItems to db, with status PENDING, no external_id, and not yet mapped to Album
+        # init and save MediaItems to db, with status NEWBORN, no external_id, and not yet mapped to Album
         media_item = MediaItem(
             file_name=image_file_name, owner=OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
             latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name)
@@ -335,23 +354,35 @@ def album_create(request):
         media_item.save()
         media_items.append(media_item)
 
-    # create gphotos album
-    album_response = gphotosapi.init_new_album(album_title)
+    # if adding photos to existing album: fetch album from gphotos 
+    if album_external_id:
+        album_response = gphotosapi.get_album(album_external_id)
 
-    if not album_response or not album_response['id']:
-        log_and_store_message(request, messages.ERROR, "@@@@@@ ERROR GRASSHOPPER DISASSEMBLE")
+        if not album_response or not album_response['id']:
+            log_and_store_message(request, messages.ERROR, 
+                "Failure to import photos, unable to fetch album with id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
+            # TODO do I need to delete partially loaded photos here, otherwise key collisions on subsequent reload?
+            return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
-        return redirect(f"/lockdownsf/manage/album_import/")
+    # if adding photos to new album: create gphotos album, update album external_id and status in db
+    else:
+        album_response = gphotosapi.init_new_album(album_name)
 
-    # update Album in db with status LOADED and external_id set
-    album.external_id = album_response['id']
-    album.status = metadata.Status.LOADED.name
-    album.save()
+        if not album_response or not album_response['id']:
+            log_and_store_message(request, messages.ERROR, "@@@@@@ ERROR GRASSHOPPER DISASSEMBLE")
+            return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
-    # upload and map gphotos mediaItems to gphotos album
+        # update Album in db with status LOADED and external_id set
+        album.external_id = album_response['id']
+        album.status = metadata.Status.LOADED.name
+        album.save()
+
+    # for both new and existing album workflow: upload and map gphotos mediaItems to gphotos album
     mapped_images_response = gphotosapi.upload_and_map_images_to_album(album_response, image_list=images_to_upload, from_cloud=True)
 
-    # update MediaItems in db with statuses LOADED_AND_MAPPED or LOADED and external_ids set
+    # for both new and existing album workflow: update MediaItems in db...
+    # -> if gphotos upload success: update external_ids, set status to LOADED_AND_MAPPED
+    # -> if gphotos upload failure: set status to LOADED
     mapped_media_items = []
     unmapped_media_items = []
     failed_media_items = images_to_upload
@@ -369,9 +400,10 @@ def album_create(request):
             unmapped_media_items = update_mediaitems_with_gphotos_data(
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
 
-    # calculate album lat/lng and furthest N-S or E-W distance between points
-    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(mapped_media_items)
-
+    # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
+    # freshly fetch album to get all of its mappings - technically unnecessary for new albums, but just cleaner/streamlined this way
+    album = Album.objects.get(external_id=album.external_id)
+    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.calculate_album_gps_info(album.mediaitem_set.all())
     # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
     album.center_latitude = ctr_lat
     album.center_longitude = ctr_lng
@@ -380,11 +412,13 @@ def album_create(request):
     album.status = metadata.Status.LOADED_AND_MAPPED.name
     album.save()
 
+    # for both new and existing album workflow: response messaging
+    # if adding photos to existing album
     log_and_store_message(request, messages.SUCCESS,
-        f"Successfully created album [{album.name}] and mapped [{len(mapped_media_items)}] media items to it")
+        f"Successfully mapped [{len(mapped_media_items)}] new media items to album [{album.name}]")
     if unmapped_media_items:
         log_and_store_message(request, messages.ERROR,
-            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to newly created album [{album.name}]")
+            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to album [{album.name}]")
         log_and_store_message(request, messages.ERROR, f"Unmapped media items: [{unmapped_media_items}]")
     if failed_media_items:
         log_and_store_message(request, messages.ERROR,

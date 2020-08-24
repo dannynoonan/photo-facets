@@ -90,7 +90,7 @@ def upload_and_map_images_to_album(album_response, image_list=None, image_dir_pa
     # map newly uploaded images into new album
     result = map_images_to_album(gpids_to_img_data, album_response['id'])
 
-    print(f"Successfully uploaded [{len(gpids_to_img_data)}] images and mapped [{len(result['mapped_gpids_to_img_data'])}] images to album [{album_response['title']}] at url [{album_response['productUrl']}]")
+    print(f"Successfully uploaded [{len(gpids_to_img_data)}] images and mapped [{len(result['mapped_gpids_to_img_data'])}] images to album [{album_response['title']}]")
 
     if result.get('unmapped_gpids_to_img_data', ''):
         print(f"Failed to add [{len(result['unmapped_gpids_to_img_data'])}] images into album. This may be due to a duplicate version of an image already existing in your library. Make sure you are only trying to add images that don't already exist in your library.")

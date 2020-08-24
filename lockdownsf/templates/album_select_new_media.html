@@ -1,0 +1,53 @@
+{% extends 'manage.html' %}
+
+{% block body %}
+<form action="/lockdownsf/manage/album_import_new_media/" method="POST">
+    <h5>Select album to import photos into:</h5>
+    <select class="form-control form-control-inline-lg" id="select-album-external-id" name="select-album-external-id" onchange="showOrHideAlbumTitleInput();">
+        <option value="">* Create new album *</option>
+    {% for album in all_albums %}
+        <option value="{{ album.external_id }}" {% if add_to_album_external_id == album.external_id %} selected {% endif %}>{{ album.name }}</option>
+    {% endfor %} 
+    </select><br/>
+    <div id="new-album-name" {% if add_to_album_external_id %} class="hidden-block" {% endif %}>
+        <input type="text" name="new-album-name" placeholder="New album title" class="form-control form-control-inline-lg">
+    </div>
+    <br/><br/>
+
+    <div id="file-upload-selector" class="form-group">
+        <h5>Select folder containing image files to import:</h5>
+        <label class="custom-file-upload">Select folder
+            <input id="file-upload" type="file" name="multi-file-upload" id="multi-file-upload" aria-describedby="fileHelp"
+                onchange="selectFolder(event)" webkitdirectory mozdirectory msdirectory odirectory directory multiple />
+        </label>
+        <small id="fileHelp" class="form-text text-muted">
+            This will generate a preview of photos to be imported. Once the preview is generated you will have the option to submit these photos for import into the specified album.</small>
+    </div>
+
+    <div id="album-import-media-form" class="hidden-block form-group">
+        <div id="s3-upload-success" class="hidden-block alert alert-success"></div>
+        <div id="s3-upload-failure" class="hidden-block alert alert-danger"></div>
+        {% csrf_token %}
+        <!-- <input type="hidden" id="image-count" name="image-count"> -->
+        <div id="album-import-media-submit" class="hidden-block form-group">
+            <input type="submit" value="Import photos into album" class="btn btn-secondary">
+        </div>
+        <table id="image-preview-table" class="table table-hover hidden-block">
+            <thead>
+                <tr><th scope="col"></th>
+                    <th scope="col">photo</th>
+                    <th scope="col">filename</th>
+                    <th scope="col">mime type</th></tr>
+            </thead>
+        </table>
+    </div>
+
+</form>
+
+<!-- <div>
+    <button onclick="authenticate().then(loadClient)">authorize and load</button>
+    <button onclick="execute()">execute</button>
+</div> -->
+    
+{% endblock %}
+        

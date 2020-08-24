@@ -101,11 +101,11 @@
     {% endfor %}
     </tbody>
 </table>
-<input type="submit" value="Delete selected photos" class="btn btn-secondary">
+<input type="submit" value="[&mdash;] Delete selected photos" class="btn btn-secondary">
 </form>
 {% endif %}
 
-{% if unmapped_media_items %}
+<!-- {% if unmapped_media_items %}
 <p>{{ unmapped_media_items|length }} media items uploaded but failed to map to album:</p>
 <table class="table table-hover">
     <thead>
@@ -136,19 +136,25 @@
     <il>{{ failed_media_item }}</il>    
 {% endfor %}
 </ul>
-{% endif %}
+{% endif %} -->
+
+<form action="/lockdownsf/manage/album_select_new_media/" method="POST" class="form-group">
+    {% csrf_token %}
+    <input type="hidden" name="add-to-album-external-id" value="{{ album.external_id }}">
+    <input type="submit" value="[+] Add photos to album" class="btn btn-secondary">
+</form>
 
 <form action="/lockdownsf/manage/extract_ocr_text/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="request-scope" value="album">
     <input type="hidden" name="external-id" value="{{ album.external_id }}">
-    <input type="submit" value="Extract OCR text (entire album)" class="btn btn-secondary">
+    <input type="submit" value="[~] Extract OCR text ({{ total_results_count }} photos)" class="btn btn-secondary">
 </form>
 
 <form action="/lockdownsf/manage/album_delete/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
-    <input type="submit" value="DELETE ALBUM" class="btn btn-secondary">
+    <input type="submit" value="[x] DELETE ALBUM" class="btn btn-secondary">
 </form>
 
 {% else %}
