@@ -4,7 +4,7 @@ from . import views
 
 urlpatterns = [
     path(r'', views.index, name='index'),
-    path(r'neighborhood/<str:neighborhood_slug>/', views.neighborhood, name='neighborhood'),
+    path(r'album_map/<str:album_id>/', views.album_map, name='album_map'),
     path(r'sign_s3/', views.sign_s3, name='sign_s3'),
     path(r'manage/', views.manage, name='manage'),
     path(r'manage/album_listing/', views.album_listing, name='album_listing'),

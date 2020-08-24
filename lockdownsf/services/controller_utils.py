@@ -112,4 +112,27 @@ def copy_gphotos_image_to_s3(media_item_external_id):
         return 
     except Exception as ex:
         raise Exception("Failure to extract OCR text, google photos image could not be uploaded to s3 for google external_id [{media_item_external_id}]. Details: {ex}")
-    
+
+
+def convert_album_to_json(album):
+    if not (album and hasattr(album, 'media_items')):
+        return None
+
+    media_items_json = []
+    for media_item in album.media_items:
+        facets_json = [tag.name for tag in media_item.tags.all()]
+        media_item_json = {
+            'external_id': media_item.external_id,
+            'longitude': str(media_item.longitude),
+            'latitude': str(media_item.latitude),
+            'thumb_url': media_item.thumb_url,
+            'facets': facets_json
+        }
+        media_items_json.append(media_item_json)
+        
+    album_json = {
+        'external_id': album.external_id,
+        'media_items': media_items_json,
+    }
+
+    return album_json
