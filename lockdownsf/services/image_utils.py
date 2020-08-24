@@ -2,6 +2,7 @@ import exifread
 from PIL import ExifTags, Image
 
 from lockdownsf.metadata import img_max_dimensions
+from lockdownsf.models import Album, MediaItem
 
 import ipdb
 
@@ -111,9 +112,18 @@ def convert_to_degress(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
-def calculate_album_gps_info(media_items):
-    all_lat = [float(mi.latitude) for mi in media_items if mi.latitude]
-    all_lng = [float(mi.longitude) for mi in media_items if mi.longitude]
+def avg_gps_info(media_items):
+    if not media_items:
+        return 0, 0, 1, 0
+    # hackish way of supporting both MediaItem and Album types
+    if type(media_items[0]) == MediaItem:
+        all_lat = [float(mi.latitude) for mi in media_items if mi.latitude]
+        all_lng = [float(mi.longitude) for mi in media_items if mi.longitude]
+    elif type(media_items[0]) == Album:
+        all_lat = [float(a.center_latitude) for a in media_items if a.center_latitude]
+        all_lng = [float(a.center_longitude) for a in media_items if a.center_longitude]
+    else:
+        return 0, 0, 1, 0
     ctr_lat = None
     ctr_lng = None
     furthest_dist = 0
