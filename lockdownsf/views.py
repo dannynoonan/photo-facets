@@ -21,7 +21,7 @@ from django.template import loader
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
-from lockdownsf.services.controller_utils import copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
+from lockdownsf.services.controller_utils import convert_album_to_json, copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
@@ -48,23 +48,7 @@ def index(request):
     # build photo_collection json that will be passed to page js
     photo_collection_json = []
     for album in all_albums:
-        album_media_items_json = []
-        if not hasattr(album, 'media_items'):
-            continue
-        for media_item in album.media_items:
-            facets_json = [tag.name for tag in media_item.tags.all()]
-            media_item_json = {
-                'external_id': media_item.external_id,
-                'longitude': str(media_item.longitude),
-                'latitude': str(media_item.latitude),
-                'thumb_url': media_item.thumb_url,
-                'facets': facets_json
-            }
-            album_media_items_json.append(media_item_json)
-        album_json = {
-            'external_id': album.external_id,
-            'media_items': album_media_items_json,
-        }
+        album_json = convert_album_to_json(album)
         photo_collection_json.append(album_json)
 
     context = {
@@ -77,19 +61,39 @@ def index(request):
     return render(request, template, context)
 
 
-def neighborhood(request, neighborhood_slug):
-    template = 'neighborhood.html'
+def album_map(request, album_id):
+    template = 'index.html'
+    page_title = 'Photo facets - album map'
+
+    # fetch all albums from db
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
     try:
-        neighborhood = Neighborhood.objects.get(slug=neighborhood_slug)
-        photos = neighborhood.photo_set.all() 
-        context = {
-            'neighborhood': neighborhood,
-            'photos': photos,
-        }
-        return render(request, template, context)
-    except Neighborhood.DoesNotExist:
-        raise Http404("No neighborhood found for slug %s" % neighborhood_slug)
+        album = Album.objects.get(external_id=album_id)
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR, 'Failure to load album with google photos id [{album_id}]')
+        return redirect(f"/lockdownsf/")
+
+    # fetch all media_items per album; ignore albums lacking media items
+    album_media_items = album.mediaitem_set.all()
+    if album_media_items:
+        # fetch media_items from gphotos api to populate image metadata
+        fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+        populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
+        album.media_items = album_media_items
+
+    # build single album photo_collection json that will be passed to page js
+    album_json = convert_album_to_json(album)
+    photo_collection_json = [album_json]
+
+    context = {
+        'template': template,
+        'page_title': page_title,
+        'all_albums': all_albums,
+        'photo_collection_json': json.dumps(photo_collection_json, indent=4)
+    }
+
+    return render(request, template, context)
 
 
 def sign_s3(request):
