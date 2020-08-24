@@ -1,7 +1,7 @@
 import exifread
 from PIL import ExifTags, Image
 
-from lockdownsf.metadata import img_max_dimensions
+from lockdownsf.metadata import img_max_dimensions, distances_to_zooms
 from lockdownsf.models import Album, MediaItem
 
 import ipdb
@@ -131,10 +131,12 @@ def avg_gps_info(media_items):
         ctr_lat = sum(all_lat) / len(all_lat)
         sorted_lat = sorted(all_lat)
         furthest_dist = abs(sorted_lat[0] - sorted_lat[-1])
+        # print(f"lat furthest_dist: {furthest_dist} (lowest lat: {sorted_lat[0]} highest lat: {sorted_lat[-1]}")
     if all_lng:
         ctr_lng = sum(all_lng) / len(all_lng)
         sorted_lng = sorted(all_lng)
         furthest_lng = abs(sorted_lng[0] - sorted_lng[-1])
+        # print(f"lng furthest_dist: {furthest_lng} (lowest lng: {sorted_lng[0]} highest lng: {sorted_lng[-1]}")
         if furthest_lng > furthest_dist:
             furthest_dist = furthest_lng
     zoom_level = optimal_zoom_for_distance(furthest_dist)
@@ -143,8 +145,10 @@ def avg_gps_info(media_items):
 
 
 def optimal_zoom_for_distance(distance):
-    # TODO
-    return 14
+    for dtz in distances_to_zooms:
+        if distance < dtz[0]:
+            return dtz[1]
+    return 0
 
 
 
