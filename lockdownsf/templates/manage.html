@@ -8,11 +8,14 @@
             {% csrf_token %}
             <a class="navbar-brand" href="/lockdownsf/manage/album_listing/">Albums</a>
             <ul class="navbar-nav mr-auto">
+                <li class="nav-item {% if template == 'album_select_new_media.html' %} active {% endif %}">
+                    <a class="nav-link" href="/lockdownsf/manage/album_select_new_media/">Import</a>
+                </li>
                 <li class="nav-item {% if template == 'album_listing.html' %} active {% endif %}">
                     <a class="nav-link" href="/lockdownsf/manage/album_listing/">List</a>
                 </li>
-                <li class="nav-item {% if template == 'album_import.html' or template == 'album_view.html' %} active {% endif %}">
-                    <a class="nav-link" href="/lockdownsf/manage/album_import/">Add/Edit</a>
+                <li class="nav-item {% if template == 'album_view.html' %} active {% endif %}">
+                    <a class="nav-link">Edit</a>
                 </li>
                 <li class="nav-item nav-link">Lookup:</li>
             </ul>
@@ -29,13 +32,15 @@
     <a class="navbar-brand" href="/lockdownsf/manage/mediaitem_search/">Photos</a>
     <div class="collapse navbar-collapse" id="navbarColor01">
         <ul class="navbar-nav mr-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="/lockdownsf/manage/album_select_new_media/">Import</a>
+            </li>
             <li class="nav-item {% if template == 'mediaitem_search.html' %} active {% endif %}">
                 <a class="nav-link" href="/lockdownsf/manage/mediaitem_search/">Search</a>
             </li>
             <li class="nav-item {% if template == 'mediaitem_view.html' %} active {% endif %}">
                 <a class="nav-link">Edit</a>
             </li>
-            
         </ul>
     </div>
 
