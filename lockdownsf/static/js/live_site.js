@@ -77,12 +77,44 @@ function loadPhotoCollection() {
             domImg.id = media_item.external_id;
             domImg.src = media_item.thumb_url;
             keysToDomImgs[media_item.external_id] = domImg;
-            console.log(domImg);
+            // console.log(domImg);
         }			
     }
 }
 
 function addFacetsToNav() {
+    // create album pulldown with counts per album in photoCollection
+    if (Object.keys(allAlbums).length > 1) {  
+        var albumSelect = document.createElement('select');
+        albumSelect.setAttribute('id', 'album-select'); 
+        albumSelect.className = 'form-control';
+        albumSelect.onchange = function() {
+            location = this.options[this.selectedIndex].value;
+        }
+        // add all-album option
+        var albumOption = document.createElement('option');
+        albumOption.setAttribute('value', "/lockdownsf/"); 
+        // if (selectedAlbumId == "0") {
+        //     albumOption.selected = true;
+        // }
+        var albumLabel = document.createTextNode('-- Zoom to album --'); 
+        albumOption.appendChild(albumLabel); 
+        albumSelect.appendChild(albumOption);  
+        // add each album option
+        for (var albumId in allAlbums) {
+            var url = "/lockdownsf/album_map/" + albumId + "/"
+            var albumOption = document.createElement('option');
+            albumOption.setAttribute('value', url); 
+            if (albumId == selectedAlbumId) {
+                albumOption.selected = true;
+            }
+            var albumLabel = document.createTextNode(allAlbums[albumId]); 
+            albumOption.appendChild(albumLabel); 
+            albumSelect.appendChild(albumOption);     
+        }
+        // add select element to facet-panel
+        document.getElementById('facet-panel').appendChild(albumSelect);
+    }
     // create checkboxes with counts for all tags found in photoCollection
     for (var tag in tagsToKeys) {
         // create checkbox for each tag
@@ -97,15 +129,16 @@ function addFacetsToNav() {
         var tagCount = document.createElement('span');
         tagCount.innerHTML = tagsToKeys[tag].length;
         tagCount.className = 'badge badge-primary badge-pill';
-        // wrap checkbox, textNode, and span in list item and add to facet-list
+        // wrap checkbox, textNode, and span in list item and add to facet-panel
         var tagLi = document.createElement('li');
         tagLi.className = 'list-group-item d-flex justify-content-between align-items-center';
         tagLi.appendChild(tagCheckbox);
         tagLi.appendChild(tagLabel);
         tagLi.appendChild(tagCount);
-        document.getElementById("facet-list").appendChild(tagLi);
+        document.getElementById('facet-panel').appendChild(tagLi);
     }
 }
+
 
 //
 function initAndDisplayAllPhotoMarkers() {
@@ -127,7 +160,7 @@ function initAndDisplayPhotoMarker(domImg) {
     //
     // var contentDiv = "<div class=\"marker-window-landscape\" style=\"height:" + adjustedHeight + "; width:" + adjustedWidth + ";\"><img src=\"" + this.src + "\" height=\"" + adjustedHeight + "\" width=\"" + adjustedWidth + "\"></div>";
     var contentDiv = "<div class=\"marker-window-landscape\"><img src=\"" + domImg.src + "\"></div>";
-    console.log("content for photo id [" + domImg.id + "]: " + contentDiv);          
+    // console.log("content for photo id [" + domImg.id + "]: " + contentDiv);          
     var markerWindow = new google.maps.InfoWindow({
         content: contentDiv,
     });
