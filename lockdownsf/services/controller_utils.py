@@ -120,13 +120,13 @@ def convert_album_to_json(album):
 
     media_items_json = []
     for media_item in album.media_items:
-        facets_json = [tag.name for tag in media_item.tags.all()]
+        tags_json = [tag.name for tag in media_item.tags.all()]
         media_item_json = {
             'external_id': media_item.external_id,
             'longitude': str(media_item.longitude),
             'latitude': str(media_item.latitude),
             'thumb_url': media_item.thumb_url,
-            'facets': facets_json
+            'tags': tags_json
         }
         media_items_json.append(media_item_json)
         

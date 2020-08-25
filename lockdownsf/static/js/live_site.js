@@ -61,9 +61,9 @@ function loadPhotoCollection() {
             var media_item = photoCollection[i].media_items[j];
             loadedMediaItems[media_item.external_id] = media_item;
             // add keys to tagsToKeys 
-            if (media_item.facets) {
-                for (var k = 0; k < media_item.facets.length; k++) {
-                    tag = media_item.facets[k];
+            if (media_item.tags) {
+                for (var k = 0; k < media_item.tags.length; k++) {
+                    tag = media_item.tags[k];
                     if (tag in tagsToKeys) {
                         tagsToKeys[tag].push(media_item.external_id);
                     }
@@ -86,24 +86,24 @@ function addFacetsToNav() {
     // create checkboxes with counts for all tags found in photoCollection
     for (var tag in tagsToKeys) {
         // create checkbox for each tag
-        var facetCheckbox = document.createElement('input');
-        facetCheckbox.setAttribute('type', 'checkbox');
-        facetCheckbox.id = tag + '_checkbox';
-        facetCheckbox.checked = true;
+        var tagCheckbox = document.createElement('input');
+        tagCheckbox.setAttribute('type', 'checkbox');
+        tagCheckbox.id = tag + '_checkbox';
+        tagCheckbox.checked = true;
         // add listener for adding/removing markers to map for tag
-        facetCheckbox.onclick = toggleMarkersForTag;
-        // create textNode and span element for displaying facet label and counts
-        var facetLabel = document.createTextNode(tag);     
-        var facetCount = document.createElement('span');
-        facetCount.innerHTML = tagsToKeys[tag].length;
-        facetCount.className = 'badge badge-primary badge-pill';
+        tagCheckbox.onclick = toggleMarkersForTag;
+        // create textNode and span element for displaying tag label and counts
+        var tagLabel = document.createTextNode(tag);     
+        var tagCount = document.createElement('span');
+        tagCount.innerHTML = tagsToKeys[tag].length;
+        tagCount.className = 'badge badge-primary badge-pill';
         // wrap checkbox, textNode, and span in list item and add to facet-list
-        var facetLi = document.createElement('li');
-        facetLi.className = 'list-group-item d-flex justify-content-between align-items-center';
-        facetLi.appendChild(facetCheckbox);
-        facetLi.appendChild(facetLabel);
-        facetLi.appendChild(facetCount);
-        document.getElementById("facet-list").appendChild(facetLi);
+        var tagLi = document.createElement('li');
+        tagLi.className = 'list-group-item d-flex justify-content-between align-items-center';
+        tagLi.appendChild(tagCheckbox);
+        tagLi.appendChild(tagLabel);
+        tagLi.appendChild(tagCount);
+        document.getElementById("facet-list").appendChild(tagLi);
     }
 }
 
