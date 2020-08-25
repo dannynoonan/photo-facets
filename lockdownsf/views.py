@@ -292,6 +292,9 @@ def album_select_new_media(request):
     # assign form data to vars and validate input
     add_to_album_external_id = request.POST.get('add-to-album-external-id', '')
 
+    # generate uuid for tmp s3 dir to store photos to if any are uploaded
+    tmp_dir_uuid = uuid.uuid4()
+
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
@@ -299,6 +302,7 @@ def album_select_new_media(request):
         'template': template,
         'page_title': page_title,
         'all_albums': all_albums,
+        'tmp_dir_uuid': tmp_dir_uuid,
         'add_to_album_external_id': add_to_album_external_id,
     }
     
@@ -336,8 +340,10 @@ def album_import_new_media(request):
 
     # assign form data to vars and validate input
     images_to_upload = request.POST.getlist('images-to-upload', [])
+    print(f"images_to_upload: [{images_to_upload}]")
     album_external_id = request.POST.get('select-album-external-id', '')
     album_name = request.POST.get('new-album-name', '')
+    tmp_dir_uuid = request.POST.get('tmp-dir-uuid', '')
     
     if not images_to_upload:
         log_and_store_message(request, messages.ERROR,
@@ -366,8 +372,11 @@ def album_import_new_media(request):
 
     # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
     media_items = []
+    image_file_names = []
     for image_path in images_to_upload:
         image_file_name = image_path.split('/')[-1:][0]
+        # store file_names to list used to delete from s3 later TODO redundant but avoids combining success/failure lists later
+        image_file_names.append(image_file_name)
 
         # download each photo from s3
         response = requests.get(image_path, stream=True)
@@ -468,7 +477,8 @@ def album_import_new_media(request):
             f"Failed to load [{len(failed_media_items)}] media items into google photos library.")
         log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_items}]")
 
-    # TODO: delete photos from s3
+    # delete photos from s3
+    s3manager.delete_dir(tmp_dir_uuid, image_file_names)
     
     return redirect(f"/lockdownsf/manage/album_view/{album.external_id}/")
 
@@ -790,7 +800,7 @@ def tag_listing(request):
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tag_statuses = [ts.name for ts in metadata.TagStatus]
         
-    all_tags = Tag.objects.all()
+    all_tags = Tag.objects.all().order_by('name')
     for tag in all_tags:
         tag.mediaitem_count = len(tag.mediaitem_set.all())
         

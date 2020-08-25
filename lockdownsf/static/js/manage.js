@@ -255,6 +255,7 @@ function initUpload(files) {
 
 
 function getSignedRequest(file, sequence, retryCount) {
+    // handle failed requests
     if (retryCount > 5) {
         alert("Could not get signed URL for file [" + file.name + "] sequence [" + sequence + "]");
         failed_files.append(file.name);
@@ -270,8 +271,10 @@ function getSignedRequest(file, sequence, retryCount) {
             document.getElementById("album-create-submit").style.display = 'block';
         }
     }
+    // create request
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "/lockdownsf/sign_s3?file_name=" + file.name + "&file_type=" + file.type);
+    var tmp_dir = document.getElementById("tmp-dir-uuid").value;
+    xhr.open("GET", "/lockdownsf/sign_s3?file_name=" + tmp_dir + "/" + file.name + "&file_type=" + file.type);
     xhr.onreadystatechange = function(){
         if (xhr.readyState === 4) {
             if (xhr.status === 200) {

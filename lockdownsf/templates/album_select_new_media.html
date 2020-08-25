@@ -2,6 +2,7 @@
 
 {% block body %}
 <form action="/lockdownsf/manage/album_import_new_media/" method="POST">
+    <input type="hidden" id="tmp-dir-uuid" name="tmp-dir-uuid" value="{{ tmp_dir_uuid }}">
     <h5>Select album to import photos into:</h5>
     <select class="form-control form-control-inline-lg" id="select-album-external-id" name="select-album-external-id" onchange="showOrHideAlbumTitleInput();">
         <option value="">* Create new album *</option>
