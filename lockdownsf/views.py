@@ -32,7 +32,7 @@ def index(request):
     page_title = 'Photo facets home'
 
     # fetch all albums from db
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
 
     if not all_albums:
         log_and_store_message(request, messages.ERROR, 'Failure to load albums to build photo collection')
@@ -46,12 +46,9 @@ def index(request):
     photo_collection_json = []
     all_albums_json = {} 
     for album in all_albums:
-        # fetch all media_items per album; ignore albums lacking media items
-        album_media_items = album.mediaitem_set.all()
+        # fetch all media_items per album; ignore albums lacking tagged media items 
+        album_media_items = album.mediaitem_set.filter(tags__isnull=False).distinct()
         if not album_media_items:
-            continue
-        # ignore albums lack GPS data
-        if not album.center_latitude:
             continue
         # fetch media_items from gphotos api to populate image metadata
         fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
@@ -86,7 +83,7 @@ def album_map(request, album_id):
     page_title = 'Photo facets - album map'
 
     # fetch all albums from db
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
 
     if not all_albums:
         log_and_store_message(request, messages.ERROR, 'Failure to load albums to build photo collection')
@@ -95,43 +92,41 @@ def album_map(request, album_id):
     # build json objects to be passed to live site js
     all_albums_json = {}
     for album in all_albums:
-        # ignore albums lacking media items
-        album_media_items = album.mediaitem_set.all()
+        # ignore albums lacking tagged media items
+        album_media_items = album.mediaitem_set.filter(tags__isnull=False).distinct()
         if not album_media_items:
             continue
-        # ignore albums lack GPS data
-        if not album.center_latitude:
-            continue
+        # TODO ignore media albums lacking active tags
         all_albums_json[album.external_id] = album.name
 
     try:
-        album = Album.objects.get(external_id=album_id)
+        selected_album = Album.objects.get(external_id=album_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 'Failure to load album with google photos id [{album_id}]')
         return redirect(f"/lockdownsf/")
 
-    # fetch all media_items for album
-    album_media_items = album.mediaitem_set.all()
-    if album_media_items:
+    # fetch tagged media_items for album
+    selected_album_media_items = selected_album.mediaitem_set.filter(tags__isnull=False).distinct()
+    if selected_album_media_items:
         # fetch media_items from gphotos api to populate image metadata
         fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
-        album.media_items = album_media_items
+        populate_fields_from_gphotosapi(selected_album_media_items, fields_to_populate)
+        selected_album.media_items = selected_album_media_items
 
     # build single album photo_collection json to be passed to page js
-    album_json = convert_album_to_json(album)
-    photo_collection_json = [album_json]
+    selected_album_json = convert_album_to_json(selected_album)
+    photo_collection_json = [selected_album_json]
     # build map meta json to be passed to page js
     map_meta_json = {}
-    map_meta_json['latitude'] = str(album.center_latitude)
-    map_meta_json['longitude'] = str(album.center_longitude)
-    map_meta_json['zoom_level'] = album.map_zoom_level
+    map_meta_json['latitude'] = str(selected_album.center_latitude)
+    map_meta_json['longitude'] = str(selected_album.center_longitude)
+    map_meta_json['zoom_level'] = selected_album.map_zoom_level
 
     context = {
         'template': template,
         'page_title': page_title,
         # 'all_albums': all_albums,
-        'selected_album_id': album.external_id,
+        'selected_album_id': selected_album.external_id,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
         'all_albums_json': json.dumps(all_albums_json, indent=4),
         'map_meta_json': json.dumps(map_meta_json, indent=4),
