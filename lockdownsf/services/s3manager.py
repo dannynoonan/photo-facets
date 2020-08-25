@@ -5,6 +5,7 @@ from PIL import Image
 import requests
 
 from lockdownsf import metadata
+from lockdownsf.services.controller_utils import log_and_store_message
 
 
 def extract_text(img_file_name, bucket):
@@ -93,6 +94,29 @@ def upload_image_to_s3(img_file_path, img_file_name):
 
     return s3_img_file_path
 
+
+def delete_dir(tmp_dir, file_names):
+    if not (tmp_dir and file_names):
+        return
+    s3_resource = boto3.resource('s3',
+         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+         
+    # delete each file in tmp_dir
+    for fn in file_names:
+        file_path = f"{tmp_dir}/{fn}"
+        try:
+            s3_resource.Object(metadata.S3_BUCKET, file_path).delete()
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR,
+                f"Failed to delete file [{file_path}] from s3. Details: {ex}")
+
+    # delete tmp_dir
+    try:
+        s3_resource.Object(metadata.S3_BUCKET, tmp_dir).delete()
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failed to delete temp directory [{tmp_dir}] from s3. Details: {ex}")
 
 
 def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):

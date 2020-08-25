@@ -159,7 +159,8 @@ function initAndDisplayPhotoMarker(domImg) {
     });          
     //
     // var contentDiv = "<div class=\"marker-window-landscape\" style=\"height:" + adjustedHeight + "; width:" + adjustedWidth + ";\"><img src=\"" + this.src + "\" height=\"" + adjustedHeight + "\" width=\"" + adjustedWidth + "\"></div>";
-    var contentDiv = "<div class=\"marker-window-landscape\"><img src=\"" + domImg.src + "\"></div>";
+    var gphotos_url = "https://photos.google.com/lr/photo/" + domImg.id;
+    var contentDiv = "<div class=\"marker-window-landscape\"><a href=\"" + gphotos_url + "\" target=\"new\"><img src=\"" + domImg.src + "\"></a></div>";
     // console.log("content for photo id [" + domImg.id + "]: " + contentDiv);          
     var markerWindow = new google.maps.InfoWindow({
         content: contentDiv,
