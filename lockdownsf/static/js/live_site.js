@@ -25,8 +25,8 @@ var loadedMediaItems = {};
 var keysToDomImgs = {};
 // dict of media_item external_ids to google.maps.Marker objects
 var keysToMarkers = {};
-// dict of categories to media_item external_ids
-var catsToKeys = {};
+// dict of tags to media_item external_ids
+var tagsToKeys = {};
 // array of currently displayed media_item external_ids
 var displayedMarkerKeys = [];
 
@@ -46,8 +46,7 @@ function initGmap() {
     });
     // load locations from images
     loadPhotoCollection();
-    console.log(catsToKeys);
-    // add counts to checkbox catCountSpans, check all catCheckboxes
+    // add album pulldowns, counts to checkbox tagCountSpans, and check all tagCheckboxes
     addFacetsToNav();
     // activate photos to be displayed
     initAndDisplayAllPhotoMarkers();
@@ -61,15 +60,15 @@ function loadPhotoCollection() {
             // add to loadedMediaItems
             var media_item = photoCollection[i].media_items[j];
             loadedMediaItems[media_item.external_id] = media_item;
-            // add keys to catsToKeys 
+            // add keys to tagsToKeys 
             if (media_item.facets) {
                 for (var k = 0; k < media_item.facets.length; k++) {
-                    cat = media_item.facets[k];
-                    if (cat in catsToKeys) {
-                        catsToKeys[cat].push(media_item.external_id);
+                    tag = media_item.facets[k];
+                    if (tag in tagsToKeys) {
+                        tagsToKeys[tag].push(media_item.external_id);
                     }
                     else {
-                        catsToKeys[cat] = [media_item.external_id];
+                        tagsToKeys[tag] = [media_item.external_id];
                     }
                 }
             }
@@ -84,19 +83,19 @@ function loadPhotoCollection() {
 }
 
 function addFacetsToNav() {
-    // create checkboxes with counts for all cats found in photoCollection
-    for (var cat in catsToKeys) {
-        // create checkbox for each facet
+    // create checkboxes with counts for all tags found in photoCollection
+    for (var tag in tagsToKeys) {
+        // create checkbox for each tag
         var facetCheckbox = document.createElement('input');
         facetCheckbox.setAttribute('type', 'checkbox');
-        facetCheckbox.id = cat + '_checkbox';
+        facetCheckbox.id = tag + '_checkbox';
         facetCheckbox.checked = true;
-        // add listener for adding/removing markers to map for category
-        facetCheckbox.onclick = toggleMarkersForCategory;
+        // add listener for adding/removing markers to map for tag
+        facetCheckbox.onclick = toggleMarkersForTag;
         // create textNode and span element for displaying facet label and counts
-        var facetLabel = document.createTextNode(cat);     
+        var facetLabel = document.createTextNode(tag);     
         var facetCount = document.createElement('span');
-        facetCount.innerHTML = catsToKeys[cat].length;
+        facetCount.innerHTML = tagsToKeys[tag].length;
         facetCount.className = 'badge badge-primary badge-pill';
         // wrap checkbox, textNode, and span in list item and add to facet-list
         var facetLi = document.createElement('li');
@@ -140,7 +139,7 @@ function initAndDisplayPhotoMarker(domImg) {
     keysToMarkers[domImg.id] = marker;
 }
 
-// remove gmap from all markers to hide them, empty displayedMarkerKeys array, uncheck all category checkboxes
+// remove gmap from all markers to hide them, empty displayedMarkerKeys array, uncheck all tag checkboxes
 function hideAllMarkers() {
     // remove gmap from all markers to hide them
     for (var key in keysToMarkers) {
@@ -148,36 +147,36 @@ function hideAllMarkers() {
     }
     // reset displayedMarkerKeys array
     displayedMarkerKeys = [];
-    // uncheck all category checkboxes
-    for (var cat in catsToKeys) {
-        var catCheckbox = document.getElementById(cat + '_checkbox');
-        catCheckbox.checked = null;
+    // uncheck all tag checkboxes
+    for (var tag in tagsToKeys) {
+        var tagCheckbox = document.getElementById(tag + '_checkbox');
+        tagCheckbox.checked = null;
     }
 }
 
-// add gmap to all markers to display them, add all markers to displayedMarkerKeys array, check all category checkboxes
+// add gmap to all markers to display them, add all markers to displayedMarkerKeys array, check all tag checkboxes
 function displayAllMarkers() {
     // add gmap to all markers to display them, add all markers to displayedMarkerKeys array
     for (var key in keysToMarkers) {
         keysToMarkers[key].setMap(gmap);
         displayedMarkerKeys.push(key);        
     }
-    // check all category checkboxes
-    for (var cat in catsToKeys) {
-        var catCheckbox = document.getElementById(cat + '_checkbox');
-        catCheckbox.checked = true;
+    // check all tag checkboxes
+    for (var tag in tagsToKeys) {
+        var tagCheckbox = document.getElementById(tag + '_checkbox');
+        tagCheckbox.checked = true;
     }
 }
 
-// add gmap to subset of markers to display them, update category checkbox div and displayedMarkerKeys array
-function toggleMarkersForCategory() {
-    // extract category name from checkbox element id
-    var category = this.id.split('_')[0];
-    // if checkbox is checked, display markers for this category  
+// add gmap to subset of markers to display them, update tag checkbox div and displayedMarkerKeys array
+function toggleMarkersForTag() {
+    // extract tag name from checkbox element id
+    var tagToToggle = this.id.split('_')[0];
+    // if checkbox is checked, display markers for this tag  
     if (this.checked) {
-        for (var i = 0; i < catsToKeys[category].length; i++) {
+        for (var i = 0; i < tagsToKeys[tagToToggle].length; i++) {
             for (var markerKey in keysToMarkers) {
-                if (markerKey == catsToKeys[category][i]) {
+                if (markerKey == tagsToKeys[tagToToggle][i]) {
                     keysToMarkers[markerKey].setMap(gmap);
                     displayedMarkerKeys.push(markerKey);
                 }
@@ -185,36 +184,36 @@ function toggleMarkersForCategory() {
         }
     }
 
-    // if checkbox is unchecked, hide markers for this category
+    // if checkbox is unchecked, hide markers for this tag
     else {
-        var keysForCategory = catsToKeys[category];
-        // loop thru each key associated to the category being hidden
-        for (var i = 0; i < keysForCategory.length; i++) {
-            var keyToPotentiallyRemove = keysForCategory[i];
+        var keysForTagToToggle = tagsToKeys[tagToToggle];
+        // loop thru each key associated to the tag being hidden
+        for (var i = 0; i < keysForTagToToggle.length; i++) {
+            var keyToPotentiallyRemove = keysForTagToToggle[i];
             // match the key to its marker
             for (var markerKey in keysToMarkers) {
                 if (markerKey == keyToPotentiallyRemove) {
                     var markerToPotentiallyRemove = keysToMarkers[markerKey];
-                    // if this key is in catsToKeys for another currently displayed cat, do not remove it
-                    var keyInOtherDisplayedCat = false;
+                    // if this key is in tagsToKeys for another currently displayed tag, do not remove it
+                    var keyInOtherDisplayedTag = false;
                     keyScan:
-                    for (var cat in catsToKeys) {
-                        // if cat is same category we're hiding: ignore
-                        if (cat == category) { continue; }
-                        // if cat isn't currently displayed: ignore
-                        var catCheckbox = document.getElementById(cat + '_checkbox');
-                        if (!(catCheckbox.checked)) { continue; }
-                        // if cat is currently displayed, look for keyToPotentiallyRemove in that 
-                        var keysForCat = catsToKeys[cat];
-                        for (var j = 0; j < keysForCat.length; j++) {
-                            if (keysForCat[j] == keyToPotentiallyRemove) {
-                            keyInOtherDisplayedCat = true;
+                    for (var tag in tagsToKeys) {
+                        // if tag is same tag we're hiding: ignore
+                        if (tag == tagToToggle) { continue; }
+                        // if tag isn't currently displayed: ignore
+                        var tagCheckbox = document.getElementById(tag + '_checkbox');
+                        if (!(tagCheckbox.checked)) { continue; }
+                        // if tag is currently displayed, look for keyToPotentiallyRemove in that 
+                        var keysForTag = tagsToKeys[tag];
+                        for (var j = 0; j < keysForTag.length; j++) {
+                            if (keysForTag[j] == keyToPotentiallyRemove) {
+                            keyInOtherDisplayedTag = true;
                             break keyScan;
                             } 
                         }
                     }
-                    // if this key is not in catsToKeys for any other currently displayed cats, update its marker's map and remove it from displayedMarkerKeys array
-                    if (!(keyInOtherDisplayedCat)) {
+                    // if this key is not in tagsToKeys for any other currently displayed tags, update its marker's map and remove it from displayedMarkerKeys array
+                    if (!(keyInOtherDisplayedTag)) {
                     markerToPotentiallyRemove.setMap(null);
                     var index = displayedMarkerKeys.indexOf(markerKey);
                     if (index !== -1) displayedMarkerKeys.splice(index, 1);
