@@ -90,6 +90,12 @@ a.navigate:hover {
 }
 
 
+/* https://www.digitalocean.com/community/tutorials/css-prevent-line-break */
+span.nobreak {
+    white-space: nowrap;
+}
+
+
 /* https://www.smashingmagazine.com/2018/01/drag-drop-file-uploader-vanilla-js/ */
 #drop-area {
     border: 2px dashed #ccc;

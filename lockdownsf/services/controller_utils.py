@@ -120,7 +120,8 @@ def convert_album_to_json(album):
 
     media_items_json = []
     for media_item in album.media_items:
-        tags_json = [tag.name for tag in media_item.tags.all()]
+        # tags_json = [tag.name for tag in media_item.tags.all()]
+        tags_json = [tag.name for tag in media_item.tags.filter(status='ACTIVE').distinct()]
         media_item_json = {
             'external_id': media_item.external_id,
             'longitude': str(media_item.longitude),

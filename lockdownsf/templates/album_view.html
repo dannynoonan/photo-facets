@@ -89,11 +89,11 @@
             <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}" target="new">
                     {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>{{ photo.mime_type }}</td>
-            <td>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</td>
+            <td><small>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</small></td>
             <td>{{ photo.width }} x {{ photo.height }}</td>
             <td>
             {% for tag in photo.tags.all %}
-                {{ tag.name }}<br/>
+            <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>
             {% endfor %}
             </td>
             <td>{% if photo.extracted_text_display %}<small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small>{% endif %}</td>

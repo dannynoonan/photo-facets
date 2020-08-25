@@ -18,8 +18,7 @@
     <form id="tag-form-{{ tag.id }}" action="/lockdownsf/manage/tag_edit/" method="POST">
         {% csrf_token %}
         <input type="hidden" name="tag-id" value="{{ tag.id }}"> 
-        <tr>
-            
+        <tr {% if tag.status == 'DISABLED' %} class="text-muted" {% endif %}> 
             <td id="tag-name-{{ tag.id }}">{{ tag.name }}</td>
             <td><a href="/lockdownsf/manage/mediaitem_search/?search-tag={{ tag.name }}">{{ tag.mediaitem_count }}</a></th>
             <td>{{ tag.dt_inserted }}</td>
