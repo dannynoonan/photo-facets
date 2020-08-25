@@ -125,7 +125,7 @@ function addFacetsToNav() {
         // add listener for adding/removing markers to map for tag
         tagCheckbox.onclick = toggleMarkersForTag;
         // create textNode and span element for displaying tag label and counts
-        var tagLabel = document.createTextNode(tag);     
+        var tagLabel = document.createTextNode(tag);   
         var tagCount = document.createElement('span');
         tagCount.innerHTML = tagsToKeys[tag].length;
         tagCount.className = 'badge badge-primary badge-pill';

@@ -33,6 +33,7 @@ def index(request):
 
     # fetch all albums from db
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
+    # active_tags = Tag.objects.filter(status='ACTIVE')
 
     if not all_albums:
         log_and_store_message(request, messages.ERROR, 'Failure to load albums to build photo collection')
@@ -47,6 +48,7 @@ def index(request):
     all_albums_json = {} 
     for album in all_albums:
         # fetch all media_items per album; ignore albums lacking tagged media items 
+        # album_media_items = album.mediaitem_set.filter(tags__isnull=False, tags__in=active_tags).distinct()
         album_media_items = album.mediaitem_set.filter(tags__isnull=False).distinct()
         if not album_media_items:
             continue

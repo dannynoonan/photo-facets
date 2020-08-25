@@ -41,7 +41,7 @@
                 {% if mediaitem.tags.all %}
                     <ul>
                     {% for tag in mediaitem.tags.all %}
-                        <li>{{ tag.name }}</li>
+                        <li {% if tag.status == 'DISABLED' %} class="text-muted" {% endif %}>{{ tag.name }}</li>
                     {% endfor %}
                     </ul>
                 {% else %}
@@ -53,7 +53,8 @@
                 <div class="form-group custom-control custom-checkbox">
                     <input type="checkbox" id="tag-{{ tag.id }}" class="custom-control-input" name="tag_ids" value="{{ tag.id }}"
                     {% if tag in mediaitem.tags.all %} checked="" {% endif %}>
-                    <label class="custom-control-label" for="tag-{{ tag.id }}">{{ tag.name }}</label>
+                    <label class="custom-control-label {% if tag.status == 'DISABLED' %} text-muted {% endif %}" 
+                        for="tag-{{ tag.id }}">{{ tag.name }}</label>
                 </div>
                 {% endfor %} 
             </td>

@@ -102,7 +102,7 @@
                 {{ photo.external_id|truncatechars:20 }}</a></td>
             <td>
             {% for tag in photo.tags.all %}
-                {{ tag.name }}<br/>
+                <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>
             {% endfor %}
             </td>
             <td>{% if photo.extracted_text_display %}<small>{{ photo.extracted_text_display|linebreaks|truncatechars:100 }}</small>{% endif %}</td></tr>
