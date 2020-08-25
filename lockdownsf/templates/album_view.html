@@ -105,39 +105,6 @@
 </form>
 {% endif %}
 
-<!-- {% if unmapped_media_items %}
-<p>{{ unmapped_media_items|length }} media items uploaded but failed to map to album:</p>
-<table class="table table-hover">
-    <thead>
-        <tr><th scope="col">photo</th>
-            <th scope="col">filename</th>
-            <th scope="col">id</th>
-            <th scope="col">mime type</th>
-            <th scope="col">date taken</th>
-            <th scope="col">dimensions</th></tr>
-    </thead>
-    <tbody>
-    {% for photo in unmapped_media_items %}
-        <tr><th scope="row"><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}"><img src="{{ photo.thumb_url }}"></a></th>
-            <td>{{ photo.file_name }}</th>
-            <td>{{ photo.external_id }}</td>
-            <td>{{ photo.mime_type }}</td>
-            <td>{{ photo.dt_taken }}</td>
-            <td>{{ photo.width }} x {{ photo.height }}</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
-{% endif %}
-
-{% if failed_media_items %}
-<p>{{ failed_media_items|length }} media items that failed to upload:</p>
-<ul>
-{% for failed_media_item in failed_media_items %}
-    <il>{{ failed_media_item }}</il>    
-{% endfor %}
-</ul>
-{% endif %} -->
-
 <form action="/lockdownsf/manage/album_select_new_media/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="add-to-album-external-id" value="{{ album.external_id }}">
@@ -160,7 +127,6 @@
 {% else %}
 <h4>No album found (TODO messaging)</h4>
 {% endif %}
-
 
     
 {% endblock %}
