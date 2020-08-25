@@ -17,7 +17,9 @@
         <link rel="stylesheet" href="{% static 'js/live_site.js' %}">
         <script>
             photoCollection = {{ photo_collection_json|safe }};
+            allAlbums = {{ all_albums_json|safe }};
             mapMeta = {{ map_meta_json|safe }};
+            selectedAlbumId = "{{ selected_album_id }}";
         </script>
         <script type="text/javascript" src="{% static 'js/live_site.js' %}"></script>
         <script async defer 
