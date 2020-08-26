@@ -231,7 +231,7 @@ def album_view(request, album_external_id, page_number=None):
         """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
         # fetch album and mapped media_items from db
         album = Album.objects.get(external_id=album_external_id)
-        mapped_media_items = album.mediaitem_set.all().order_by('-dt_taken')
+        mapped_media_items = album.mediaitem_set.all().order_by('dt_taken')
         
         # TODO diff media_items returned by gphotos api call to those mapped to db album
         # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
@@ -283,6 +283,50 @@ def album_view(request, album_external_id, page_number=None):
         }
 
     return render(request, template, context)
+
+
+def album_edit(request):
+
+    # assign form data to vars and validate input
+    album_external_id = request.POST.get('album-external-id', '')
+    # update_album_name_flag = request.POST.get('update-album-name-flag', '')
+    album_name = request.POST.get('album-name', '')
+
+    if not album_external_id:
+        log_and_store_message(request, messages.ERROR, "Failed to update album, no album id was set.")
+        return redirect(f"/lockdownsf/manage/album_listing/")
+
+    # if update_album_name_flag:
+    if not album_name:
+        log_and_store_message(request, messages.ERROR, "Failed to update album, album name cannot be empty.")
+        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+
+    # update album name in gphotos api
+    try:
+        album_response = gphotosapi.update_album(album_external_id, album_name=album_name)
+        if not album_response:
+            log_and_store_message(request, messages.ERROR,
+                f"Failed to update album with Google Photos id [{album_external_id}], Google Photos API response was empty.")
+            return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failed to update album with Google Photos id [{album_external_id}], call to Google Photos API failed. Details: {ex}")
+        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+
+    # update album name in db (where it's needed since gphotos api doesn't support album search)
+    try:
+        album = Album.objects.get(external_id=album_external_id)
+        album.name = album_name
+        album.save()
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"Failed to update album with Google Photos id [{album_external_id}]. Details: {ex}")
+        return redirect(f"/lockdownsf/manage/album_listing/")
+    
+    # if everything fired without exceptions, return success
+    log_and_store_message(request, messages.SUCCESS,
+        f"Successfully updated album [{album_external_id}] in both Google Photos API and photo-facets db.")
+    return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
 
 def album_select_new_media(request):
@@ -665,7 +709,7 @@ def mediaitem_view(request, mediaitem_external_id):
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     # fetch album from db to determine previous and next media_items for sequential navigation
-    mapped_media_items = mediaitem.album.mediaitem_set.all().order_by('-dt_taken')
+    mapped_media_items = mediaitem.album.mediaitem_set.all().order_by('dt_taken')
 
     # store all mapped media_item_ids to list, get index of current media item
     album_media_item_ids = [m.external_id for m in mapped_media_items]
