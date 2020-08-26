@@ -186,6 +186,40 @@ def upload_image(image_path, token, from_cloud=False):
     return new_media_item
 
 
+# https://developers.google.com/photos/library/guides/manage-albums
+# https://developers.google.com/photos/library/reference/rest/v1/albums/patch
+def update_album(album_id, album_name=None, cover_photo_id=None, gphotos_service=None):
+    if not gphotos_service:
+        gphotos_service = init_gphotos_service()
+
+    if not album_id:
+        raise Exception(f"Failure to update_album, album_id required")
+
+    if not (album_name or cover_photo_id):
+        raise Exception(f"Failure to update_album [{album_id}], either album_name or cover_photo_id is required")
+
+    # get album by id
+    album = get_album(album_id)
+
+    if not album:
+        raise Exception(f"Failure to update_album, API call failed for Google Photos album id [{album_id}]")
+
+    request_body = {}
+    update_mask = []
+    if album_name:
+        request_body['title'] = album_name
+        update_mask.append('title')
+    if cover_photo_id:
+        request_body['coverPhotoMediaItemId'] = cover_photo_id
+        update_mask.append('coverPhotoMediaItemId')
+    update_mask = ','.join(update_mask)
+    
+    response = gphotos_service.albums().patch(id=album_id, updateMask=update_mask, body=request_body).execute()
+
+    return response
+
+
+# https://developers.google.com/photos/library/reference/rest/v1/mediaItems/patch
 def update_image_description(image_id, image_description, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
@@ -255,15 +289,18 @@ def get_album(album_id, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
-    response = gphotos_service.albums().get(albumId=album_id).execute()
-    album = None
-    if response:      
-        album = {
-            'id': response['id'],
-            'title': response['title']
-        }
+    album_response = gphotos_service.albums().get(albumId=album_id).execute()
 
-    return album
+    return album_response
+    
+    # album = None
+    # if album_response:      
+    #     album = {
+    #         'id': album_response['id'],
+    #         'title': album_response['title']
+    #     }
+
+    # return album
 
 
 # https://stackoverflow.com/questions/52565028/mediaitems-search-not-working-with-albumid

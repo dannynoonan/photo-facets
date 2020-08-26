@@ -12,6 +12,7 @@ urlpatterns = [
     path(r'manage/album_import_new_media/', views.album_import_new_media, name='album_import_new_media'),
     path(r'manage/album_view/<str:album_external_id>/', views.album_view, name='album_view'),
     path(r'manage/album_view/<str:album_external_id>/<str:page_number>/', views.album_view, name='album_view_for_page'),
+    path(r'manage/album_edit/', views.album_edit, name='album_edit'),
     path(r'manage/album_delete/', views.album_delete, name='album_delete'),
     path(r'manage/album_media_items_delete/', views.album_media_items_delete, name='album_media_items_delete'),
     path(r'manage/mediaitem_search/', views.mediaitem_search, name='mediaitem_search'),

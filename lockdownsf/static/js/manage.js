@@ -183,6 +183,21 @@ function makeDescriptionEditable() {
 }
 
 
+function makeAlbumNameEditable() {
+    // remove display elements
+    document.getElementById("album-name-display-cell").remove();
+
+    // display hidden elements
+    document.getElementById("album-name-input-cell").setAttribute("class", "");
+
+    // activate flag
+    document.getElementById("update-album-name-flag").value = "true";
+
+    // display submit button
+    document.getElementById("submit-cell").setAttribute("class", "");
+}
+
+
 
 
 

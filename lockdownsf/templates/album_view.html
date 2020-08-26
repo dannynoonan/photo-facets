@@ -3,22 +3,34 @@
 {% block body %}
 
 {% if album %}
-<table class="table table-hover table-fit">
-    <tbody>
-        <tr><th scope="row">Google photos id:</th>
-            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></td></tr>
-        <!-- <tr><th scope="row">Description:</th>
-            <td>{% if album.description %} {{ album.description }} {% endif %}</td></tr> -->
-        <tr><th scope="row">Date added:</th>
-            <td>{{ album.dt_inserted }}</td></tr>
-        <tr><th scope="row">Date updated:</th>
-            <td>{{ album.dt_updated }}</td></tr>
-        <tr><th scope="row">Map location:</th>
-            <td>Avg lat: {{ album.center_latitude }} / Avg lng: {{ album.center_longitude }} / Zoom level: {{ album.map_zoom_level }} (averaging {{ album.photos_having_gps }} photos)</td></tr>
-        <tr><th scope="row">Status:</th>
-            <td>{{ album.status }}</td></tr>
-    </tbody>
-</table>
+<form action="/lockdownsf/manage/album_edit/" method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
+    <input type="hidden" id="update-album-name-flag" name="update-album-name-flag" value="">
+
+    <table class="table table-hover table-fit">
+        <tbody>
+            <tr><th scope="row">Google photos id:</th>
+                <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></td></tr>
+            <tr><th scope="row">Title:</th>
+                <td id="album-name-display-cell" ><span onclick="makeAlbumNameEditable()">{{ album.name }}</span></td>
+                <td id="album-name-input-cell" class="hidden-block">
+                    <input type="text" id="album-name-input" class="form-control" name="album-name" value="{{ album.name }}">
+                </td></tr>
+            <tr><th scope="row">Date added:</th>
+                <td>{{ album.dt_inserted }}</td></tr>
+            <tr><th scope="row">Date updated:</th>
+                <td>{{ album.dt_updated }}</td></tr>
+            <tr><th scope="row">Map location:</th>
+                <td>Avg lat: {{ album.center_latitude }} / Avg lng: {{ album.center_longitude }} / Zoom level: {{ album.map_zoom_level }} (averaging {{ album.photos_having_gps }} photos)</td></tr>
+            <tr><th scope="row">Status:</th>
+                <td>{{ album.status }}</td></tr>
+            <tr><td id="submit-cell" class="hidden-block" colspan="2">
+                    <input id="submit-buttom" type="submit" value="Update" class="btn btn-secondary"></td></tr>
+        </tbody>
+    </table>
+
+</form>
 
 {% if page_results %}
 <h4>
