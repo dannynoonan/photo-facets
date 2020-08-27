@@ -11,16 +11,22 @@ def log_and_store_message(request, level, message):
 
 
 def extract_messages_from_storage(request):
-    success_messages = []
-    error_messages = []
+    response_messages = {
+        'success': [],
+        'warning': [],
+        'error': []
+    }
     all_messages = messages.get_messages(request)
     if all_messages:
         for message in all_messages:
             if message.level_tag == 'success':
-                success_messages.append(message.message)
+                response_messages['success'].append(message.message)
+            if message.level_tag == 'warning':
+                response_messages['warning'].append(message.message)
             if message.level_tag == 'error':
-                error_messages.append(message.message)
-    return success_messages, error_messages
+                response_messages['error'].append(message.message)
+
+    return response_messages
 
 
 def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status):
@@ -140,3 +146,33 @@ def convert_album_to_json(album):
     }
 
     return album_json
+
+
+def album_diff_detected(db_album, gphotos_album):
+    # verify that neither album version is falsy
+    if not db_album and gphotos_album:
+        return True
+    # compare album names between db and gphotos versions
+    if not gphotos_album.get('title', '') or gphotos_album['title'] != db_album.name:
+        return True
+    # compare photo counts between db and gphotos versions
+    if not gphotos_album.get('mediaItemsCount', '') or gphotos_album['mediaItemsCount'] != len(db_album.mediaitem_set.all()):
+        return True
+
+    return False
+
+
+def media_item_diff_detected(db_media_item, gphotos_media_item):
+    # verify that neither media item version is falsy
+    if not db_media_item and gphotos_media_item:
+        return True
+    # compare individual fields of db vs gphotos versions
+    if db_media_item.description != gphotos_media_item.get('description', ''):
+        return True
+    if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
+        return True
+    if db_media_item.file_name != gphotos_media_item.get('filename', ''):
+        return True
+    # TODO creation date?
+
+    return False

@@ -21,7 +21,7 @@ from django.template import loader
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
-from lockdownsf.services.controller_utils import convert_album_to_json, copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
+from lockdownsf.services.controller_utils import album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, media_item_diff_detected, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
@@ -30,6 +30,9 @@ MAX_RESULTS_PER_PAGE = 40
 def index(request):
     template = 'index.html'
     page_title = 'Photo facets home'
+
+    # process messages
+    response_messages = extract_messages_from_storage(request)
 
     # fetch all albums from db
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
@@ -70,6 +73,7 @@ def index(request):
     context = {
         'template': template,
         'page_title': page_title,
+        'response_messages': response_messages,
         # 'all_albums': all_albums,
         'selected_album_id': None,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -83,6 +87,9 @@ def index(request):
 def album_map(request, album_id):
     template = 'index.html'
     page_title = 'Photo facets - album map'
+
+    # process messages
+    response_messages = extract_messages_from_storage(request)
 
     # fetch all albums from db
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
@@ -127,6 +134,7 @@ def album_map(request, album_id):
     context = {
         'template': template,
         'page_title': page_title,
+        'response_messages': response_messages,
         # 'all_albums': all_albums,
         'selected_album_id': selected_album.external_id,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -176,7 +184,7 @@ def manage(request):
     page_title = 'Management console'
 
     # process messages
-    success_messages, error_messages = extract_messages_from_storage(request)
+    response_messages = extract_messages_from_storage(request)
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
@@ -184,8 +192,7 @@ def manage(request):
     context = {
         'template': template,
         'page_title': page_title,
-        'success_messages': success_messages,
-        'error_messages': error_messages,
+        'response_messages': response_messages,
         'all_albums': all_albums,
     }
     
@@ -197,7 +204,7 @@ def album_listing(request):
     page_title = 'Album listing'
 
     # process messages
-    success_messages, error_messages = extract_messages_from_storage(request)
+    response_messages = extract_messages_from_storage(request)
 
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     if all_albums:
@@ -207,8 +214,7 @@ def album_listing(request):
     context = {
         'template': template,
         'page_title': page_title,
-        'success_messages': success_messages,
-        'error_messages': error_messages,
+        'response_messages': response_messages,
         'all_albums': all_albums,
     }
     
@@ -220,67 +226,71 @@ def album_view(request, album_external_id, page_number=None):
     page_title = 'Album details'
 
     # process messages
-    success_messages, error_messages = extract_messages_from_storage(request)
+    response_messages = extract_messages_from_storage(request)
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
 
-    # TODO some way to identify where the photos uploaded to s3 temporarily are
-
-    if album_external_id and album_external_id != "_":
-        """If we're loading a pre-existing album: fetch it from the db and the gphotos api"""
-        # fetch album and mapped media_items from db
-        album = Album.objects.get(external_id=album_external_id)
-        mapped_media_items = album.mediaitem_set.all().order_by('dt_taken')
-        
-        # TODO diff media_items returned by gphotos api call to those mapped to db album
-        # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
-
-        page_title = f"{page_title}: {album.name}"
-
-        # pagination
-        if page_number:
-            page_number = int(page_number)
-        else:
-            page_number = 1
-        total_results_count = len(mapped_media_items)
-        paginator = Paginator(mapped_media_items, MAX_RESULTS_PER_PAGE)
-        page_results = paginator.page(page_number) 
-        prev_page_number = None
-        next_page_number = None
-        if page_results.has_previous():
-            prev_page_number = page_number - 1
-        if page_results.has_next():
-            next_page_number = page_number + 1
-
-        # fetch media_items from gphotos api to populate image metadata
-        fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        populate_fields_from_gphotosapi(page_results, fields_to_populate)
-
-        context = {
-            'template': template,
-            'page_title': page_title,
-            'success_messages': success_messages,
-            'error_messages': error_messages,
-            'all_albums': all_albums,
-            'album': album,
-            'page_number': page_number,
-            'prev_page_number': prev_page_number,
-            'next_page_number': next_page_number,
-            'page_count_iterator': range(1, paginator.num_pages+1),
-            'page_results': page_results,
-            'page_results_start_index': page_results.start_index(),
-            'page_results_end_index': page_results.end_index(),
-            'total_results_count': total_results_count,
-        }
-    else:
+    if not album_external_id:
         log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no external_id was specified')
         context = {
             'template': template,
             'page_title': page_title,
-            'error_messages': error_messages,
+            'response_messages': response_messages,
             'all_albums': all_albums,
         }
+        return render(request, template, context)
+
+    # fetch album and mapped media_items from db
+    album = Album.objects.get(external_id=album_external_id)
+    mapped_media_items = album.mediaitem_set.all().order_by('dt_taken')
+    
+    # diff media_items returned by gphotos api call to those mapped to db album
+    gphotos_album = gphotosapi.get_album(album_external_id)
+    if album_diff_detected(album, gphotos_album):
+        diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
+        log_and_store_message(request, messages.WARNING, 
+            f"Diff detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
+    
+    # gphotos_media_items = gphotosapi.get_photos_for_album(album.external_id)
+
+    page_title = f"{page_title}: {album.name}"
+
+    # pagination
+    if page_number:
+        page_number = int(page_number)
+    else:
+        page_number = 1
+    total_results_count = len(mapped_media_items)
+    paginator = Paginator(mapped_media_items, MAX_RESULTS_PER_PAGE)
+    page_results = paginator.page(page_number) 
+    prev_page_number = None
+    next_page_number = None
+    if page_results.has_previous():
+        prev_page_number = page_number - 1
+    if page_results.has_next():
+        next_page_number = page_number + 1
+
+    # fetch media_items from gphotos api to populate image metadata
+    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
+    populate_fields_from_gphotosapi(page_results, fields_to_populate)
+
+    context = {
+        'template': template,
+        'page_title': page_title,
+        'response_messages': response_messages,
+        'all_albums': all_albums,
+        'album': album,
+        'page_number': page_number,
+        'prev_page_number': prev_page_number,
+        'next_page_number': next_page_number,
+        'page_count_iterator': range(1, paginator.num_pages+1),
+        'page_results': page_results,
+        'page_results_start_index': page_results.start_index(),
+        'page_results_end_index': page_results.end_index(),
+        'total_results_count': total_results_count,
+        'album_diff_detected': album_diff_detected,
+    }
 
     return render(request, template, context)
 
@@ -624,6 +634,9 @@ def mediaitem_search(request):
     template = 'mediaitem_search.html'
     page_title = 'Search for photos'
 
+    # process messages
+    response_messages = extract_messages_from_storage(request)
+
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=OWNER)
@@ -672,6 +685,7 @@ def mediaitem_search(request):
     context = {
         'template': template,
         'page_title': page_title,
+        'response_messages': response_messages,
         'all_albums': all_albums,
         'all_tags': all_tags,
         'search_criteria': search_criteria,
@@ -693,7 +707,7 @@ def mediaitem_view(request, mediaitem_external_id):
     page_title = 'Photo details'
 
     # process messages
-    success_messages, error_messages = extract_messages_from_storage(request)
+    response_messages = extract_messages_from_storage(request)
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
@@ -707,6 +721,13 @@ def mediaitem_view(request, mediaitem_external_id):
             f"Failure to fetch media item, no match for external_id [{mediaitem_external_id}]")
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
+
+    # diff media_item returned by gphotos api to that mapped to db album
+    gphotos_media_item = gphotosapi.get_photo_by_id(mediaitem_external_id)
+    if media_item_diff_detected(mediaitem, gphotos_media_item):
+        diff_link = f"<a href=\"/lockdownsf/manage/media_item_diff/{mediaitem_external_id}/\">inspect differences</a>"
+        log_and_store_message(request, messages.WARNING, 
+            f"Diff detected between Google Photos API and photo-facets db versions of this media item. Click to {diff_link}.")
 
     # fetch album from db to determine previous and next media_items for sequential navigation
     mapped_media_items = mediaitem.album.mediaitem_set.all().order_by('dt_taken')
@@ -735,8 +756,7 @@ def mediaitem_view(request, mediaitem_external_id):
     context = {
         'template': template,
         'page_title': page_title,
-        'success_messages': success_messages,
-        'error_messages': error_messages,
+        'response_messages': response_messages,
         'all_albums': all_albums,
         'all_tags': all_tags,
         'mediaitem_external_id': mediaitem_external_id,
@@ -838,7 +858,7 @@ def tag_listing(request):
     page_title = 'Tag listing'
 
     # process messages
-    success_messages, error_messages = extract_messages_from_storage(request)
+    response_messages = extract_messages_from_storage(request)
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
@@ -851,8 +871,7 @@ def tag_listing(request):
     context = {
         'template': template,
         'page_title': page_title,
-        'success_messages': success_messages,
-        'error_messages': error_messages,
+        'response_messages': response_messages,
         'all_albums': all_albums,
         'all_tag_statuses': all_tag_statuses,
         'all_tags': all_tags,
