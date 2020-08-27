@@ -75,26 +75,40 @@
     <!-- <div class="g-signin2" data-onsuccess="onSignIn"></div> -->
     <!-- <a href="#" onclick="signOut();">Sign out</a> -->
 
-{% if success_messages %}
-{% for success_message in success_messages %}
-<div class="alert alert-success">
-    <h5><strong>{{ success_message|safe }}</strong></h5>
-    {% if success_detail %}
-        <p>{{ success_detail|safe }}</p>
+{% if response_messages %}
+    {% if response_messages.success %}
+        {% for success_message in response_messages.success %}
+        <div class="alert alert-success">
+            <h5><strong>{{ success_message|safe }}</strong></h5>
+            <!-- {% if success_detail %}
+                <p>{{ success_detail|safe }}</p>
+            {% endif %} -->
+        </div>
+        {% endfor %}
     {% endif %}
-</div>
-{% endfor %}
-{% endif %}
 
-{% if error_messages %}
-{% for error_message in error_messages %}
-<div class="alert alert-danger">
-    <h5><strong>{{ error_message|safe }}</strong></h5>
-    {% if error_detail %}
-        <p>{{ error_detail|safe }}</p>
+
+    {% if response_messages.warning %}
+        {% for warning_message in response_messages.warning %}
+        <div class="alert alert-warning">
+            <h5><strong>{{ warning_message|safe }}</strong></h5>
+            <!-- {% if warning_detail %}
+                <p>{{ warning_detail|safe }}</p>
+            {% endif %} -->
+        </div>
+        {% endfor %}
     {% endif %}
-</div>
-{% endfor %}
+
+    {% if response_messages.error %}
+        {% for error_message in response_messages.error %}
+        <div class="alert alert-danger">
+            <h5><strong>{{ error_message|safe }}</strong></h5>
+            <!-- {% if error_detail %}
+                <p>{{ error_detail|safe }}</p>
+            {% endif %} -->
+        </div>
+        {% endfor %}
+    {% endif %}
 {% endif %}
 
 {% block body %}
