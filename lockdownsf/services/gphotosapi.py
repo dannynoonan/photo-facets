@@ -304,13 +304,13 @@ def get_album(album_id, gphotos_service=None):
 
 
 # https://stackoverflow.com/questions/52565028/mediaitems-search-not-working-with-albumid
-def get_photos_for_album(album_id, gphotos_service=None):
+def get_photos_for_album(album_id, media_item_count, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
         
     search_body = {
         "albumId": album_id,
-        "pageSize": 10
+        "pageSize": media_item_count,
     }
     response = gphotos_service.mediaItems().search(body=search_body).execute()
 
