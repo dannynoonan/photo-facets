@@ -50,7 +50,6 @@ class Tag(models.Model):
     name = models.CharField(max_length=256, db_index=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     dt_inserted = models.DateTimeField(auto_now_add=True)
-    # media_items = models.ManyToManyField(MediaItem)
     status = models.CharField(max_length=64, db_index=True)
 
     class Meta:
@@ -63,8 +62,7 @@ class Tag(models.Model):
 class Album(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=500)  # chopping block
-    description = models.CharField(max_length=500, null=True)  # chopping block
+    name = models.CharField(max_length=500)
     center_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     center_longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
     map_zoom_level = models.IntegerField(default=0)

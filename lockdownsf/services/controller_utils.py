@@ -29,7 +29,7 @@ def extract_messages_from_storage(request):
     return response_messages
 
 
-def update_mediaitems_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status):
+def update_media_items_with_gphotos_data(gpids_to_img_data, media_items, failed_media_items, status):
     matched_media_items = []
     for gpid, img_data in gpids_to_img_data.items():
         for media_item in media_items:
@@ -148,6 +148,30 @@ def convert_album_to_json(album):
     return album_json
 
 
+def diff_media_item(db_media_item, gphotos_media_item):
+    fields_with_differences = []
+    if not (db_media_item and gphotos_media_item):
+        # fields_with_differences = ['description', 'mime_type', 'file_name', 'dt_taken']
+        fields_with_differences = ['description', 'file_name']
+    else:
+        # description - TODO figure out better way to massage empty data
+        # import ipdb; ipdb.set_trace()
+        if not db_media_item.description:
+            db_media_item.description = ''
+        if not gphotos_media_item.get('description', ''):
+            gphotos_media_item['description'] = ''
+        if db_media_item.description != gphotos_media_item['description'].strip():
+            fields_with_differences.append('description')
+        # file_name
+        if db_media_item.file_name != gphotos_media_item.get('filename', ''):
+            fields_with_differences.append('file_name')
+        # if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
+        #     fields_with_differences.append('mime_type')
+        # if db_media_item.dt_taken != gphotos_media_item.get('creationTime', ''):
+        #     fields_with_differences.append('dt_taken')
+    return fields_with_differences
+
+
 def album_diff_detected(db_album, gphotos_album):
     # verify that neither album version is falsy
     if not db_album and gphotos_album:
@@ -162,17 +186,17 @@ def album_diff_detected(db_album, gphotos_album):
     return False
 
 
-def media_item_diff_detected(db_media_item, gphotos_media_item):
-    # verify that neither media item version is falsy
-    if not db_media_item and gphotos_media_item:
-        return True
-    # compare individual fields of db vs gphotos versions
-    if db_media_item.description != gphotos_media_item.get('description', ''):
-        return True
-    if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
-        return True
-    if db_media_item.file_name != gphotos_media_item.get('filename', ''):
-        return True
-    # TODO creation date?
+# def media_item_diff_detected(db_media_item, gphotos_media_item):
+#     # verify that neither media item version is falsy
+#     if not db_media_item and gphotos_media_item:
+#         return True
+#     # compare individual fields of db vs gphotos versions
+#     if db_media_item.description != gphotos_media_item.get('description', ''):
+#         return True
+#     if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
+#         return True
+#     if db_media_item.file_name != gphotos_media_item.get('filename', ''):
+#         return True
+#     # TODO creation date?
 
-    return False
+#     return False

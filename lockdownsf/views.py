@@ -21,7 +21,9 @@ from django.template import loader
 from lockdownsf import metadata
 from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
-from lockdownsf.services.controller_utils import album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, extract_messages_from_storage, log_and_store_message, media_item_diff_detected, populate_fields_from_gphotosapi, update_mediaitems_with_gphotos_data
+from lockdownsf.services.controller_utils import (
+    album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_media_item, extract_messages_from_storage, 
+    log_and_store_message, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
@@ -209,7 +211,7 @@ def album_listing(request):
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
     if all_albums:
         for album in all_albums:
-            album.mediaitem_count = len(album.mediaitem_set.all())
+            album.media_item_count = len(album.mediaitem_set.all())
 
     context = {
         'template': template,
@@ -496,7 +498,7 @@ def album_import_new_media(request):
     if mapped_images_response:
         # update images mapped to an album
         if mapped_images_response.get('mapped_gpids_to_img_data', ''):
-            mapped_media_items = update_mediaitems_with_gphotos_data(
+            mapped_media_items = update_media_items_with_gphotos_data(
                 mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED_AND_MAPPED)
             # set album and save to db
             for mapped_media_item in mapped_media_items:
@@ -504,7 +506,7 @@ def album_import_new_media(request):
                 mapped_media_item.save()
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
-            unmapped_media_items = update_mediaitems_with_gphotos_data(
+            unmapped_media_items = update_media_items_with_gphotos_data(
                 mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
 
     # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
@@ -633,7 +635,7 @@ def album_media_items_delete(request):
 
 def album_diff(request, album_external_id):
     template = 'album_diff.html'
-    page_title = 'Compare and sync album data (Google Photos API vs photo-facets db)'
+    page_title = 'Compare API vs DB data for album'
 
     # process messages
     response_messages = extract_messages_from_storage(request)
@@ -644,7 +646,6 @@ def album_diff(request, album_external_id):
     # fetch album and mapped media_items from db
     try:
         db_album = Album.objects.get(external_id=album_external_id)
-        db_album_media_items = db_album.mediaitem_set.all().order_by('dt_taken')
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
             f"Failure to fetch album to diff, no album found in db with external_id [{album_external_id}]. Details: {ex}")
@@ -658,8 +659,34 @@ def album_diff(request, album_external_id):
         return redirect(f"/lockdownsf/manage/album_listing/")
     gphotos_album_media_items = gphotosapi.get_photos_for_album(album_external_id, gphotos_album.get('mediaItemsCount', ''))
 
-    # diff album returned by gphotos api call to db album
-    import ipdb; ipdb.set_trace()
+    # establish which fields and media items differ between db and api versions
+    album_differences = []
+    media_items_only_in_db = []
+    media_items_only_in_api = []
+    media_items_in_both = {}  # dict of media item ids to thumb_urls
+    already_compared_ids = []
+
+    if db_album.name != gphotos_album.get('title', ''):
+        album_differences.append('name')
+
+    for dbmi in db_album.mediaitem_set.all():
+        dbmi_found_in_gphotos = False
+        for gpmi in gphotos_album_media_items:
+            if dbmi.external_id == gpmi['id']:
+                dbmi_found_in_gphotos = True
+                if diff_media_item(dbmi, gpmi):
+                    media_items_in_both[dbmi.external_id] = gpmi.get('baseUrl', '')
+                already_compared_ids.append(dbmi.external_id)
+                break
+        if not dbmi_found_in_gphotos:
+            media_items_only_in_db.append(dbmi)
+    
+    # identify any items in gphotos not already found in gphotos_album_media_items
+    for gpmi in gphotos_album_media_items:
+        if gpmi['id'] not in already_compared_ids:
+            media_items_only_in_api.append(gpmi)
+
+    page_title = f"{page_title}: {db_album.name}"
 
     context = {
         'template': template,
@@ -667,9 +694,13 @@ def album_diff(request, album_external_id):
         'response_messages': response_messages,
         'all_albums': all_albums,
         'db_album': db_album,
-        'db_album_media_items': db_album_media_items,
         'gphotos_album': gphotos_album,
-        'gphotos_album_media_items': gphotos_album_media_items,
+        # 'gphotos_album_media_items': gphotos_album_media_items,
+        'album_differences': album_differences,
+        'media_items_only_in_db': media_items_only_in_db,
+        'media_items_only_in_api': media_items_only_in_api,
+        'media_items_in_both': media_items_in_both,
+        'total_differences': len(album_differences) + len(media_items_only_in_db) + len(media_items_only_in_api) + len(media_items_in_both)
     }
     
     return render(request, template, context)
@@ -708,13 +739,13 @@ def mediaitem_search(request):
         search_criteria['search_text'] = search_text
 
     # fetch media_items from db
-    matching_mediaitems = MediaItem.objects.filter(**and_filters).order_by('-dt_taken')
+    matching_media_items = MediaItem.objects.filter(**and_filters).order_by('-dt_taken')
     if or_filters:
-        matching_mediaitems = matching_mediaitems.filter(or_filters).order_by('-dt_taken')
+        matching_media_items = matching_media_items.filter(or_filters).order_by('-dt_taken')
     
     # pagination
-    total_results_count = len(matching_mediaitems)
-    paginator = Paginator(matching_mediaitems, MAX_RESULTS_PER_PAGE)
+    total_results_count = len(matching_media_items)
+    paginator = Paginator(matching_media_items, MAX_RESULTS_PER_PAGE)
     page_results = paginator.page(page_number) 
     prev_page_number = None
     next_page_number = None
@@ -747,7 +778,7 @@ def mediaitem_search(request):
     return render(request, template, context)
 
 
-def mediaitem_view(request, mediaitem_external_id):
+def mediaitem_view(request, media_item_external_id):
     template = 'mediaitem_view.html'
     page_title = 'Photo details'
 
@@ -757,26 +788,26 @@ def mediaitem_view(request, mediaitem_external_id):
 
     # fetch media_item from db
     try:
-        mediaitem = MediaItem.objects.get(external_id=mediaitem_external_id)
+        media_item = MediaItem.objects.get(external_id=media_item_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch media item, no match for external_id [{mediaitem_external_id}]")
+            f"Failure to fetch media item, no match for external_id [{media_item_external_id}]")
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     # diff media_item returned by gphotos api to that mapped to db album
-    gphotos_media_item = gphotosapi.get_photo_by_id(mediaitem_external_id)
-    if media_item_diff_detected(mediaitem, gphotos_media_item):
-        diff_link = f"<a href=\"/lockdownsf/manage/mediaitem_diff/{mediaitem_external_id}/\">inspect differences</a>"
+    gphotos_media_item = gphotosapi.get_photo_by_id(media_item_external_id)
+    if diff_media_item(media_item, gphotos_media_item):
+        diff_link = f"<a href=\"/lockdownsf/manage/mediaitem_diff/{media_item_external_id}/\">inspect differences</a>"
         log_and_store_message(request, messages.WARNING, 
             f"Differences detected between Google Photos API and photo-facets db versions of this media item. Click to {diff_link}.")
 
     # fetch album from db to determine previous and next media_items for sequential navigation
-    mapped_media_items = mediaitem.album.mediaitem_set.all().order_by('dt_taken')
+    mapped_media_items = media_item.album.mediaitem_set.all().order_by('dt_taken')
 
     # store all mapped media_item_ids to list, get index of current media item
     album_media_item_ids = [m.external_id for m in mapped_media_items]
-    curr_index = album_media_item_ids.index(mediaitem_external_id)
+    curr_index = album_media_item_ids.index(media_item_external_id)
 
     # get media item ids for previous and next index
     prev_media_item_id = None
@@ -788,11 +819,11 @@ def mediaitem_view(request, mediaitem_external_id):
 
     # fetch media_items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    populate_fields_from_gphotosapi([mediaitem], fields_to_populate)
+    populate_fields_from_gphotosapi([media_item], fields_to_populate)
 
-    # mediaitem_location = { 
-    #     'lat': str(mediaitem.latitude), 
-    #     'lng': str(mediaitem.longitude) 
+    # media_item_location = { 
+    #     'lat': str(media_item.latitude), 
+    #     'lng': str(media_item.longitude) 
     # }
 
     # process messages
@@ -804,11 +835,11 @@ def mediaitem_view(request, mediaitem_external_id):
         'response_messages': response_messages,
         'all_albums': all_albums,
         'all_tags': all_tags,
-        'mediaitem_external_id': mediaitem_external_id,
-        'mediaitem': mediaitem,
+        'media_item_external_id': media_item_external_id, # TODO this is legacy I think
+        'media_item': media_item,
         'prev_media_item_id': prev_media_item_id,
         'next_media_item_id': next_media_item_id,
-        # 'mediaitem_location_json': json.dumps(mediaitem_location, indent=4),
+        # 'media_item_location_json': json.dumps(media_item_location, indent=4),
     }
 
     return render(request, template, context)
@@ -898,7 +929,7 @@ def mediaitem_edit(request):
     return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
 
 
-def mediaitem_diff(request, mediaitem_external_id):
+def mediaitem_diff(request, media_item_external_id):
     template = 'mediaitem_diff.html'
     page_title = 'Compare and sync media item data (Google Photos API vs photo-facets db)'
 
@@ -910,14 +941,25 @@ def mediaitem_diff(request, mediaitem_external_id):
 
     # fetch media_item from db
     try:
-        db_media_item = MediaItem.objects.get(external_id=mediaitem_external_id)
+        db_media_item = MediaItem.objects.get(external_id=media_item_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch media item to diff, no match found in db for external_id [{mediaitem_external_id}]")
+            f"Failure to fetch media item to diff, no match found in photo-facets db for external_id [{media_item_external_id}]")
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     # fetch media item from gphotos api 
-    gphotos_media_item = gphotosapi.get_photo_by_id(mediaitem_external_id)
+    gphotos_media_item = gphotosapi.get_photo_by_id(media_item_external_id)
+    if not gphotos_media_item:
+        log_and_store_message(request, messages.ERROR,
+            f"Failure to fetch media item to diff, no match found in Google Photos API for external_id [{media_item_external_id}]")
+        return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
+
+    # flatten gphotos_media_item date taken data to simplify comparisons and django template access
+    if gphotos_media_item.get('mediaMetadata', ''):
+        gphotos_media_item['creationTime'] = gphotos_media_item['mediaMetadata'].get('creationTime', '')
+
+    # establish which fields, if any, have differences between db and api versions
+    fields_with_differences = diff_media_item(db_media_item, gphotos_media_item)
 
     context = {
         'template': template,
@@ -926,6 +968,7 @@ def mediaitem_diff(request, mediaitem_external_id):
         'all_albums': all_albums,
         'db_media_item': db_media_item,
         'gphotos_media_item': gphotos_media_item,
+        'fields_with_differences': fields_with_differences,
     }
     
     return render(request, template, context)
@@ -944,7 +987,7 @@ def tag_listing(request):
         
     all_tags = Tag.objects.all().order_by('name')
     for tag in all_tags:
-        tag.mediaitem_count = len(tag.mediaitem_set.all())
+        tag.media_item_count = len(tag.mediaitem_set.all())
         
     context = {
         'template': template,

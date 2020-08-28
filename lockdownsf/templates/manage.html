@@ -14,7 +14,7 @@
                 <li class="nav-item {% if template == 'album_listing.html' %} active {% endif %}">
                     <a class="nav-link" href="/lockdownsf/manage/album_listing/">List</a>
                 </li>
-                <li class="nav-item {% if template == 'album_view.html' %} active {% endif %}">
+                <li class="nav-item {% if template == 'album_view.html' or template == 'album_diff.html' %} active {% endif %}">
                     <a class="nav-link">Edit</a>
                 </li>
                 <li class="nav-item nav-link">Lookup:</li>
@@ -38,7 +38,7 @@
             <li class="nav-item {% if template == 'mediaitem_search.html' %} active {% endif %}">
                 <a class="nav-link" href="/lockdownsf/manage/mediaitem_search/">Search</a>
             </li>
-            <li class="nav-item {% if template == 'mediaitem_view.html' %} active {% endif %}">
+            <li class="nav-item {% if template == 'mediaitem_view.html' or template == 'mediaitem_diff.html' %} active {% endif %}">
                 <a class="nav-link">Edit</a>
             </li>
         </ul>

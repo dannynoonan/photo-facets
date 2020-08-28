@@ -19,7 +19,7 @@
     {% for album in all_albums %}
         <tr><th scope="row">
                 <a href="/lockdownsf/manage/album_view/{{ album.external_id }}/">{{ album.name }}</a></th>
-            <td>{{ album.mediaitem_count }}</td>
+            <td>{{ album.media_item_count }}</td>
             <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id|truncatechars:20 }}</a></td>
             <td>{% if album.description %} {{ album.description }} {% endif %}</td>    
             <td>Lat: {{ album.center_latitude }}<br/>Lng: {{ album.center_longitude }}</td>
