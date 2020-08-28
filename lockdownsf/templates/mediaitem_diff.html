@@ -2,5 +2,42 @@
 
 {% block body %}
 
+<h5>Differences found in {{ fields_with_differences|length }} field(s)</h5>
+
+{% if fields_with_differences %}
+<h6>Differences don't *need* to be resolved, but the app may exhibit strange behavior if they are not. 
+    Click arrow(s) to choose which version of a field's data to keep.</h6> 
+<h6>Clicking an arrow will generate a preview. Data won't be updated until the "Save Changes" button is clicked.</h6>
+{% endif %}
+
+<br/>
+
+<table class="table table-hover">
+    <thead>
+        <tr><th scope="col"></th>
+            <th scope="col">Google Photos API</th>
+            <th scope="col">Photo-Facets DB</th></tr>
+    </thead>
+    <tbody>
+        <tr {% if 'description' in fields_with_differences %} class="text-danger" {% endif %}>
+            <th scope="row">Description:</th>
+            <td>{% if gphotos_media_item.description %} {{ gphotos_media_item.description }} {% endif %}</td>
+            <td>{% if db_media_item.description %} {{ db_media_item.description }} {% endif %}</td></tr>
+        <tr {% if 'file_name' in fields_with_differences %} class="text-danger" {% endif %}>
+            <th scope="row">File name:</th>
+            <td>{{ gphotos_media_item.filename }}</td>
+            <td>{{ db_media_item.file_name }}</td></tr>
+        <tr {% if 'dt_taken' in fields_with_differences %} class="text-danger" {% endif %}>
+            <th scope="row">Date taken:</th>
+            <td>{{ gphotos_media_item.creationTime }}</td>
+            <td>{{ db_media_item.dt_taken }}</td></tr>
+        <tr {% if 'mime_type' in fields_with_differences %} class="text-danger" {% endif %}>
+            <th scope="row">Mime type:</th>
+            <td>{{ gphotos_media_item.mimeType }}</td>
+            <td>{{ db_media_item.mime_type }}</td></tr>
+        <tr><td class="hidden-button" colspan="3">
+                <input class="hidden-button" type="submit" value="Update"></td></tr>
+    </tbody>
+</table>
 
 {% endblock %}

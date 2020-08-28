@@ -317,6 +317,18 @@ def get_photos_for_album(album_id, media_item_count, gphotos_service=None):
     return response.get('mediaItems', [])
 
 
+def get_photo_by_id(media_item_id, gphotos_service=None):
+    if not gphotos_service:
+        gphotos_service = init_gphotos_service()
+    
+    try:
+        response = gphotos_service.mediaItems().get(mediaItemId=media_item_id).execute()
+        return response
+    except Exception as ex:
+        # TODO
+        return
+
+
 # not in use
 # https://stackoverflow.com/questions/58928685/google-photos-api-python-working-non-deprecated-example
 # https://www.youtube.com/watch?v=lj1uzJQnX38
@@ -336,16 +348,6 @@ def get_albums(gphotos_service=None):
             albums.append(album)
 
     return albums
-
-
-# not in use
-def get_photo_by_id(image_id, gphotos_service=None):
-    if not gphotos_service:
-        gphotos_service = init_gphotos_service()
-    
-    response = gphotos_service.mediaItems().get(mediaItemId=image_id).execute()
-
-    return response
 
 
 # not in use
