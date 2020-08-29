@@ -2,13 +2,10 @@
 
 {% block body %}
 
-<h5>Differences found in {{ fields_with_differences|length }} field(s)</h5>
+<h5>{{ fields_with_differences|length }} difference(s) found</h5>
 
 {% if fields_with_differences %}
-<h6>Differences don't *need* to be resolved, but the app may exhibit strange behavior if they are not. 
-    Click arrow(s) to choose which version of a field's data to keep.</h6> 
-<h6>Clicking an arrow will generate a preview. Data won't be updated until the "Save Changes" button is clicked.</h6>
-{% endif %}
+<h6>Differences don't <i>need</i> to be resolved, but the app may exhibit strange behavior if they are not.</h6>
 
 <br/>
 
@@ -19,25 +16,45 @@
             <th scope="col">Photo-Facets DB</th></tr>
     </thead>
     <tbody>
-        <tr {% if 'description' in fields_with_differences %} class="text-danger" {% endif %}>
-            <th scope="row">Description:</th>
-            <td>{% if gphotos_media_item.description %} {{ gphotos_media_item.description }} {% endif %}</td>
-            <td>{% if db_media_item.description %} {{ db_media_item.description }} {% endif %}</td></tr>
-        <tr {% if 'file_name' in fields_with_differences %} class="text-danger" {% endif %}>
-            <th scope="row">File name:</th>
+    {% for field in fields_with_differences %}
+        {% if field == 'description' %}
+        <tr><th scope="row">Description:</th>
+            <td><form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                <input type="hidden" name="description" value="{{ gphotos_media_item.description }}">
+                <input type="hidden" name="update-description-flag" value="true">
+                {% if gphotos_media_item.description %} {{ gphotos_media_item.description }} {% endif %}<br/>
+                <input type="submit" value="^ Use this">
+                </form></td>
+            <td><form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                <input type="hidden" name="description" value="{{ db_media_item.description }}">
+                <input type="hidden" name="update-description-flag" value="true">
+                {% if db_media_item.description %} {{ db_media_item.description }} {% endif %}<br/>
+                <input type="submit" value="^ Use this">
+                </form></td></tr>
+        {% endif %}
+        {% if field == 'file_name' %}
+        <tr><th scope="row">File name:</th>
             <td>{{ gphotos_media_item.filename }}</td>
             <td>{{ db_media_item.file_name }}</td></tr>
-        <tr {% if 'dt_taken' in fields_with_differences %} class="text-danger" {% endif %}>
-            <th scope="row">Date taken:</th>
+        {% endif %}
+        {% if field == 'dt_taken' %}
+        <tr><th scope="row">Date taken:</th>
             <td>{{ gphotos_media_item.creationTime }}</td>
             <td>{{ db_media_item.dt_taken }}</td></tr>
-        <tr {% if 'mime_type' in fields_with_differences %} class="text-danger" {% endif %}>
-            <th scope="row">Mime type:</th>
-            <td>{{ gphotos_media_item.mimeType }}</td>
-            <td>{{ db_media_item.mime_type }}</td></tr>
-        <tr><td class="hidden-button" colspan="3">
-                <input class="hidden-button" type="submit" value="Update"></td></tr>
+        {% endif %}
+    {% endfor %}
     </tbody>
 </table>
+
+{% else %}
+<h6>All Google Photos API and Photo-facets DB data is in sync!</h6>
+{% endif %}
+
+<h5>Back to <a href="/lockdownsf/manage/mediaitem_view/{{ db_media_item.external_id }}/">photo page</a></h5>
+
 
 {% endblock %}
