@@ -154,8 +154,7 @@ def diff_media_item(db_media_item, gphotos_media_item):
         # fields_with_differences = ['description', 'mime_type', 'file_name', 'dt_taken']
         fields_with_differences = ['description', 'file_name']
     else:
-        # description - TODO figure out better way to massage empty data
-        # import ipdb; ipdb.set_trace()
+        # description - massage empty data (TODO figure out better way to do this)
         if not db_media_item.description:
             db_media_item.description = ''
         if not gphotos_media_item.get('description', ''):
@@ -176,11 +175,19 @@ def album_diff_detected(db_album, gphotos_album):
     # verify that neither album version is falsy
     if not db_album and gphotos_album:
         return True
-    # compare album names between db and gphotos versions
+    # album name - massage empty data (TODO figure out better way to do this)
+    if not db_album.name:
+        db_album.name = ''
+    if not gphotos_album.get('title', ''):
+        gphotos_album['title'] = ''
     if not gphotos_album.get('title', '') or gphotos_album['title'] != db_album.name:
         return True
     # compare photo counts between db and gphotos versions
-    if not gphotos_album.get('mediaItemsCount', '') or gphotos_album['mediaItemsCount'] != len(db_album.mediaitem_set.all()):
+    if not gphotos_album.get('mediaItemsCount', ''):
+        gphotos_album['mediaItemsCount'] = 0
+    else:
+        gphotos_album['mediaItemsCount'] = int(gphotos_album['mediaItemsCount'])  # TODO need a try/except?
+    if gphotos_album['mediaItemsCount'] != len(db_album.mediaitem_set.all()):
         return True
 
     return False

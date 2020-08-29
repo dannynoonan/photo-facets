@@ -7,7 +7,7 @@
 {% if fields_with_differences %}
 <h6>Differences don't <i>need</i> to be resolved, but the app may exhibit strange behavior if they are not.</h6>
 
-<br/>
+<img src="{{ gphotos_media_item.baseUrl }}"/><br/>
 
 <table class="table table-hover">
     <thead>
@@ -20,26 +20,54 @@
         {% if field == 'description' %}
         <tr><th scope="row">Description:</th>
             <td><form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
-                {% csrf_token %}
-                <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
-                <input type="hidden" name="description" value="{{ gphotos_media_item.description }}">
-                <input type="hidden" name="update-description-flag" value="true">
-                {% if gphotos_media_item.description %} {{ gphotos_media_item.description }} {% endif %}<br/>
-                <input type="submit" value="^ Use this">
+                    {% csrf_token %}
+                    <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                    <input type="hidden" name="description" value="{{ gphotos_media_item.description }}">
+                    <input type="hidden" name="update-description-flag" value="true">
+                    {% if gphotos_media_item.description %} {{ gphotos_media_item.description }} {% endif %}<br/>
+                    <input type="submit" value="^ Use this">
                 </form></td>
             <td><form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
-                {% csrf_token %}
-                <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
-                <input type="hidden" name="description" value="{{ db_media_item.description }}">
-                <input type="hidden" name="update-description-flag" value="true">
-                {% if db_media_item.description %} {{ db_media_item.description }} {% endif %}<br/>
-                <input type="submit" value="^ Use this">
+                    {% csrf_token %}
+                    <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                    <input type="hidden" name="description" value="{{ db_media_item.description }}">
+                    <input type="hidden" name="update-description-flag" value="true">
+                    {% if db_media_item.description %} {{ db_media_item.description }} {% endif %}<br/>
+                    <input type="submit" value="^ Use this">
                 </form></td></tr>
         {% endif %}
         {% if field == 'file_name' %}
-        <tr><th scope="row">File name:</th>
+        <tr><th scope="row" rowspan="2">File name:</th>
             <td>{{ gphotos_media_item.filename }}</td>
             <td>{{ db_media_item.file_name }}</td></tr>
+        <tr>
+            <td colspan="2">
+                <form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                    <input type="hidden" name="file-name" value="{{ gphotos_media_item.filename }}">
+                    <input type="hidden" name="update-file-name-flag" value="true">
+                    This is rare and mysterious, and may not actually lead to any issues with the app's behavior. Options:<br/><br/>
+                    <strong>* Either: *</strong><br/>
+                    (a) SYNC FILE NAMES by clicking here: <input type="submit" value="Use Google Photos file_name in DB">
+                </form><br/>
+                <form action="/lockdownsf/manage/album_media_items_delete/" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="album-external-id" value="{{ db_media_item.album.external_id }}">
+                    <input type="hidden" name="media-item-external-ids" value="{{ db_media_item.external_id }}">
+                    <strong>* Or: *</strong><br/>
+                    (b) Fully remove the photo from both Google Photos and Photo-Facets DB and then re-import the photo from scratch. Steps:
+                    <ol>
+                        <li>Remove photo from Google Photos - 2 options:
+                        <ul>
+                            <li><a href="https://photos.google.com/lr/photo/{{ db_media_item.external_id }}" target="new">Open photo in Google Photos</a> and click the "trash can" icon to manually delete it from library.</li>
+                            <li><a href="https://photos.google.com/lr/album/{{ db_media_item.album.external_id }}" target="new">Open album in Google Photos</a>, select the photo, and select the "Move to trash" option.</li>
+                        </ul></li>
+                        <li>Delete photo from Photo-Facets DB via this button: <input type="submit" value="Delete from DB"></li>
+                        <li>Re-import the photo via the <a href="/lockdownsf/manage/album_select_new_media/?add-to-album-external-id={{ db_media_item.album.external_id }}">standard import page</a>.</li>
+                    </ol>
+                </form>
+            </td></tr>
         {% endif %}
         {% if field == 'dt_taken' %}
         <tr><th scope="row">Date taken:</th>
