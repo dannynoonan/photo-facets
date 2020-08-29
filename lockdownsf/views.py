@@ -348,6 +348,8 @@ def album_select_new_media(request):
 
     # assign form data to vars and validate input
     add_to_album_external_id = request.POST.get('add-to-album-external-id', '')
+    if not add_to_album_external_id:
+        add_to_album_external_id = request.GET.get('add-to-album-external-id', '')
 
     # generate uuid for tmp s3 dir to store photos to if any are uploaded
     tmp_dir_uuid = uuid.uuid4()
