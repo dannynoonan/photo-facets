@@ -18,19 +18,21 @@
     <tbody>
     {% for album_field in album_differences %}
         {% if album_field == 'name' %}
-        <tr><th scope="row">Name:</th>
-            <td><form action="/lockdownsf/manage/TODO/" method="POST">
+        <tr><th scope="row">Album name:</th>
+            <td><form action="/lockdownsf/manage/album_edit/" method="POST">
+                {% csrf_token %}
                 <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
                 <input type="hidden" name="album-name" value="{{ gphotos_album.title }}">
                 {{ gphotos_album.title }}<br/>
                 <input type="submit" value="^ Use this">
-            </td>
-            <td><form action="/lockdownsf/manage/TODO/" method="POST">
+                </form></td>
+            <td><form action="/lockdownsf/manage/album_edit/" method="POST">
+                {% csrf_token %}
                 <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
                 <input type="hidden" name="album-name" value="{{ db_album.name }}">
                 {{ db_album.name }}<br/>
                 <input type="submit" value="^ Or use this">
-            </td></tr>
+                </form></td></tr>
         {% endif %}
     {% endfor %}
     {% for media_item_id, thumb_url in media_items_in_both.items %}
@@ -44,17 +46,17 @@
             <td>Photo <strong>DOES NOT EXIST</strong> in DB</td></tr>
         <tr><td colspan="2">
                 <form action="/lockdownsf/manage/album_import_existing_media/" method="POST">
+                {% csrf_token %}
                 <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
                 <input type="hidden" name="media-item-external-id" value="{{ media_item.id }}">
                 <input type="hidden" name="import-source" value="gphotos">
                 Sync actions available:
                 <ul>
                     <li>FULLY REMOVE PHOTO FROM ALBUM: <a href="https://photos.google.com/lr/photo/{{ media_item.id }}" target="new">Open photo in Google Photos</a> and manually delete it from library. 
-                        Or open album <a href="https://photos.google.com/lr/album/{{ db_album.external_id }}" target="new">{{ db_album.name }}</a> in Google Photos</li> and manually remove it from album.
-                    <li>RESTORE PHOTO TO ALBUM: Re-import photo (file name: {{ media_item.filename }}) into DB from desktop via the <a href="/lockdownsf/manage/album_import_select_media/">standard import page</a>.
+                        Or <a href="https://photos.google.com/lr/album/{{ db_album.external_id }}" target="new">open album in Google Photos</a> and manually remove photo from album.</li>
+                    <li>RESTORE PHOTO TO ALBUM: Re-import photo (file name: {{ media_item.filename }}) into DB from desktop via the <a href="/lockdownsf/manage/album_select_new_media/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.
                         If you re-import the same original image, it will be matched to the existing version in Google Photos (no duplicate will be created).</li>
-                </ul>
-                </form>
+                </ul></form>
             </td></tr>
     {% endfor %}
     {% for media_item in media_items_only_in_db %}
@@ -63,15 +65,15 @@
             <td>Photo <strong>EXISTS</strong> in DB</td></tr>
         <tr><td colspan="2">
                 <form action="/lockdownsf/manage/album_media_items_delete/" method="POST">
+                {% csrf_token %}
                 <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
-                <input type="hidden" name="media-item-external-id" value="{{ media_item.external_id }}">
+                <input type="hidden" name="media-item-external-ids" value="{{ media_item.external_id }}">
                 Sync actions available:
                 <ul>
                     <li>FULLY REMOVE PHOTO FROM ALBUM: Delete photo from DB via this button: <input type="submit" value="Delete from DB"></li>
                     <li>RESTORE PHOTO TO ALBUM: Your best bet is to use the "Delete from DB" button above, then re-import the photo (file name: {{ media_item.file_name }})
-                        into DB and Google Photos from desktop via the <a href="/lockdownsf/manage/album_import_select_media/">standard import page</a>.</li>               
-                </ul>
-                </form>
+                        into DB and Google Photos from desktop via the <a href="/lockdownsf/manage/album_select_new_media/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.</li>               
+                </ul></form>
             </td></tr>
     {% endfor %}
         <tr><td class="hidden-button" colspan="3">
