@@ -254,6 +254,10 @@ def album_view(request, album_external_id, page_number=None):
         diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
         log_and_store_message(request, messages.WARNING, 
             f"Differences detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
+    else:
+        diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">thorough comparison</a>"
+        log_and_store_message(request, messages.SUCCESS, 
+            f"A cursory scan found no high-level differences between Google Photos API and photo-facets db versions of this album. Click for a more {diff_link}.")
     
     page_title = f"{page_title}: {album.name}"
 
@@ -854,7 +858,9 @@ def mediaitem_edit(request):
     update_description_flag = request.POST.get('update-description-flag', '')
     new_description = request.POST.get('description', '')
     update_tags_flag = request.POST.get('update-tags-flag', '')
-    new_tag_ids = request.POST.getlist('tag_ids', [])
+    new_tag_ids = request.POST.getlist('tag-ids', [])
+    update_file_name_flag = request.POST.get('update-file-name-flag', '')
+    new_file_name = request.POST.get('file-name', '')
 
     # handle missing data
     if not media_item_external_id:
@@ -862,8 +868,7 @@ def mediaitem_edit(request):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
-    if not (update_description_flag or update_tags_flag):
-        # javascript should prevent this scenario, but...
+    if not (update_description_flag or update_tags_flag or update_file_name_flag):
         log_and_store_message(request, messages.ERROR, 
             f"Failure to update media item, no data changes were submitted")
         
@@ -878,7 +883,7 @@ def mediaitem_edit(request):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
-    # description updates - update db object and gphotos api field
+    # description update - update db object and gphotos api field
     if update_description_flag:
         # db object update
         media_item.description = new_description
@@ -918,6 +923,11 @@ def mediaitem_edit(request):
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
                     f"Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
+
+    # file_name update - update db object only, this isn't editable in gphotos api
+    if update_file_name_flag:
+        # db object update
+        media_item.file_name = new_file_name
 
     # write accumulated changes to db
     try:

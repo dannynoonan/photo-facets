@@ -93,7 +93,7 @@
     <tbody>
     {% for photo in page_results %}
         <tr><td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
-                    <img src="{{ photo.thumb_url }}" width="200"></a></td>
+                    <img src="{{ photo.thumb_url }}" width="300"></a></td>
             <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
                     {{ photo.album.name }}</a></td>
             <td>{{ photo.file_name }}</td>   
