@@ -119,43 +119,43 @@ def delete_dir(tmp_dir, file_names):
         raise Exception(f"Failed to delete temp directory [{tmp_dir}] from s3. Details: {ex}")
 
 
-def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
-    print('****** in resize_and_upload')
+# def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
+#     print('****** in resize_and_upload')
 
-    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
-    print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
+#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.format: {str(orig_img.format)}")
+#     print(f"@@@@@@ [{thumb_type} before resizing] orig_img.size: {str(orig_img.size)}")
 
-    # im = Image.open(orig_img)
-    orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
+#     # im = Image.open(orig_img)
+#     orig_img.thumbnail(img_dimensions, Image.ANTIALIAS)
     
-    print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
-    print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
+#     print(f"****** [{thumb_type} after resizing] orig_img.format: {str(orig_img.format)}")
+#     print(f"****** [{thumb_type} after resizing] orig_img.size: {str(orig_img.size)}")
     
-    in_mem_file = BytesIO()
-    orig_img.save(in_mem_file, format=orig_img.format)
+#     in_mem_file = BytesIO()
+#     orig_img.save(in_mem_file, format=orig_img.format)
 
-    print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
-    print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
+#     print(f"^^^^^^ [{thumb_type}] orig_img saved to in_mem_file")
+#     print(f"^^^^^^ [{thumb_type}] file size / in_mem_file.tell(): {str(in_mem_file.tell())}")
 
-    in_mem_file.seek(0)
+#     in_mem_file.seek(0)
 
-    resized_img_file_name = f"{thumb_type}/{uuid}"
+#     resized_img_file_name = f"{thumb_type}/{uuid}"
 
-    # Upload image to s3
-    client_s3 = boto3.client('s3') 
+#     # Upload image to s3
+#     client_s3 = boto3.client('s3') 
 
-    response = client_s3.put_object( 
-        ACL="public-read",
-        Bucket=metadata.S3_BUCKET,
-        Body=in_mem_file,
-        ContentType='image/jpeg',
-        Key=resized_img_file_name,
-        Expires = datetime.now() + timedelta(minutes = 6),
-    )
+#     response = client_s3.put_object( 
+#         ACL="public-read",
+#         Bucket=metadata.S3_BUCKET,
+#         Body=in_mem_file,
+#         ContentType='image/jpeg',
+#         Key=resized_img_file_name,
+#         Expires = datetime.now() + timedelta(minutes = 6),
+#     )
 
-    resized_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
+#     resized_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
 
-    print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
-    print(f"====== [{thumb_type}] str(response): {str(response)}")
+#     print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
+#     print(f"====== [{thumb_type}] str(response): {str(response)}")
 
-    return resized_img_file_path
+#     return resized_img_file_path
