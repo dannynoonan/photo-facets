@@ -19,7 +19,7 @@ from django.shortcuts import render, redirect
 from django.template import loader
 
 from lockdownsf import metadata
-from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
+from lockdownsf.models import Album, MediaItem, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
     album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_media_item, extract_messages_from_storage, 
