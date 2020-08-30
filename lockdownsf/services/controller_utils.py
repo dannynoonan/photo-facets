@@ -54,20 +54,6 @@ def update_media_items_with_gphotos_data(gpids_to_img_data, media_items, failed_
     return matched_media_items
 
 
-# def populate_thumb_urls_from_gphotosapi(mapped_media_items):
-#     # fetch media_items from gphotos api to populate thumb_urls
-#     media_item_ids = [m_item.external_id for m_item in mapped_media_items]
-#     gphotos_media_items = gphotosapi.get_photos_by_ids(media_item_ids)
-#     for gpmi in gphotos_media_items:
-#         for mmi in mapped_media_items:
-#             if not (gpmi.get('mediaItem', '') and gpmi['mediaItem'].get('id', '')):
-#                 print(f"Error fetching mediaItem, mediaItem or mediaItem['id'] was None. Skipping to next.")
-#                 continue
-#             if gpmi['mediaItem']['id'] == mmi.external_id:
-#                 mmi.thumb_url = gpmi['mediaItem'].get('baseUrl', '')
-#                 continue
-
-
 def populate_fields_from_gphotosapi(mapped_media_items, fields):
     # fetch media_items from gphotos api 
     media_item_ids = [m_item.external_id for m_item in mapped_media_items if m_item.external_id]
@@ -177,8 +163,6 @@ def diff_media_item(db_media_item, gphotos_media_item):
                 fields_with_differences.append('dt_taken')
             else:
                 # if both gphotos creationTime and db dt_taken are set, massage data for comparison
-                # gphotos_dt_taken = datetime.strptime(gphotos_media_item['creationTime'], '%Y-%m-%dT%H:%M:%SZ')
-                # gphotos_dt_taken = pytz.utc.localize(gphotos_dt_taken)
                 if db_media_item.dt_taken != gphotos_media_item['dt_taken']:
                     fields_with_differences.append('dt_taken')
         # mime type
@@ -208,22 +192,6 @@ def album_diff_detected(db_album, gphotos_album):
         return True
 
     return False
-
-
-# def media_item_diff_detected(db_media_item, gphotos_media_item):
-#     # verify that neither media item version is falsy
-#     if not db_media_item and gphotos_media_item:
-#         return True
-#     # compare individual fields of db vs gphotos versions
-#     if db_media_item.description != gphotos_media_item.get('description', ''):
-#         return True
-#     if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
-#         return True
-#     if db_media_item.file_name != gphotos_media_item.get('filename', ''):
-#         return True
-#     # TODO creation date?
-
-#     return False
 
 
 # flatten gphotos_media_item data to simplify comparisons and django template access
