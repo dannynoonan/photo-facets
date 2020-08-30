@@ -40,8 +40,7 @@
         <tr><th scope="row" rowspan="2">File name:</th>
             <td>{{ gphotos_media_item.filename }}</td>
             <td>{{ db_media_item.file_name }}</td></tr>
-        <tr>
-            <td colspan="2">
+        <tr><td colspan="2">
                 <form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
@@ -71,8 +70,17 @@
         {% endif %}
         {% if field == 'dt_taken' %}
         <tr><th scope="row">Date taken:</th>
-            <td>{{ gphotos_media_item.creationTime }}</td>
-            <td>{{ db_media_item.dt_taken }}</td></tr>
+            <td><form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="media-item-external-id" value="{{ db_media_item.external_id }}">
+                    <input type="hidden" name="dt-taken" value="{{ gphotos_media_item.creationTime }}">
+                    <input type="hidden" name="update-dt-taken-flag" value="true">
+                    {{ gphotos_media_item.dt_taken }}<br/>
+                    <input type="submit" value="^ Use this">
+                </form></td>
+            <td>{{ db_media_item.dt_taken }}<br/>
+                To use this date, <a href="https://photos.google.com/lr/photo/{{ db_media_item.external_id }}" target="new">open photo in Google Photos</a> 
+                and manually change its Date & Time to "{{ db_media_item.dt_taken }}" under Info -> Details.</li></td></tr>
         {% endif %}
     {% endfor %}
     </tbody>

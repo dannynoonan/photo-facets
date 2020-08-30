@@ -1,3 +1,6 @@
+from datetime import datetime
+import pytz
+
 from django.contrib import messages
 
 from lockdownsf import metadata
@@ -157,17 +160,30 @@ def diff_media_item(db_media_item, gphotos_media_item):
         # description - massage empty data (TODO figure out better way to do this)
         if not db_media_item.description:
             db_media_item.description = ''
-        if not gphotos_media_item.get('description', ''):
-            gphotos_media_item['description'] = ''
-        if db_media_item.description != gphotos_media_item['description'].strip():
+        if db_media_item.description != gphotos_media_item.get('description', ''):
             fields_with_differences.append('description')
         # file_name
         if db_media_item.file_name != gphotos_media_item.get('filename', ''):
             fields_with_differences.append('file_name')
+        # date taken 
+        if not gphotos_media_item.get('dt_taken', ''):
+            if db_media_item.dt_taken:
+                # db dt_taken is set but gphotos creationTime is not
+                fields_with_differences.append('dt_taken')
+        else:
+            if not db_media_item.dt_taken:
+                # gphotos creationTime is set but db dt_taken is not
+                fields_with_differences.append('dt_taken')
+            else:
+                # if both gphotos creationTime and db dt_taken are set, massage data for comparison
+                # gphotos_dt_taken = datetime.strptime(gphotos_media_item['creationTime'], '%Y-%m-%dT%H:%M:%SZ')
+                # gphotos_dt_taken = pytz.utc.localize(gphotos_dt_taken)
+                if db_media_item.dt_taken != gphotos_media_item['dt_taken']:
+                    fields_with_differences.append('dt_taken')
+        # mime type
         # if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
         #     fields_with_differences.append('mime_type')
-        # if db_media_item.dt_taken != gphotos_media_item.get('creationTime', ''):
-        #     fields_with_differences.append('dt_taken')
+    print(f"fields_with_differences: [{fields_with_differences}]")
     return fields_with_differences
 
 
@@ -207,3 +223,17 @@ def album_diff_detected(db_album, gphotos_album):
 #     # TODO creation date?
 
 #     return False
+
+
+# flatten gphotos_media_item data to simplify comparisons and django template access
+def massage_gphotos_media_item(gphotos_media_item):
+    # description - assign default value, trim whitespace
+    if not gphotos_media_item.get('description', ''):
+        gphotos_media_item['description'] = ''
+    gphotos_media_item['description'] = gphotos_media_item['description'].strip()
+    # date taken
+    if gphotos_media_item.get('mediaMetadata', ''):
+        gphotos_media_item['creationTime'] = gphotos_media_item['mediaMetadata'].get('creationTime', '')
+        if gphotos_media_item['creationTime']:
+            gphotos_media_item['dt_taken'] = datetime.strptime(gphotos_media_item['creationTime'], '%Y-%m-%dT%H:%M:%SZ')
+            gphotos_media_item['dt_taken'] = pytz.utc.localize(gphotos_media_item['dt_taken'])

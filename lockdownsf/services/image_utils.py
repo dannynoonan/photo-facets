@@ -4,8 +4,6 @@ from PIL import ExifTags, Image
 from lockdownsf.metadata import img_max_dimensions, distances_to_zooms
 from lockdownsf.models import Album, MediaItem
 
-import ipdb
-
 
 def calculate_resized_images(aspect_ratio, width, height):
     img_dimensions = {}
@@ -184,7 +182,6 @@ def optimal_zoom_for_distance(distance):
 
 # def get_exif_data(image_data):
 #     # print(f"^^^^^^ in get_exif_data file size / in_mem_image.tell(): {str(in_mem_image.tell())}")
-#     ipdb.set_trace()
 #     exif_tags = exifread.process_file(image_data)
 #     return exif_tags
 
@@ -195,8 +192,6 @@ def optimal_zoom_for_distance(distance):
 #     """
 #     lat = None
 #     lon = None
-
-#     ipdb.set_trace()
 
 #     gps_latitude = _get_if_exist(exif_data, 'GPS GPSLatitude')
 #     gps_latitude_ref = _get_if_exist(exif_data, 'GPS GPSLatitudeRef')
