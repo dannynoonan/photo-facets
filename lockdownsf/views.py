@@ -23,7 +23,7 @@ from lockdownsf.models import Album, MediaItem, Neighborhood, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
     album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_media_item, extract_messages_from_storage, 
-    log_and_store_message, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
+    log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
 
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
@@ -680,6 +680,9 @@ def album_diff(request, album_external_id):
         for gpmi in gphotos_album_media_items:
             if dbmi.external_id == gpmi['id']:
                 dbmi_found_in_gphotos = True
+                # massage gphotos data
+                massage_gphotos_media_item(gpmi)
+                # diff gphotos and db versions
                 if diff_media_item(dbmi, gpmi):
                     media_items_in_both[dbmi.external_id] = gpmi.get('baseUrl', '')
                 already_compared_ids.append(dbmi.external_id)
@@ -803,6 +806,9 @@ def mediaitem_view(request, media_item_external_id):
 
     # diff media_item returned by gphotos api to that mapped to db album
     gphotos_media_item = gphotosapi.get_photo_by_id(media_item_external_id)
+    # massage gphotos data
+    massage_gphotos_media_item(gphotos_media_item)
+    # diff gphotos and db versions
     if diff_media_item(media_item, gphotos_media_item):
         diff_link = f"<a href=\"/lockdownsf/manage/mediaitem_diff/{media_item_external_id}/\">inspect differences</a>"
         log_and_store_message(request, messages.WARNING, 
@@ -861,6 +867,8 @@ def mediaitem_edit(request):
     new_tag_ids = request.POST.getlist('tag-ids', [])
     update_file_name_flag = request.POST.get('update-file-name-flag', '')
     new_file_name = request.POST.get('file-name', '')
+    update_dt_taken_flag = request.POST.get('update-dt-taken-flag', '')
+    new_dt_taken = request.POST.get('dt-taken', '')
 
     # handle missing data
     if not media_item_external_id:
@@ -868,7 +876,7 @@ def mediaitem_edit(request):
         
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
-    if not (update_description_flag or update_tags_flag or update_file_name_flag):
+    if not (update_description_flag or update_tags_flag or update_file_name_flag or update_dt_taken_flag):
         log_and_store_message(request, messages.ERROR, 
             f"Failure to update media item, no data changes were submitted")
         
@@ -924,10 +932,16 @@ def mediaitem_edit(request):
                 log_and_store_message(request, messages.ERROR,
                     f"Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
 
-    # file_name update - update db object only, this isn't editable in gphotos api
+    # file_name update - update db object only, not editable in gphotos api
     if update_file_name_flag:
         # db object update
         media_item.file_name = new_file_name
+
+    # dt_taken update - update db object only, not editable in gphotos api
+    if update_dt_taken_flag:
+        # transform datetime value and update db object 
+        # new_dt_taken = datetime.strptime(new_dt_taken, '%Y-%m-%dT%H:%M:%SZ') 
+        media_item.dt_taken = new_dt_taken
 
     # write accumulated changes to db
     try:
@@ -966,11 +980,9 @@ def mediaitem_diff(request, media_item_external_id):
             f"Failure to fetch media item to diff, no match found in Google Photos API for external_id [{media_item_external_id}]")
         return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
 
-    # flatten gphotos_media_item date taken data to simplify comparisons and django template access
-    if gphotos_media_item.get('mediaMetadata', ''):
-        gphotos_media_item['creationTime'] = gphotos_media_item['mediaMetadata'].get('creationTime', '')
-
-    # establish which fields, if any, have differences between db and api versions
+    # massage gphotos data
+    massage_gphotos_media_item(gphotos_media_item)
+    # establish which fields have differences between gphotos and db versions
     fields_with_differences = diff_media_item(db_media_item, gphotos_media_item)
 
     context = {
