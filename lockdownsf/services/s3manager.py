@@ -67,8 +67,8 @@ def extract_text(img_file_name, bucket):
     return extracted_text_search, extracted_text_display
 
 
-def upload_image_to_s3(img_file_path, img_file_name):
-    response = requests.get(img_file_path, stream=True)
+def upload_image_to_s3(img_src_file_path, img_dest_file_name):
+    response = requests.get(img_src_file_path, stream=True)
     orig_img = Image.open(BytesIO(response.content))
 
     in_mem_file = BytesIO()
@@ -84,18 +84,20 @@ def upload_image_to_s3(img_file_path, img_file_name):
         ACL="public-read",
         Bucket=metadata.S3_BUCKET,
         Body=in_mem_file,
-        # ContentType='image/jpeg',
         ContentType=orig_img.format,
-        Key=img_file_name,
+        Key=img_dest_file_name,
         Expires = datetime.now() + timedelta(minutes = 6),
     )
 
-    s3_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{img_file_name}"
+    img_dest_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{img_dest_file_name}"
 
-    return s3_img_file_path
+    return img_dest_file_path
 
 
 def delete_dir(tmp_dir, file_names):
+
+    # import ipdb; ipdb.set_trace()
+
     if not (tmp_dir and file_names):
         return
     s3_resource = boto3.resource('s3',
@@ -108,15 +110,13 @@ def delete_dir(tmp_dir, file_names):
         try:
             s3_resource.Object(metadata.S3_BUCKET, file_path).delete()
         except Exception as ex:
-            log_and_store_message(request, messages.ERROR,
-                f"Failed to delete file [{file_path}] from s3. Details: {ex}")
+            raise Exception(f"Failed to delete file [{file_path}] from s3. Details: {ex}")
 
     # delete tmp_dir
     try:
         s3_resource.Object(metadata.S3_BUCKET, tmp_dir).delete()
     except Exception as ex:
-        log_and_store_message(request, messages.ERROR,
-            f"Failed to delete temp directory [{tmp_dir}] from s3. Details: {ex}")
+        raise Exception(f"Failed to delete temp directory [{tmp_dir}] from s3. Details: {ex}")
 
 
 def resize_and_upload(orig_img, thumb_type, img_dimensions, uuid):
