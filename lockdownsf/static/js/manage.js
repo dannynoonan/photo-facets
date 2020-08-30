@@ -264,7 +264,15 @@ function initUpload(files) {
     }
 
     for (var i=0; i<files.length; i++) {
-        getSignedRequest(files[i], i, 0);
+        // exclude non-image files
+        fileSuperType = files[i].type.split("/")[0];
+        // alert('fileSuperType: ' + fileSuperType)
+        if (fileSuperType != "image") {
+            addToFailedFiles(files[i].name);
+        }
+        else {
+            getSignedRequest(files[i], i, 0);
+        }
     }
 }
 
@@ -272,15 +280,16 @@ function initUpload(files) {
 function getSignedRequest(file, sequence, retryCount) {
     // handle failed requests
     if (retryCount > 5) {
-        alert("Could not get signed URL for file [" + file.name + "] sequence [" + sequence + "]");
-        failed_files.append(file.name);
-        failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
-        for (var i=0; i<failed_files.length; i++) {
-            failure_message += "<li>" + failed_files[i] + "</li>";
-        }
-        failure_message += "</ul>";
-        document.getElementById("s3-upload-failure").style.display = 'block';
-        document.getElementById("s3-upload-failure").innerHTML = failure_message;
+        // alert("Could not get signed URL for file [" + file.name + "] sequence [" + sequence + "]");
+        addToFailedFiles(file.name);
+        // failed_files.push(file.name);
+        // failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
+        // for (var i=0; i<failed_files.length; i++) {
+        //     failure_message += "<li>" + failed_files[i] + "</li>";
+        // }
+        // failure_message += "</ul>";
+        // document.getElementById("s3-upload-failure").style.display = 'block';
+        // document.getElementById("s3-upload-failure").innerHTML = failure_message;
         if (success_file_count + failed_files.length == total_file_count) {
             // alert("Total retry count: " + totalRetryCount);
             document.getElementById("album-create-submit").style.display = 'block';
@@ -370,16 +379,16 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 // EXIF.getData(domImg, extractImageData);
             }
             else {
-                alert("Could not upload file: " + file.name);
-                // TODO refactor, cut-and-pasted from getSignedRequest
-                failed_files.append(file.name);
-                failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
-                for (var i=0; i<failed_files.length; i++) {
-                    failure_message += "<li>" + failed_files[i] + "</li>";
-                }
-                failure_message += "</ul>";
-                document.getElementById("s3-upload-failure").style.display = 'block';
-                document.getElementById("s3-upload-failure").innerHTML = failure_message;
+                // alert("Could not upload file: " + file.name);
+                addToFailedFiles(file.name);
+                // failed_files.push(file.name);
+                // failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
+                // for (var i=0; i<failed_files.length; i++) {
+                //     failure_message += "<li>" + failed_files[i] + "</li>";
+                // }
+                // failure_message += "</ul>";
+                // document.getElementById("s3-upload-failure").style.display = 'block';
+                // document.getElementById("s3-upload-failure").innerHTML = failure_message;
                 if (success_file_count + failed_files.length == total_file_count) {
                     // alert("Total retry count: " + totalRetryCount);
                     document.getElementById("album-import-media-submit").style.display = 'block';
@@ -389,6 +398,20 @@ function uploadFileClassic(file, sequence, s3Data, url) {
     };
     xhr.send(postData);
 }
+
+
+// this function is hideous, it regenerates the whole shebang from scratch each time it's called
+function addToFailedFiles(file_name) {
+    failed_files.push(file_name);
+    failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
+    for (var i=0; i<failed_files.length; i++) {
+        failure_message += "<li>" + failed_files[i] + "</li>";
+    }
+    failure_message += "</ul>";
+    document.getElementById("s3-upload-failure").style.display = 'block';
+    document.getElementById("s3-upload-failure").innerHTML = failure_message;
+}
+
 
 
 function showOrHideAlbumTitleInput() {

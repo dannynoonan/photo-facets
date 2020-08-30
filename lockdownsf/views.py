@@ -567,7 +567,6 @@ def album_delete(request):
             link_to_deleted_album = f"<ul><li><a href=\"https://photos.google.com/lr/album/{album_external_id}\" target=\"new\">{album.name}</a></li></ul>"
             log_and_store_message(request, messages.SUCCESS, 
                 f"Note this album still exists in Google Photos. To also delete it there, visit this link: {link_to_deleted_album}")
-
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
                 f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}")
@@ -601,7 +600,6 @@ def album_media_items_delete(request):
             media_item = MediaItem.objects.get(external_id=media_item_id)
             media_item.delete()
             successful_media_item_ids.append(media_item_id)
-
         except Exception as ex:
             failed_media_item_ids.append(media_item_id)
 
@@ -801,7 +799,6 @@ def mediaitem_view(request, media_item_external_id):
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
             f"Failure to fetch media item, no match for external_id [{media_item_external_id}]")
-        
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     # diff media_item returned by gphotos api to that mapped to db album
@@ -873,13 +870,11 @@ def mediaitem_edit(request):
     # handle missing data
     if not media_item_external_id:
         log_and_store_message(request, messages.ERROR, f"Failure to update media item, external_id was not set")
-        
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     if not (update_description_flag or update_tags_flag or update_file_name_flag or update_dt_taken_flag):
         log_and_store_message(request, messages.ERROR, 
             f"Failure to update media item, no data changes were submitted")
-        
         return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
 
     # fetch media_item from db
@@ -888,7 +883,6 @@ def mediaitem_edit(request):
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
             f"Failure to update media item, no match for external_id [{media_item_external_id}]")
-        
         return redirect(f"/lockdownsf/manage/mediaitem_search/")
 
     # description update - update db object and gphotos api field
@@ -1031,19 +1025,16 @@ def tag_create(request):
     new_tag_name = request.POST.get('new-tag-name', '')
     if not new_tag_name:
         log_and_store_message(request, messages.ERROR, f"Failed to create new tag, no tag name was specified.")
-
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     try:
         new_tag = Tag(name=new_tag_name, status=metadata.TagStatus.ACTIVE.name, owner=OWNER)
         new_tag.save()
         log_and_store_message(request, messages.SUCCESS, f"Successfully created new tag [{new_tag.name}].")
-    
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, f"Failed to create new tag [{new_tag_name}]. Exception: {ex}")
-
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
 
@@ -1053,18 +1044,16 @@ def tag_edit(request):
     tag_id = request.POST.get('tag-id', '')
     if not tag_id:
         log_and_store_message(request, messages.ERROR, f"Failed to edit tag, no tag id was specified.")
-
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     tag_status_field = f"tag-status-select-{tag_id}"
     tag_status = request.POST.get(tag_status_field, '')
 
-    for key, value in request.POST.items():
-        print(f"key: {key} | value: {value}") 
+    # for key, value in request.POST.items():
+    #     print(f"key: {key} | value: {value}") 
 
     if not tag_status:
         log_and_store_message(request, messages.ERROR, f"Failed to update tag, no status was specified.")
-
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     try:
@@ -1072,12 +1061,10 @@ def tag_edit(request):
         tag.status = tag_status
         tag.save()
         log_and_store_message(request, messages.SUCCESS, f"Successfully updated tag [{tag.name}].")
-    
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, f"Failed to fetch and update tag with tag_id [{tag_id}]. Exception: {ex}")
-
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
 
@@ -1090,14 +1077,15 @@ def extract_ocr_text(request):
     if not (request_scope and external_id):
         log_and_store_message(request, messages.ERROR, 
             "Failure to extract OCR text, both request_scope and external_id are required")
-
         return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
 
     if request_scope not in ['album', 'media_item']:
         log_and_store_message(request, messages.ERROR, 
             "Failure to extract OCR text, request_scope must be 'album' or 'media_item'")
-
         return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
+
+    # generate uuid for tmp s3 dir to store photos to if any are uploaded
+    tmp_dir_uuid = str(uuid.uuid4())
     
     if request_scope == 'media_item':
         # fetch media item from db
@@ -1110,20 +1098,21 @@ def extract_ocr_text(request):
 
         # copy image from gphotos to s3 for OCR extraction
         try:
-            copy_gphotos_image_to_s3(external_id)
+            s3_file_name = copy_gphotos_image_to_s3(external_id, tmp_dir_uuid)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, ex)
             return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
         # extract OCR text from image on s3
-        extracted_text_search, extracted_text_display = s3manager.extract_text(external_id, metadata.S3_BUCKET)
+        extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, metadata.S3_BUCKET)
 
         # add extracted text to media_item and save 
         media_item.extracted_text_search = extracted_text_search
         media_item.extracted_text_display = extracted_text_display
         media_item.save()
 
-        # TODO remove image from s3
+        # delete photo from s3
+        s3manager.delete_dir(tmp_dir_uuid, [external_id])
 
         return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
@@ -1140,20 +1129,21 @@ def extract_ocr_text(request):
         for media_item in album_media_items:
             # copy image from gphotos to s3 for OCR extraction
             try:
-                copy_gphotos_image_to_s3(media_item.external_id)
+                s3_file_name = copy_gphotos_image_to_s3(media_item.external_id, tmp_dir_uuid)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR, ex)
                 continue
 
             # extract OCR text from image on s3
-            extracted_text_search, extracted_text_display = s3manager.extract_text(media_item.external_id, metadata.S3_BUCKET)
+            extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, metadata.S3_BUCKET)
 
             # add extracted text to media_item and save 
             media_item.extracted_text_search = extracted_text_search
             media_item.extracted_text_display = extracted_text_display
             media_item.save()
 
-            # TODO remove image from s3
+            # delete photos from s3
+            s3manager.delete_dir(tmp_dir_uuid, [mi.external_id for mi in album_media_items if mi.external_id])
 
         return redirect(f"/lockdownsf/manage/album_view/{external_id}/")
 

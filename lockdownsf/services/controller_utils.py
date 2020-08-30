@@ -98,9 +98,9 @@ def populate_fields_from_gphotosapi(mapped_media_items, fields):
                 continue
 
 
-def copy_gphotos_image_to_s3(media_item_external_id):
+def copy_gphotos_image_to_s3(media_item_external_id, tmp_dir):
     # fetch image data from gphotos api
-    gphotos_image_response = gphotosapi.get_photo_by_id(image_id=media_item_external_id)
+    gphotos_image_response = gphotosapi.get_photo_by_id(media_item_external_id)
 
     if not (gphotos_image_response and gphotos_image_response.get('baseUrl', '')):
         raise Exception("Failure to extract OCR text, no google photos image returned matching external_id [{media_item_external_id}]")
@@ -116,9 +116,10 @@ def copy_gphotos_image_to_s3(media_item_external_id):
             img_file_path = f"{img_file_path}=w{width}-h{height}"
 
     # upload gphotos image to s3
+    s3_file_name = f"{tmp_dir}/{media_item_external_id}"
     try:
-        s3manager.upload_image_to_s3(img_file_path, media_item_external_id)
-        return 
+        s3manager.upload_image_to_s3(img_file_path, s3_file_name)
+        return s3_file_name
     except Exception as ex:
         raise Exception("Failure to extract OCR text, google photos image could not be uploaded to s3 for google external_id [{media_item_external_id}]. Details: {ex}")
 
@@ -183,7 +184,7 @@ def diff_media_item(db_media_item, gphotos_media_item):
         # mime type
         # if db_media_item.mime_type != gphotos_media_item.get('mimeType', ''):
         #     fields_with_differences.append('mime_type')
-    print(f"fields_with_differences: [{fields_with_differences}]")
+
     return fields_with_differences
 
 
