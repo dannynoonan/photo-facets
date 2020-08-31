@@ -203,7 +203,7 @@ function makeAlbumNameEditable() {
 
 // // https://developers.google.com/photos/library/reference/rest/v1/mediaItems/batchCreate?apix=true
 // var gphotos_client_id = "656115714274-r8mllgbe6t01iba59b2ab93un487n37i.apps.googleusercontent.com";
-// var gphotos_api_key = "AIzaSyCdpJTF2R4HzQNZ9gvodI8HRXm2BP-BOBQ";
+// var gphotos_api_key = "TODO";
 // // var gapi;
 
 // function authenticate() {
