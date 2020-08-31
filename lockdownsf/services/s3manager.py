@@ -1,11 +1,17 @@
 import boto3
 from datetime import datetime, timedelta
 from io import BytesIO
+import os
 from PIL import Image
 import requests
 
-from lockdownsf import metadata
 from lockdownsf.services.controller_utils import log_and_store_message
+
+
+AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
+AWS_REGION_NAME = 'us-west-1'
+S3_BUCKET = os.environ['S3_BUCKET']
 
 
 def extract_text(img_file_name, bucket):
@@ -18,9 +24,9 @@ def extract_text(img_file_name, bucket):
     # https://docs.aws.amazon.com/rekognition/latest/dg/text-detecting-text-procedure.html
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rekognition.html#Rekognition.Client.detect_text
     rekognition_client = boto3.client('rekognition', 
-        region_name=metadata.AWS_REGION_NAME,
-        aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+        region_name=AWS_REGION_NAME,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
     response = rekognition_client.detect_text(
         Image = {'S3Object': {'Bucket': bucket, 'Name': img_file_name}})
     text_detections = response['TextDetections']
@@ -46,9 +52,9 @@ def extract_text(img_file_name, bucket):
         # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/textract.html
         print(f"parsing textract detect_document_text response for image [{img_file_name}]")
         textract_client = boto3.client('textract', 
-            region_name=metadata.AWS_REGION_NAME, 
-            aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+            region_name=AWS_REGION_NAME, 
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
         response = textract_client.detect_document_text(
             Document = {'S3Object': {'Bucket': bucket, 'Name': img_file_name}})
         blocks = response['Blocks']
@@ -77,19 +83,19 @@ def upload_image_to_s3(img_src_file_path, img_dest_file_name):
 
     # Upload image to s3
     client_s3 = boto3.client('s3',
-         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
-         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+         aws_access_key_id=AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     response = client_s3.put_object( 
         ACL="public-read",
-        Bucket=metadata.S3_BUCKET,
+        Bucket=S3_BUCKET,
         Body=in_mem_file,
         ContentType=orig_img.format,
         Key=img_dest_file_name,
         Expires = datetime.now() + timedelta(minutes = 6),
     )
 
-    img_dest_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{img_dest_file_name}"
+    img_dest_file_path = f"https://{S3_BUCKET}.s3.amazonaws.com/{img_dest_file_name}"
 
     return img_dest_file_path
 
@@ -101,20 +107,20 @@ def delete_dir(tmp_dir, file_names):
     if not (tmp_dir and file_names):
         return
     s3_resource = boto3.resource('s3',
-         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
-         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+         aws_access_key_id=AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
          
     # delete each file in tmp_dir
     for fn in file_names:
         file_path = f"{tmp_dir}/{fn}"
         try:
-            s3_resource.Object(metadata.S3_BUCKET, file_path).delete()
+            s3_resource.Object(S3_BUCKET, file_path).delete()
         except Exception as ex:
             raise Exception(f"Failed to delete file [{file_path}] from s3. Details: {ex}")
 
     # delete tmp_dir
     try:
-        s3_resource.Object(metadata.S3_BUCKET, tmp_dir).delete()
+        s3_resource.Object(S3_BUCKET, tmp_dir).delete()
     except Exception as ex:
         raise Exception(f"Failed to delete temp directory [{tmp_dir}] from s3. Details: {ex}")
 
@@ -146,14 +152,14 @@ def delete_dir(tmp_dir, file_names):
 
 #     response = client_s3.put_object( 
 #         ACL="public-read",
-#         Bucket=metadata.S3_BUCKET,
+#         Bucket=S3_BUCKET,
 #         Body=in_mem_file,
 #         ContentType='image/jpeg',
 #         Key=resized_img_file_name,
 #         Expires = datetime.now() + timedelta(minutes = 6),
 #     )
 
-#     resized_img_file_path = f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
+#     resized_img_file_path = f"https://{S3_BUCKET}.s3.amazonaws.com/{resized_img_file_name}"
 
 #     print(f"====== [{thumb_type}] resized_img_file_path: {resized_img_file_path}")
 #     print(f"====== [{thumb_type}] str(response): {str(response)}")

@@ -1,7 +1,7 @@
 import exifread
 from PIL import ExifTags, Image
 
-from lockdownsf.metadata import img_max_dimensions, distances_to_zooms
+from lockdownsf.metadata import distances_to_zooms
 from lockdownsf.models import Album, MediaItem
     
 
