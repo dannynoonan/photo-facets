@@ -18,20 +18,28 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
 from django.template import loader
 
-from lockdownsf import metadata
+from lockdownsf.metadata import Status, TagStatus
 from lockdownsf.models import Album, MediaItem, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
     album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_media_item, extract_messages_from_storage, 
     log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
 
+
 OWNER = User.objects.get(email='andyshirey@gmail.com')
 MAX_RESULTS_PER_PAGE = 40
+
+AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
+S3_BUCKET = os.environ['S3_BUCKET']
 
 
 def index(request):
     template = 'index.html'
     page_title = 'Photo facets home'
+
+    # config vars
+    google_api_key = os.environ['GOOGLE_API_KEY']
 
     # process messages
     response_messages = extract_messages_from_storage(request)
@@ -76,6 +84,7 @@ def index(request):
         'template': template,
         'page_title': page_title,
         'response_messages': response_messages,
+        'google_api_key': google_api_key,
         # 'all_albums': all_albums,
         'selected_album_id': None,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -89,6 +98,9 @@ def index(request):
 def album_map(request, album_id):
     template = 'index.html'
     page_title = 'Photo facets - album map'
+
+    # config vars
+    google_api_key = os.environ['GOOGLE_API_KEY']
 
     # process messages
     response_messages = extract_messages_from_storage(request)
@@ -137,6 +149,7 @@ def album_map(request, album_id):
         'template': template,
         'page_title': page_title,
         'response_messages': response_messages,
+        'google_api_key': google_api_key,
         # 'all_albums': all_albums,
         'selected_album_id': selected_album.external_id,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -159,11 +172,11 @@ def sign_s3(request):
     file_type = request.GET['file_type']
 
     s3 = boto3.client('s3',
-         aws_access_key_id=metadata.AWS_ACCESS_KEY_ID,
-         aws_secret_access_key=metadata.AWS_SECRET_ACCESS_KEY)
+         aws_access_key_id=AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     presigned_post = s3.generate_presigned_post(
-        Bucket = metadata.S3_BUCKET,
+        Bucket = S3_BUCKET,
         Key = file_name,
         Fields = {"acl": "public-read", "Content-Type": file_type},
         Conditions = [
@@ -175,7 +188,7 @@ def sign_s3(request):
 
     data = json.dumps({
         'data': presigned_post,
-        'url': f"https://{metadata.S3_BUCKET}.s3.amazonaws.com/{file_name}",
+        'url': f"https://{S3_BUCKET}.s3.amazonaws.com/{file_name}",
     })
 
     return HttpResponse(data, content_type='json')
@@ -432,7 +445,7 @@ def album_import_new_media(request):
             return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
         # insert Album into db with status NEWBORN and no external_id
-        album = Album(name=album_name, owner=OWNER, status=metadata.Status.NEWBORN.name)
+        album = Album(name=album_name, owner=OWNER, status=Status.NEWBORN.name)
         album.save()
 
     # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
@@ -461,12 +474,12 @@ def album_import_new_media(request):
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # extract OCR text
-        # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, metadata.S3_BUCKET)
+        # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, S3_BUCKET)
 
         # init and save MediaItems to db, with status NEWBORN, no external_id, and not yet mapped to Album
         media_item = MediaItem(
             file_name=image_file_name, owner=OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
-            latitude=lat, longitude=lng, status=metadata.Status.NEWBORN.name)
+            latitude=lat, longitude=lng, status=Status.NEWBORN.name)
             # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
         media_items.append(media_item)
@@ -491,7 +504,7 @@ def album_import_new_media(request):
 
         # update Album in db with status LOADED and external_id set
         album.external_id = album_response['id']
-        album.status = metadata.Status.LOADED.name
+        album.status = Status.LOADED.name
         album.save()
 
     # for both new and existing album workflow: upload and map gphotos mediaItems to gphotos album
@@ -507,7 +520,7 @@ def album_import_new_media(request):
         # update images mapped to an album
         if mapped_images_response.get('mapped_gpids_to_img_data', ''):
             mapped_media_items = update_media_items_with_gphotos_data(
-                mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED_AND_MAPPED)
+                mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items, status=Status.LOADED_AND_MAPPED)
             # set album and save to db
             for mapped_media_item in mapped_media_items:
                 mapped_media_item.album = album
@@ -515,7 +528,7 @@ def album_import_new_media(request):
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
             unmapped_media_items = update_media_items_with_gphotos_data(
-                mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=metadata.Status.LOADED)
+                mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=Status.LOADED)
 
     # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
     # freshly fetch album to get all of its mappings - technically unnecessary for new albums, but just cleaner/streamlined this way
@@ -526,7 +539,7 @@ def album_import_new_media(request):
     album.center_longitude = ctr_lng
     album.map_zoom_level = zoom_level
     album.photos_having_gps = photos_having_gps
-    album.status = metadata.Status.LOADED_AND_MAPPED.name
+    album.status = Status.LOADED_AND_MAPPED.name
     album.save()
 
     # for both new and existing album workflow: response messaging
@@ -1003,7 +1016,7 @@ def tag_listing(request):
 
     # form backing data
     all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
-    all_tag_statuses = [ts.name for ts in metadata.TagStatus]
+    all_tag_statuses = [ts.name for ts in TagStatus]
         
     all_tags = Tag.objects.all().order_by('name')
     for tag in all_tags:
@@ -1030,7 +1043,7 @@ def tag_create(request):
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     try:
-        new_tag = Tag(name=new_tag_name, status=metadata.TagStatus.ACTIVE.name, owner=OWNER)
+        new_tag = Tag(name=new_tag_name, status=TagStatus.ACTIVE.name, owner=OWNER)
         new_tag.save()
         log_and_store_message(request, messages.SUCCESS, f"Successfully created new tag [{new_tag.name}].")
         return redirect(f"/lockdownsf/manage/tag_listing/")
@@ -1106,7 +1119,7 @@ def extract_ocr_text(request):
             return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
         # extract OCR text from image on s3
-        extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, metadata.S3_BUCKET)
+        extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, S3_BUCKET)
 
         # add extracted text to media_item and save 
         media_item.extracted_text_search = extracted_text_search
@@ -1137,7 +1150,7 @@ def extract_ocr_text(request):
                 continue
 
             # extract OCR text from image on s3
-            extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, metadata.S3_BUCKET)
+            extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, S3_BUCKET)
 
             # add extracted text to media_item and save 
             media_item.extracted_text_search = extracted_text_search
