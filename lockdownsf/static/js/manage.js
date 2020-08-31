@@ -238,17 +238,19 @@ function makeAlbumNameEditable() {
 
 
 
-var total_file_count = 0;
-var success_file_count = 0;
-var failed_files = [];
+var totalFileCount = 0;
+var successFileCount = 0;
+var failedFiles = [];
 var totalRetryCount = 0;
 
 // https://stackoverflow.com/questions/24718769/html5-javascript-how-to-get-the-selected-folder-name
 function selectFolder(e) {
     var files = e.target.files;
-    total_file_count = files.length;  // TODO weed out non-images?  oversized images?
+    totalFileCount = files.length;  // TODO weed out non-images?  oversized images?
     var relativePath = files[0].webkitRelativePath;
     var folder = relativePath.split("/");
+
+    document.getElementById("album-import-progress").style.display = 'block';
 
     // var el = document.getElementById("multi-file-upload").value = relativePath;
     // alert(folder[0]);
@@ -282,15 +284,7 @@ function getSignedRequest(file, sequence, retryCount) {
     if (retryCount > 5) {
         // alert("Could not get signed URL for file [" + file.name + "] sequence [" + sequence + "]");
         addToFailedFiles(file.name);
-        // failed_files.push(file.name);
-        // failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
-        // for (var i=0; i<failed_files.length; i++) {
-        //     failure_message += "<li>" + failed_files[i] + "</li>";
-        // }
-        // failure_message += "</ul>";
-        // document.getElementById("s3-upload-failure").style.display = 'block';
-        // document.getElementById("s3-upload-failure").innerHTML = failure_message;
-        if (success_file_count + failed_files.length == total_file_count) {
+        if (successFileCount + failedFiles.length == totalFileCount) {
             // alert("Total retry count: " + totalRetryCount);
             document.getElementById("album-create-submit").style.display = 'block';
         }
@@ -365,10 +359,19 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 // increment the image counter - TODO have this interact with sequence value and a slider widget
                 //var image_count = tableEl.rows.length - 1;
                 document.getElementById("s3-upload-success").style.display = 'block';
-                success_file_count++;
-                document.getElementById("s3-upload-success").innerHTML = success_file_count + " images staged and ready for import.";
+                successFileCount++;
+                document.getElementById("s3-upload-success").innerHTML = successFileCount + " images staged and ready for import.";
 
-                if (success_file_count + failed_files.length == total_file_count) {
+                // progress bar
+                var procdFilePct = Math.floor(90 * (successFileCount + failedFiles.length) / totalFileCount) + 10;
+                var progressBar = document.getElementById("album-import-progress-bar");
+                progressBar.setAttribute("aria-valuenow", procdFilePct);
+                progressBar.style.width = procdFilePct+"%";
+                if (procdFilePct >= 100) {
+                    document.getElementById("album-import-progress").style.display = 'none';
+                }
+
+                if (successFileCount + failedFiles.length == totalFileCount) {
                     // alert("Total retry count: " + totalRetryCount);
                     document.getElementById("album-import-media-submit").style.display = 'block';
                 }
@@ -381,15 +384,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
             else {
                 // alert("Could not upload file: " + file.name);
                 addToFailedFiles(file.name);
-                // failed_files.push(file.name);
-                // failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
-                // for (var i=0; i<failed_files.length; i++) {
-                //     failure_message += "<li>" + failed_files[i] + "</li>";
-                // }
-                // failure_message += "</ul>";
-                // document.getElementById("s3-upload-failure").style.display = 'block';
-                // document.getElementById("s3-upload-failure").innerHTML = failure_message;
-                if (success_file_count + failed_files.length == total_file_count) {
+                if (successFileCount + failedFiles.length == totalFileCount) {
                     // alert("Total retry count: " + totalRetryCount);
                     document.getElementById("album-import-media-submit").style.display = 'block';
                 }
@@ -401,11 +396,11 @@ function uploadFileClassic(file, sequence, s3Data, url) {
 
 
 // this function is hideous, it regenerates the whole shebang from scratch each time it's called
-function addToFailedFiles(file_name) {
-    failed_files.push(file_name);
-    failure_message = failed_files.length + " images failed to be staged for upload: <ul>";
-    for (var i=0; i<failed_files.length; i++) {
-        failure_message += "<li>" + failed_files[i] + "</li>";
+function addToFailedFiles(fileName) {
+    failedFiles.push(fileName);
+    failure_message = failedFiles.length + " images failed to be staged for upload: <ul>";
+    for (var i=0; i<failedFiles.length; i++) {
+        failure_message += "<li>" + failedFiles[i] + "</li>";
     }
     failure_message += "</ul>";
     document.getElementById("s3-upload-failure").style.display = 'block';
