@@ -1,7 +1,7 @@
 pg_dump -t lockdownsf_user --schema-only lockdownsf
 pg_dump -t lockdownsf_tag --schema-only lockdownsf
 pg_dump -t lockdownsf_album --schema-only lockdownsf
-pg_dump -t lockdownsf_mediaitem --schema-only lockdownsf
+pg_dump -t lockdownsf_photo --schema-only lockdownsf
 
 
 --
@@ -158,10 +158,10 @@ ALTER TABLE ONLY public.lockdownsf_album
 
 
 --
--- Name: lockdownsf_mediaitem; Type: TABLE; Schema: public
+-- Name: lockdownsf_photo; Type: TABLE; Schema: public
 --
 
-CREATE TABLE public.lockdownsf_mediaitem (
+CREATE TABLE public.lockdownsf_photo (
     id integer NOT NULL,
     external_id character varying(500),
     file_name character varying(256) NOT NULL,
@@ -179,7 +179,7 @@ CREATE TABLE public.lockdownsf_mediaitem (
     extracted_text_search character varying(16000)
 );
 
-CREATE SEQUENCE public.lockdownsf_mediaitem_id_seq
+CREATE SEQUENCE public.lockdownsf_photo_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -187,36 +187,36 @@ CREATE SEQUENCE public.lockdownsf_mediaitem_id_seq
     NO MAXVALUE
     CACHE 1;
 
-ALTER SEQUENCE public.lockdownsf_mediaitem_id_seq OWNED BY public.lockdownsf_mediaitem.id;
+ALTER SEQUENCE public.lockdownsf_photo_id_seq OWNED BY public.lockdownsf_photo.id;
 
-ALTER TABLE ONLY public.lockdownsf_mediaitem ALTER COLUMN id SET DEFAULT nextval('public.lockdownsf_mediaitem_id_seq'::regclass);
+ALTER TABLE ONLY public.lockdownsf_photo ALTER COLUMN id SET DEFAULT nextval('public.lockdownsf_photo_id_seq'::regclass);
 
-ALTER TABLE ONLY public.lockdownsf_mediaitem
-    ADD CONSTRAINT lockdownsf_mediaitem_external_id_52e9f522_uniq UNIQUE (external_id);
+ALTER TABLE ONLY public.lockdownsf_photo
+    ADD CONSTRAINT lockdownsf_photo_external_id_52e9f522_uniq UNIQUE (external_id);
 
-ALTER TABLE ONLY public.lockdownsf_mediaitem
-    ADD CONSTRAINT lockdownsf_mediaitem_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.lockdownsf_photo
+    ADD CONSTRAINT lockdownsf_photo_pkey PRIMARY KEY (id);
 
-CREATE INDEX lockdownsf_mediaitem_album_id_54476c79 ON public.lockdownsf_mediaitem USING btree (album_id);
+CREATE INDEX lockdownsf_photo_album_id_54476c79 ON public.lockdownsf_photo USING btree (album_id);
 
-CREATE INDEX lockdownsf_mediaitem_external_id_52e9f522_like ON public.lockdownsf_mediaitem USING btree (external_id varchar_pattern_ops);
+CREATE INDEX lockdownsf_photo_external_id_52e9f522_like ON public.lockdownsf_photo USING btree (external_id varchar_pattern_ops);
 
-CREATE INDEX lockdownsf_mediaitem_file_name_0eb06ffe ON public.lockdownsf_mediaitem USING btree (file_name);
+CREATE INDEX lockdownsf_photo_file_name_0eb06ffe ON public.lockdownsf_photo USING btree (file_name);
 
-CREATE INDEX lockdownsf_mediaitem_file_name_0eb06ffe_like ON public.lockdownsf_mediaitem USING btree (file_name varchar_pattern_ops);
+CREATE INDEX lockdownsf_photo_file_name_0eb06ffe_like ON public.lockdownsf_photo USING btree (file_name varchar_pattern_ops);
 
-CREATE INDEX lockdownsf_mediaitem_mime_type_d64100ff ON public.lockdownsf_mediaitem USING btree (mime_type);
+CREATE INDEX lockdownsf_photo_mime_type_d64100ff ON public.lockdownsf_photo USING btree (mime_type);
 
-CREATE INDEX lockdownsf_mediaitem_mime_type_d64100ff_like ON public.lockdownsf_mediaitem USING btree (mime_type varchar_pattern_ops);
+CREATE INDEX lockdownsf_photo_mime_type_d64100ff_like ON public.lockdownsf_photo USING btree (mime_type varchar_pattern_ops);
 
-CREATE INDEX lockdownsf_mediaitem_owner_id_ebba5d1a ON public.lockdownsf_mediaitem USING btree (owner_id);
+CREATE INDEX lockdownsf_photo_owner_id_ebba5d1a ON public.lockdownsf_photo USING btree (owner_id);
 
-CREATE INDEX lockdownsf_mediaitem_status_28e6cf6d ON public.lockdownsf_mediaitem USING btree (status);
+CREATE INDEX lockdownsf_photo_status_28e6cf6d ON public.lockdownsf_photo USING btree (status);
 
-CREATE INDEX lockdownsf_mediaitem_status_28e6cf6d_like ON public.lockdownsf_mediaitem USING btree (status varchar_pattern_ops);
+CREATE INDEX lockdownsf_photo_status_28e6cf6d_like ON public.lockdownsf_photo USING btree (status varchar_pattern_ops);
 
-ALTER TABLE ONLY public.lockdownsf_mediaitem
-    ADD CONSTRAINT lockdownsf_mediaitem_album_id_54476c79_fk_lockdownsf_album_id FOREIGN KEY (album_id) REFERENCES public.lockdownsf_album(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY public.lockdownsf_photo
+    ADD CONSTRAINT lockdownsf_photo_album_id_54476c79_fk_lockdownsf_album_id FOREIGN KEY (album_id) REFERENCES public.lockdownsf_album(id) DEFERRABLE INITIALLY DEFERRED;
 
-ALTER TABLE ONLY public.lockdownsf_mediaitem
-    ADD CONSTRAINT lockdownsf_mediaitem_owner_id_ebba5d1a_fk_lockdownsf_user_id FOREIGN KEY (owner_id) REFERENCES public.lockdownsf_user(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY public.lockdownsf_photo
+    ADD CONSTRAINT lockdownsf_photo_owner_id_ebba5d1a_fk_lockdownsf_user_id FOREIGN KEY (owner_id) REFERENCES public.lockdownsf_user(id) DEFERRABLE INITIALLY DEFERRED;
