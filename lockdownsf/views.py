@@ -11,6 +11,7 @@ import requests
 from pprint import pprint
 import uuid
 
+from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -18,7 +19,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
 from django.template import loader
 
-from lockdownsf.metadata import Status, TagStatus
+from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
 from lockdownsf.models import Album, MediaItem, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
@@ -26,12 +27,7 @@ from lockdownsf.services.controller_utils import (
     log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
 
 
-OWNER = User.objects.get(email='andyshirey@gmail.com')
-MAX_RESULTS_PER_PAGE = 40
-
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_ACCESS_KEY_ID']
-S3_BUCKET = os.environ['S3_BUCKET']
+DEFAULT_OWNER = User.objects.get(email=os.environ['DEFAULT_OWNER_EMAIL'])
 
 
 def index(request):
@@ -39,13 +35,13 @@ def index(request):
     page_title = 'Photo facets home'
 
     # config vars
-    google_api_key = os.environ['GOOGLE_API_KEY']
+    gmaps_api_key = settings.GOOGLE_MAPS_API_KEY
 
     # process messages
     response_messages = extract_messages_from_storage(request)
 
     # fetch all albums from db
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
     # active_tags = Tag.objects.filter(status='ACTIVE')
 
     if not all_albums:
@@ -84,7 +80,7 @@ def index(request):
         'template': template,
         'page_title': page_title,
         'response_messages': response_messages,
-        'google_api_key': google_api_key,
+        'gmaps_api_key': gmaps_api_key,
         # 'all_albums': all_albums,
         'selected_album_id': None,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -100,13 +96,13 @@ def album_map(request, album_id):
     page_title = 'Photo facets - album map'
 
     # config vars
-    google_api_key = os.environ['GOOGLE_API_KEY']
+    gmaps_api_key = settings.GOOGLE_MAPS_API_KEY
 
     # process messages
     response_messages = extract_messages_from_storage(request)
 
     # fetch all albums from db
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False, center_latitude__isnull=False, center_longitude__isnull=False)
 
     if not all_albums:
         log_and_store_message(request, messages.ERROR, 'Failure to load albums to build photo collection')
@@ -149,7 +145,7 @@ def album_map(request, album_id):
         'template': template,
         'page_title': page_title,
         'response_messages': response_messages,
-        'google_api_key': google_api_key,
+        'gmaps_api_key': gmaps_api_key,
         # 'all_albums': all_albums,
         'selected_album_id': selected_album.external_id,
         'photo_collection_json': json.dumps(photo_collection_json, indent=4),
@@ -161,22 +157,21 @@ def album_map(request, album_id):
 
 
 def sign_s3(request):
-    # S3_BUCKET = os.environ.get('S3_BUCKET')
-    # S3_BUCKET = settings.S3_BUCKET_NAME
-
-    # file_name = request.args.get('file_name')
-    # file_type = request.args.get('file_type')
 
     # object_name = urllib.parse.quote_plus(request.GET['file_name'])
     file_name = request.GET['file_name']
     file_type = request.GET['file_type']
 
+    print(f"settings.AWS_ACCESS_KEY_ID: [{settings.AWS_ACCESS_KEY_ID}]")
+    print(f"settings.AWS_SECRET_ACCESS_KEY [{settings.AWS_SECRET_ACCESS_KEY}]")
+    print(f"settings.S3_BUCKET [{settings.S3_BUCKET}]")
+
     s3 = boto3.client('s3',
-         aws_access_key_id=AWS_ACCESS_KEY_ID,
-         aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
 
     presigned_post = s3.generate_presigned_post(
-        Bucket = S3_BUCKET,
+        Bucket = settings.S3_BUCKET,
         Key = file_name,
         Fields = {"acl": "public-read", "Content-Type": file_type},
         Conditions = [
@@ -188,7 +183,7 @@ def sign_s3(request):
 
     data = json.dumps({
         'data': presigned_post,
-        'url': f"https://{S3_BUCKET}.s3.amazonaws.com/{file_name}",
+        'url': f"https://{settings.S3_BUCKET}.s3.amazonaws.com/{file_name}",
     })
 
     return HttpResponse(data, content_type='json')
@@ -202,7 +197,7 @@ def manage(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
     context = {
         'template': template,
@@ -221,7 +216,7 @@ def album_listing(request):
     # process messages
     response_messages = extract_messages_from_storage(request)
 
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
     if all_albums:
         for album in all_albums:
             album.media_item_count = len(album.mediaitem_set.all())
@@ -241,7 +236,7 @@ def album_view(request, album_external_id, page_number=None):
     page_title = 'Album details'
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
     if not album_external_id:
         log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no external_id was specified')
@@ -365,6 +360,9 @@ def album_select_new_media(request):
     template = 'album_select_new_media.html'
     page_title = 'Select photos for import into album'
 
+    # process messages
+    response_messages = extract_messages_from_storage(request)
+
     # assign form data to vars and validate input
     add_to_album_external_id = request.POST.get('add-to-album-external-id', '')
     if not add_to_album_external_id:
@@ -374,11 +372,12 @@ def album_select_new_media(request):
     tmp_dir_uuid = str(uuid.uuid4())
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
     context = {
         'template': template,
         'page_title': page_title,
+        'response_messages': response_messages,
         'all_albums': all_albums,
         'tmp_dir_uuid': tmp_dir_uuid,
         'add_to_album_external_id': add_to_album_external_id,
@@ -445,7 +444,7 @@ def album_import_new_media(request):
             return redirect(f"/lockdownsf/manage/album_select_new_media/")
 
         # insert Album into db with status NEWBORN and no external_id
-        album = Album(name=album_name, owner=OWNER, status=Status.NEWBORN.name)
+        album = Album(name=album_name, owner=DEFAULT_OWNER, status=Status.NEWBORN.name)
         album.save()
 
     # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
@@ -474,11 +473,11 @@ def album_import_new_media(request):
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # extract OCR text
-        # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, S3_BUCKET)
+        # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, settings.S3_BUCKET)
 
         # init and save MediaItems to db, with status NEWBORN, no external_id, and not yet mapped to Album
         media_item = MediaItem(
-            file_name=image_file_name, owner=OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
+            file_name=image_file_name, owner=DEFAULT_OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
             latitude=lat, longitude=lng, status=Status.NEWBORN.name)
             # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         media_item.save()
@@ -660,7 +659,7 @@ def album_diff(request, album_external_id):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
     # fetch album and mapped media_items from db
     try:
@@ -736,8 +735,8 @@ def mediaitem_search(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
-    all_tags = Tag.objects.filter(owner=OWNER)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
+    all_tags = Tag.objects.filter(owner=DEFAULT_OWNER)
 
     # assign form data to vars and assemble query filters
     search_criteria = {}
@@ -805,8 +804,8 @@ def mediaitem_view(request, media_item_external_id):
     page_title = 'Photo details'
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
-    all_tags = Tag.objects.filter(owner=OWNER)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
+    all_tags = Tag.objects.filter(owner=DEFAULT_OWNER)
 
     # fetch media_item from db
     try:
@@ -972,7 +971,7 @@ def mediaitem_diff(request, media_item_external_id):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
     # fetch media_item from db
     try:
@@ -1015,7 +1014,7 @@ def tag_listing(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=OWNER, external_id__isnull=False)
+    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
     all_tag_statuses = [ts.name for ts in TagStatus]
         
     all_tags = Tag.objects.all().order_by('name')
@@ -1043,7 +1042,7 @@ def tag_create(request):
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     try:
-        new_tag = Tag(name=new_tag_name, status=TagStatus.ACTIVE.name, owner=OWNER)
+        new_tag = Tag(name=new_tag_name, status=TagStatus.ACTIVE.name, owner=DEFAULT_OWNER)
         new_tag.save()
         log_and_store_message(request, messages.SUCCESS, f"Successfully created new tag [{new_tag.name}].")
         return redirect(f"/lockdownsf/manage/tag_listing/")
@@ -1119,7 +1118,7 @@ def extract_ocr_text(request):
             return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
 
         # extract OCR text from image on s3
-        extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, S3_BUCKET)
+        extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, settings.S3_BUCKET)
 
         # add extracted text to media_item and save 
         media_item.extracted_text_search = extracted_text_search
@@ -1150,7 +1149,7 @@ def extract_ocr_text(request):
                 continue
 
             # extract OCR text from image on s3
-            extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, S3_BUCKET)
+            extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, settings.S3_BUCKET)
 
             # add extracted text to media_item and save 
             media_item.extracted_text_search = extracted_text_search

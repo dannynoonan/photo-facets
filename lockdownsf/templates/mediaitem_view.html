@@ -85,9 +85,9 @@
         <tr><th scope="row">File format:</th>
             <td>{{ media_item.mime_type }}</td></tr>
         <tr><th scope="row">Latitude:</th>
-            <td>{{ media_item.latitude }}</td></tr>
+            <td>{% if media_item.latitude %} {{ media_item.latitude }} {% endif %}</td></tr>
         <tr><th scope="row">Longitude:</th>
-            <td>{{ media_item.longitude }}</td></tr>
+            <td>{% if media_item.longitude %} {{ media_item.longitude }} {% endif %}</td></tr>
         <tr><th scope="row">Dimensions:</th>
             <td>{{ media_item.width }} x {{ media_item.height }}</td></tr>
         <tr><th scope="row">Status:</th>
