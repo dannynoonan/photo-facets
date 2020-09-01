@@ -173,7 +173,7 @@ def diff_photo(db_photo, gphotos_media_item):
 
 def album_diff_detected(db_album, gphotos_album):
     # verify that neither album version is falsy
-    if not db_album and gphotos_album:
+    if not (db_album and gphotos_album):
         return True
     # album name - massage empty data (TODO figure out better way to do this)
     if not db_album.name:

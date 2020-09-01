@@ -62,7 +62,7 @@ def convert_to_degress(value):
 
 def avg_gps_info(items):
     if not items:
-        return 0, 0, 1, 0
+        return None, None, 1, 0
     # hackish way of supporting both Photo and Album types
     if type(items[0]) == Photo:
         all_lat = [float(p.latitude) for p in items if p.latitude]
@@ -71,7 +71,7 @@ def avg_gps_info(items):
         all_lat = [float(a.center_latitude) for a in items if a.center_latitude]
         all_lng = [float(a.center_longitude) for a in items if a.center_longitude]
     else:
-        return 0, 0, 1, 0
+        return None, None, 1, 0
     ctr_lat = None
     ctr_lng = None
     furthest_dist = 0

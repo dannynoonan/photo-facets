@@ -11,9 +11,12 @@ import requests
 from pprint import pprint
 import uuid
 
+from googleapiclient.errors import HttpError
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
@@ -120,7 +123,8 @@ def album_map(request, album_id):
     try:
         selected_album = Album.objects.get(external_id=album_id)
     except Exception as ex:
-        log_and_store_message(request, messages.ERROR, 'Failure to load album with google photos id [{album_id}]')
+        log_and_store_message(request, messages.ERROR, 
+            f"[{ex.__class__.__name__}]: Failure to load album with google photos id [{album_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/")
 
     # fetch tagged photos for album
@@ -254,19 +258,27 @@ def album_view(request, album_external_id, page_number=None):
         album = Album.objects.get(external_id=album_external_id)
         mapped_photos = album.photo_set.all().order_by('dt_taken')
     except Exception as ex:
-        log_and_store_message(request, messages.ERROR, f"Failure to fetch album [{album_external_id}]. Details: {ex}")
+        log_and_store_message(request, messages.ERROR, 
+            f"[{ex.__class__.__name__}]: Failure to fetch album [{album_external_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/album_listing/")
     
     # diff photos returned by gphotos api call to those mapped to db album
-    gphotos_album = gphotosapi.get_album(album_external_id)
-    if album_diff_detected(album, gphotos_album):
-        diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
-        log_and_store_message(request, messages.WARNING, 
-            f"Differences detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
-    else:
-        diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">thorough comparison</a>"
-        log_and_store_message(request, messages.SUCCESS, 
-            f"A cursory scan found no high-level differences between Google Photos API and photo-facets db versions of this album. Click for a more {diff_link}.")
+    try:
+        gphotos_album = gphotosapi.get_album(album_external_id)
+        if album_diff_detected(album, gphotos_album):
+            diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
+            log_and_store_message(request, messages.WARNING, 
+                f"Differences detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
+        else:
+            diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">thorough comparison</a>"
+            log_and_store_message(request, messages.SUCCESS, 
+                f"A cursory scan found no high-level differences between Google Photos API and photo-facets db versions of this album. Click for a more {diff_link}.")
+    except HttpError as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"[HttpError]: Failure to get album with external_id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")        
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"[{ex.__class__.__name__}]: Failure to get album with external_id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app? Details: {ex}")        
     
     page_title = f"{page_title}: {album.name}"
 
@@ -336,7 +348,7 @@ def album_edit(request):
             return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failed to update album with Google Photos id [{album_external_id}], call to Google Photos API failed. Details: {ex}")
+            f"[{ex.__class__.__name__}]: Failed to update album with Google Photos id [{album_external_id}], call to Google Photos API failed. Details: {ex}")
         return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
     # update album name in db (where it's needed since gphotos api doesn't support album search)
@@ -346,7 +358,7 @@ def album_edit(request):
         album.save()
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failed to update album with Google Photos id [{album_external_id}]. Details: {ex}")
+            f"[{ex.__class__.__name__}]: Failed to update album with Google Photos id [{album_external_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/album_listing/")
     
     # if everything fired without exceptions, return success
@@ -432,7 +444,7 @@ def album_import_new_photos(request):
             album = Album.objects.get(external_id=album_external_id)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
-                "Failed to import photos, no album found matching external id [{album_external_id}]. Details: {ex}")
+                f"[{ex.__class__.__name__}]: Failed to import photos, no album found matching external id [{album_external_id}]. Details: {ex}")
             return redirect(f"/lockdownsf/manage/album_select_new_photos/")
     
     # if adding photos to new album: create new album in db
@@ -484,11 +496,16 @@ def album_import_new_photos(request):
 
     # if adding photos to existing album: fetch album from gphotos 
     if album_external_id:
-        album_response = gphotosapi.get_album(album_external_id)
-
-        if not album_response or not album_response['id']:
-            log_and_store_message(request, messages.ERROR, 
-                "Failure to import photos, unable to fetch album with id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
+        try:
+            album_response = gphotosapi.get_album(album_external_id)
+        except HttpError as ex:
+            log_and_store_message(request, messages.ERROR,
+                f"[HttpError]: Failure to import photos, unable to fetch album with id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
+            # TODO do I need to delete partially loaded photos here, otherwise key collisions on subsequent reload?
+            return redirect(f"/lockdownsf/manage/album_select_new_photos/")
+        except Exception as ex:
+            log_and_store_message(request, messages.ERROR,
+                f"[{ex.__class__.__name__}]: Failure to import photos, unable to fetch album with id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app? Details: {ex}")
             # TODO do I need to delete partially loaded photos here, otherwise key collisions on subsequent reload?
             return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
@@ -522,7 +539,17 @@ def album_import_new_photos(request):
             # set album and save to db
             for mapped_photo in mapped_photos:
                 mapped_photo.album = album
-                mapped_photo.save()
+                try:
+                    mapped_photo.save()
+                except IntegrityError as ie:
+                    gphotos_link = f"<a href=\"https://photos.google.com/lr/photo/{mapped_photo.external_id}\" target=\"new\">here</a>"
+                    log_and_store_message(request, messages.ERROR,
+                        f"[IntegrityError]: Failure during album import to map photo with external id [{mapped_photo.external_id}] to album. Photo my already exist on Google Photos {gphotos_link}.")
+                    continue
+                except Exception as ex:
+                    log_and_store_message(request, messages.ERROR,
+                        f"[{ex.__class__.__name__}]: Failure during album import to map photo with external id [{mapped_photo.external_id}] to album. Details: {ex}")
+                
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
             unmapped_photos = update_photos_with_gphotos_data(
@@ -579,10 +606,10 @@ def album_delete(request):
             # doing this here to leverage the simple text limitations of messages framework 
             link_to_deleted_album = f"<ul><li><a href=\"https://photos.google.com/lr/album/{album_external_id}\" target=\"new\">{album.name}</a></li></ul>"
             log_and_store_message(request, messages.SUCCESS, 
-                f"Note this album still exists in Google Photos. To also delete it there, visit this link: {link_to_deleted_album}")
+                f"Note this album may still exist in Google Photos. To also delete it there, visit this link: {link_to_deleted_album}")
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
-                f"Failed to delete album with external_id [{album_external_id}]. Exception: {ex}")
+                f"[{ex.__class__.__name__}]: Failed to delete album with external_id [{album_external_id}]. Details: {ex}")
 
     return redirect(f"/lockdownsf/manage/album_listing/")
 
@@ -628,7 +655,7 @@ def album_photos_delete(request):
         album.save()
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
-            f"After deleting photos from album [{album_external_id}], failure to fetch album or update its GPS info in db. Details: {ex}")
+            f"[{ex.__class__.__name__}]: After deleting photos from album [{album_external_id}], failure to fetch album or update its GPS info in db. Details: {ex}")
         
     # generate success and failure messages
     if success_photo_external_ids:
@@ -665,15 +692,21 @@ def album_diff(request, album_external_id):
         db_album = Album.objects.get(external_id=album_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
-            f"Failure to fetch album to diff, no album found in db with external_id [{album_external_id}]. Details: {ex}")
+            f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in db with external_id [{album_external_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/album_listing/")
     
     # fetch album and its mapped media items from gphotos api
-    gphotos_album = gphotosapi.get_album(album_external_id)
-    if not gphotos_album or not gphotos_album.get('id', ''):
-        log_and_store_message(request, messages.ERROR, 
-            f"Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Details: {ex}")
-        return redirect(f"/lockdownsf/manage/album_listing/")
+    try:
+        gphotos_album = gphotosapi.get_album(album_external_id)
+    except HttpError as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"[HttpError]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
+        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+    except Exception as ex:
+        log_and_store_message(request, messages.ERROR,
+            f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app? Details: {ex}")
+        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+
     gphotos_album_media_items = gphotosapi.get_photos_for_album(album_external_id, gphotos_album.get('mediaItemsCount', ''))
 
     # establish which fields and photos differ between db and api versions
@@ -811,7 +844,7 @@ def photo_view(request, photo_external_id):
         photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch photo, no match for external_id [{photo_external_id}]")
+            f"[{ex.__class__.__name__}]: Failure to fetch photo, no match for external_id [{photo_external_id}]")
         return redirect(f"/lockdownsf/manage/photo_search/")
 
     # diff media item returned by gphotos api to photo mapped to db album
@@ -895,7 +928,7 @@ def photo_edit(request):
         photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to update photo, no match for external_id [{photo_external_id}]")
+            f"[{ex.__class__.__name__}]: Failure to update photo, no match for external_id [{photo_external_id}]")
         return redirect(f"/lockdownsf/manage/photo_search/")
 
     # description update - update db object and gphotos api field
@@ -910,7 +943,7 @@ def photo_edit(request):
                 f"Successfully updated photo [{photo_external_id}] with new description [{new_description}] in google photos api")
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
-                f"Failure to update photo [{photo_external_id}] with description [{new_description}] in google photos api. Exception: {ex}")
+                f"[{ex.__class__.__name__}]: Failure to update photo [{photo_external_id}] with description [{new_description}] in google photos api. Details: {ex}")
 
     # tags updates - update db object
     if update_tags_flag:
@@ -928,7 +961,7 @@ def photo_edit(request):
                 photo.tags.remove(tag_to_remove)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
-                    f"Failure to remove tag, no tag with id [{tag_id_to_remove}] found in db")
+                    f"[{ex.__class__.__name__}]: Failure to remove tag, no tag with id [{tag_id_to_remove}] found in db")
 
         # add new tags that aren't in old list
         for tag_id_to_add in tag_ids_to_add:
@@ -937,7 +970,7 @@ def photo_edit(request):
                 photo.tags.add(tag_to_add)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
-                    f"Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
+                    f"[{ex.__class__.__name__}]: Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
 
     # file_name update - update db object only, not editable in gphotos api
     if update_file_name_flag:
@@ -957,7 +990,7 @@ def photo_edit(request):
             f"Successfully updated photo [{photo_external_id}] to db") 
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to update photo [{photo_external_id}] to db. Exception: {ex}")
+            f"[{ex.__class__.__name__}]: Failure to update photo [{photo_external_id}] to db. Details: {ex}")
 
     return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
@@ -977,14 +1010,14 @@ def photo_diff(request, photo_external_id):
         db_photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch photo to diff, no match found in photo-facets db for external_id [{photo_external_id}]")
+            f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in photo-facets db for external_id [{photo_external_id}]")
         return redirect(f"/lockdownsf/manage/photo_search/")
 
     # fetch media item from gphotos api 
     gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
     if not gphotos_media_item:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch photo to diff, no match found in Google Photos API for external_id [{photo_external_id}]")
+            f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in Google Photos API for external_id [{photo_external_id}]")
         return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
     # massage gphotos data
@@ -1047,7 +1080,8 @@ def tag_create(request):
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     except Exception as ex:
-        log_and_store_message(request, messages.ERROR, f"Failed to create new tag [{new_tag_name}]. Exception: {ex}")
+        log_and_store_message(request, messages.ERROR, 
+            f"[{ex.__class__.__name__}]: Failed to create new tag [{new_tag_name}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
 
@@ -1077,7 +1111,8 @@ def tag_edit(request):
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     except Exception as ex:
-        log_and_store_message(request, messages.ERROR, f"Failed to fetch and update tag with tag_id [{tag_id}]. Exception: {ex}")
+        log_and_store_message(request, messages.ERROR, 
+            f"[{ex.__class__.__name__}]: Failed to fetch and update tag with tag_id [{tag_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
 
@@ -1106,14 +1141,15 @@ def extract_ocr_text(request):
             photo = Photo.objects.get(external_id=external_id)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
-                "Failure to extract OCR text, no image found in db matching external_id [{external_id}]")
+                f"[{ex.__class__.__name__}]: Failure to extract OCR text, no image found in db matching external_id [{external_id}]")
             return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
 
         # copy image from gphotos to s3 for OCR extraction
         try:
             s3_file_name = copy_gphotos_image_to_s3(external_id, tmp_dir_uuid)
         except Exception as ex:
-            log_and_store_message(request, messages.ERROR, ex)
+            log_and_store_message(request, messages.ERROR, 
+                f"[{ex.__class__.__name__}]: {ex}")
             return redirect(f"/lockdownsf/manage/photo_view/{external_id}/")
 
         # extract OCR text from image on s3
@@ -1136,7 +1172,7 @@ def extract_ocr_text(request):
             album_photos = album.photo_set.all()
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
-                "Failure to extract OCR text, problem fetching images associated to album with external_id [{external_id}]")
+                f"[{ex.__class__.__name__}]: Failure to extract OCR text, problem fetching images associated to album with external_id [{external_id}]")
             return redirect(f"/lockdownsf/manage/album_view/{external_id}/")  # should this redirect to another url?
 
         for photo in album_photos:
@@ -1144,7 +1180,8 @@ def extract_ocr_text(request):
             try:
                 s3_file_name = copy_gphotos_image_to_s3(photo.external_id, tmp_dir_uuid)
             except Exception as ex:
-                log_and_store_message(request, messages.ERROR, ex)
+                log_and_store_message(request, messages.ERROR, 
+                    f"[{ex.__class__.__name__}]: {ex}")
                 continue
 
             # extract OCR text from image on s3

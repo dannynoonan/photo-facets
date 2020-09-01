@@ -123,12 +123,14 @@
     <input type="submit" value="[+] Add photos to album" class="btn btn-secondary">
 </form>
 
+{% if total_results_count %}
 <form action="/lockdownsf/manage/extract_ocr_text/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="request-scope" value="album">
     <input type="hidden" name="external-id" value="{{ album.external_id }}">
     <input type="submit" value="[~] Extract OCR text ({{ total_results_count }} photos)" class="btn btn-secondary">
 </form>
+{% endif %}
 
 <form action="/lockdownsf/manage/album_delete/" method="POST" class="form-group">
     {% csrf_token %}
