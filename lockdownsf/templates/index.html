@@ -1,21 +1,12 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div id="floating-panel">
-        <input type="button" class="btn btn-primary" value="Hide All" onclick="hideAllMarkers();" >
-        <input type="button" class="btn btn-primary" value="Dislay All" onclick="displayAllMarkers();">
-        <ul class="list-group" id="facet-panel"></ul>
-    </div>
-    <div id="gmap"></div>
-    
-{% if all_neighborhoods %}
-    <ul>
-    {% for neighborhood in all_neighborhoods %}
-        <li><a href="/lockdownsf/neighborhood/{{ neighborhood.slug }}">{{ neighborhood.name }}</a></li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No neighborhoods found to link to.</p>
-{% endif %}   
+
+<div id="floating-panel">
+    <input type="button" class="btn btn-primary" value="Hide All" onclick="hideAllMarkers();" >
+    <input type="button" class="btn btn-primary" value="Dislay All" onclick="displayAllMarkers();">
+    <ul class="list-group" id="facet-panel"></ul>
+</div>
+<div id="gmap"></div>
     
 {% endblock %}

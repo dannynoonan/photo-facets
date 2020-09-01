@@ -2,12 +2,11 @@ import exifread
 from PIL import ExifTags, Image
 
 from lockdownsf.metadata import distances_to_zooms
-from lockdownsf.models import Album, MediaItem
+from lockdownsf.models import Album, Photo
     
 
 def get_exif_data(img):
-    """Returns a dictionary from the exif data of an PIL Image item. Also
-    converts the GPS Tags"""
+    """Returns a dictionary from the exif data of an PIL Image item. Also converts the GPS Tags"""
     exif_data = {}
     info = img._getexif()
     if info:
@@ -18,7 +17,6 @@ def get_exif_data(img):
                 for t in value:
                     sub_decoded = ExifTags.GPSTAGS.get(t, t)
                     gps_data[sub_decoded] = value[t]
-
                 exif_data[decoded] = gps_data
             else:
                 exif_data[decoded] = value
@@ -48,15 +46,13 @@ def get_lat_lng(exif_gps_data):
 
 
 def convert_to_degress(value):
-    """Helper function to convert the GPS coordinates
-    stored in the EXIF to degress in float format"""
+    """Helper function to convert the GPS coordinates stored in the EXIF to degress in float format"""
     d0 = value[0][0]
     d1 = value[0][1]
     d = float(d0) / float(d1)
     m0 = value[1][0]
     m1 = value[1][1]
     m = float(m0) / float(m1)
-
     s0 = value[2][0]
     s1 = value[2][1]
     s = float(s0) / float(s1)
@@ -64,16 +60,16 @@ def convert_to_degress(value):
     return d + (m / 60.0) + (s / 3600.0)
 
 
-def avg_gps_info(media_items):
-    if not media_items:
+def avg_gps_info(items):
+    if not items:
         return 0, 0, 1, 0
-    # hackish way of supporting both MediaItem and Album types
-    if type(media_items[0]) == MediaItem:
-        all_lat = [float(mi.latitude) for mi in media_items if mi.latitude]
-        all_lng = [float(mi.longitude) for mi in media_items if mi.longitude]
-    elif type(media_items[0]) == Album:
-        all_lat = [float(a.center_latitude) for a in media_items if a.center_latitude]
-        all_lng = [float(a.center_longitude) for a in media_items if a.center_longitude]
+    # hackish way of supporting both Photo and Album types
+    if type(items[0]) == Photo:
+        all_lat = [float(p.latitude) for p in items if p.latitude]
+        all_lng = [float(p.longitude) for p in items if p.longitude]
+    elif type(items[0]) == Album:
+        all_lat = [float(a.center_latitude) for a in items if a.center_latitude]
+        all_lng = [float(a.center_longitude) for a in items if a.center_longitude]
     else:
         return 0, 0, 1, 0
     ctr_lat = None

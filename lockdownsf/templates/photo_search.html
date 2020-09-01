@@ -3,7 +3,7 @@
 {% block body %}
 
 <div class="row justify-content-center">
-    <form class="form-inline my-2 my-lg-0" action="/lockdownsf/manage/mediaitem_search/" method="GET">
+    <form class="form-inline my-2 my-lg-0" action="/lockdownsf/manage/photo_search/" method="GET">
         <strong>Album:</strong>&nbsp;
         <select class="form-control" id="search-album" name="search-album">
             <option value="">* album *</option>
@@ -53,7 +53,7 @@
             <!-- previous page -->
             {% if prev_page_number %}
             <li class="page-item">
-                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ prev_page_number }}">&laquo;</a>
+                <a class="page-link" href="/lockdownsf/manage/photo_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ prev_page_number }}">&laquo;</a>
             </li>
             {% else %}
             <li class="page-item disabled">
@@ -63,13 +63,13 @@
             <!-- numbered pages -->
             {% for i in page_count_iterator %}
             <li class="page-item {% if page_number == i %} active {% endif %}">
-                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ i }}">{{ i }}</a>
+                <a class="page-link" href="/lockdownsf/manage/photo_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ i }}">{{ i }}</a>
             </li>
             {% endfor %}
             <!-- next page -->
             {% if next_page_number %}
             <li class="page-item">
-                <a class="page-link" href="/lockdownsf/manage/mediaitem_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ next_page_number }}">&raquo;</a>
+                <a class="page-link" href="/lockdownsf/manage/photo_search?search-album={{ search_criteria.search_album_id }}&search-tag={{ search_criteria.search_tag_name }}&search-text={{ search_criteria.search_text }}&page-number={{ next_page_number }}">&raquo;</a>
             </li>
             {% else %}
             <li class="page-item disabled">
@@ -92,7 +92,7 @@
     </thead>
     <tbody>
     {% for photo in page_results %}
-        <tr><td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
+        <tr><td><a href="/lockdownsf/manage/photo_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="300"></a></td>
             <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
                     {{ photo.album.name }}</a></td>

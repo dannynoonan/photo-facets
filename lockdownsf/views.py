@@ -20,11 +20,11 @@ from django.shortcuts import render, redirect
 from django.template import loader
 
 from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
-from lockdownsf.models import Album, MediaItem, Tag, User
+from lockdownsf.models import Album, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
-    album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_media_item, extract_messages_from_storage, 
-    log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_media_items_with_gphotos_data)
+    album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_photo, extract_messages_from_storage, 
+    log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_photos_with_gphotos_data)
 
 
 DEFAULT_OWNER = User.objects.get(email=os.environ['DEFAULT_OWNER_EMAIL'])
@@ -56,15 +56,15 @@ def index(request):
     photo_collection_json = []
     all_albums_json = {} 
     for album in all_albums:
-        # fetch all media_items per album; ignore albums lacking tagged media items 
-        # album_media_items = album.mediaitem_set.filter(tags__isnull=False, tags__in=active_tags).distinct()
-        album_media_items = album.mediaitem_set.filter(tags__isnull=False).distinct()
-        if not album_media_items:
+        # fetch all photos per album; ignore albums lacking tagged photos 
+        # album_photos = album.photo_set.filter(tags__isnull=False, tags__in=active_tags).distinct()
+        album_photos = album.photo_set.filter(tags__isnull=False).distinct()
+        if not album_photos:
             continue
-        # fetch media_items from gphotos api to populate image metadata
+        # fetch media items from gphotos api to populate photo metadata
         fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        populate_fields_from_gphotosapi(album_media_items, fields_to_populate)
-        album.media_items = album_media_items
+        populate_fields_from_gphotosapi(album_photos, fields_to_populate)
+        album.photos = album_photos
         # populate json objects for live site js
         album_json = convert_album_to_json(album)
         photo_collection_json.append(album_json)
@@ -111,11 +111,10 @@ def album_map(request, album_id):
     # build json objects to be passed to live site js
     all_albums_json = {}
     for album in all_albums:
-        # ignore albums lacking tagged media items
-        album_media_items = album.mediaitem_set.filter(tags__isnull=False).distinct()
-        if not album_media_items:
+        # ignore albums lacking tagged photos
+        album_photos = album.photo_set.filter(tags__isnull=False).distinct()
+        if not album_photos:
             continue
-        # TODO ignore media albums lacking active tags
         all_albums_json[album.external_id] = album.name
 
     try:
@@ -124,13 +123,13 @@ def album_map(request, album_id):
         log_and_store_message(request, messages.ERROR, 'Failure to load album with google photos id [{album_id}]')
         return redirect(f"/lockdownsf/")
 
-    # fetch tagged media_items for album
-    selected_album_media_items = selected_album.mediaitem_set.filter(tags__isnull=False).distinct()
-    if selected_album_media_items:
-        # fetch media_items from gphotos api to populate image metadata
+    # fetch tagged photos for album
+    selected_album_photos = selected_album.photo_set.filter(tags__isnull=False).distinct()
+    if selected_album_photos:
+        # fetch media items from gphotos api to populate photo metadata
         fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        populate_fields_from_gphotosapi(selected_album_media_items, fields_to_populate)
-        selected_album.media_items = selected_album_media_items
+        populate_fields_from_gphotosapi(selected_album_photos, fields_to_populate)
+        selected_album.photos = selected_album_photos
 
     # build single album photo_collection json to be passed to page js
     selected_album_json = convert_album_to_json(selected_album)
@@ -219,7 +218,7 @@ def album_listing(request):
     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
     if all_albums:
         for album in all_albums:
-            album.media_item_count = len(album.mediaitem_set.all())
+            album.photo_count = len(album.photo_set.all())
 
     context = {
         'template': template,
@@ -250,15 +249,15 @@ def album_view(request, album_external_id, page_number=None):
         }
         return render(request, template, context)
 
-    # fetch album and mapped media_items from db
+    # fetch album and mapped photos from db
     try:
         album = Album.objects.get(external_id=album_external_id)
-        mapped_media_items = album.mediaitem_set.all().order_by('dt_taken')
+        mapped_photos = album.photo_set.all().order_by('dt_taken')
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, f"Failure to fetch album [{album_external_id}]. Details: {ex}")
         return redirect(f"/lockdownsf/manage/album_listing/")
     
-    # diff media_items returned by gphotos api call to those mapped to db album
+    # diff photos returned by gphotos api call to those mapped to db album
     gphotos_album = gphotosapi.get_album(album_external_id)
     if album_diff_detected(album, gphotos_album):
         diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
@@ -276,8 +275,8 @@ def album_view(request, album_external_id, page_number=None):
         page_number = int(page_number)
     else:
         page_number = 1
-    total_results_count = len(mapped_media_items)
-    paginator = Paginator(mapped_media_items, MAX_RESULTS_PER_PAGE)
+    total_results_count = len(mapped_photos)
+    paginator = Paginator(mapped_photos, MAX_RESULTS_PER_PAGE)
     page_results = paginator.page(page_number) 
     prev_page_number = None
     next_page_number = None
@@ -286,7 +285,7 @@ def album_view(request, album_external_id, page_number=None):
     if page_results.has_next():
         next_page_number = page_number + 1
 
-    # fetch media_items from gphotos api to populate image metadata
+    # fetch media items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
     populate_fields_from_gphotosapi(page_results, fields_to_populate)
 
@@ -356,8 +355,8 @@ def album_edit(request):
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
 
-def album_select_new_media(request):
-    template = 'album_select_new_media.html'
+def album_select_new_photos(request):
+    template = 'album_select_new_photos.html'
     page_title = 'Select photos for import into album'
 
     # process messages
@@ -386,7 +385,7 @@ def album_select_new_media(request):
     return render(request, template, context)
 
 
-def album_import_new_media(request):
+def album_import_new_photos(request):
     """Extract data from s3 photos and add them to gphotos and db: 
     - if new album:
     -   init and save Album to db with status NEWBORN and no external_id
@@ -394,14 +393,14 @@ def album_import_new_media(request):
     -   fetch album from db
     - download the photos from s3
     - extract GPS and timestamp info from photos
-    - init and save MediaItems to db, with status NEWBORN, no external_id, and not mapped to album
+    - init and save Photos to db, with status NEWBORN, no external_id, and not mapped to album
     - if new album:
     -   create gphotos album
     -   update Album in db with external_id and set status to LOADED
     - else:
     -   fetch album from gphotos
     - upload and map gphotos mediaItems to gphotos album
-    - update MediaItems in db...
+    - update Photos in db...
     -   if gphotos upload success: update external_ids and set status to LOADED_AND_MAPPED  
     -   if gphotos loading failed: set status to LOADED (and no external_id to set)
     - calculate GPS
@@ -425,7 +424,7 @@ def album_import_new_media(request):
     if not images_to_upload:
         log_and_store_message(request, messages.ERROR,
             "Failed to import photos, no photos were queued for upload. At least one photo is required.")
-        return redirect(f"/lockdownsf/manage/album_select_new_media/")
+        return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
     # if adding photos to existing album: fetch album from db
     if album_external_id:
@@ -434,21 +433,21 @@ def album_import_new_media(request):
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
                 "Failed to import photos, no album found matching external id [{album_external_id}]. Details: {ex}")
-            return redirect(f"/lockdownsf/manage/album_select_new_media/")
+            return redirect(f"/lockdownsf/manage/album_select_new_photos/")
     
     # if adding photos to new album: create new album in db
     else:
         if not album_name:
             log_and_store_message(request, messages.ERROR,
                 "Failed to create album, no album title was specified.")
-            return redirect(f"/lockdownsf/manage/album_select_new_media/")
+            return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
         # insert Album into db with status NEWBORN and no external_id
         album = Album(name=album_name, owner=DEFAULT_OWNER, status=Status.NEWBORN.name)
         album.save()
 
     # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
-    media_items = []
+    photos = []
     image_file_names = []
     for image_path in images_to_upload:
         image_file_name = image_path.split('/')[-1:][0]
@@ -475,13 +474,13 @@ def album_import_new_media(request):
         # extract OCR text
         # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, settings.S3_BUCKET)
 
-        # init and save MediaItems to db, with status NEWBORN, no external_id, and not yet mapped to Album
-        media_item = MediaItem(
+        # init and save Photos to db, with status NEWBORN, no external_id, and not yet mapped to Album
+        photo = Photo(
             file_name=image_file_name, owner=DEFAULT_OWNER, mime_type=pil_image.format, dt_taken=dt_taken, 
             latitude=lat, longitude=lng, status=Status.NEWBORN.name)
             # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
-        media_item.save()
-        media_items.append(media_item)
+        photo.save()
+        photos.append(photo)
 
     # if adding photos to existing album: fetch album from gphotos 
     if album_external_id:
@@ -491,7 +490,7 @@ def album_import_new_media(request):
             log_and_store_message(request, messages.ERROR, 
                 "Failure to import photos, unable to fetch album with id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
             # TODO do I need to delete partially loaded photos here, otherwise key collisions on subsequent reload?
-            return redirect(f"/lockdownsf/manage/album_select_new_media/")
+            return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
     # if adding photos to new album: create gphotos album, update album external_id and status in db
     else:
@@ -499,7 +498,7 @@ def album_import_new_media(request):
 
         if not album_response or not album_response['id']:
             log_and_store_message(request, messages.ERROR, "@@@@@@ ERROR GRASSHOPPER DISASSEMBLE")
-            return redirect(f"/lockdownsf/manage/album_select_new_media/")
+            return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
         # update Album in db with status LOADED and external_id set
         album.external_id = album_response['id']
@@ -509,30 +508,30 @@ def album_import_new_media(request):
     # for both new and existing album workflow: upload and map gphotos mediaItems to gphotos album
     mapped_images_response = gphotosapi.upload_and_map_images_to_album(album_response, image_list=images_to_upload, from_cloud=True)
 
-    # for both new and existing album workflow: update MediaItems in db...
+    # for both new and existing album workflow: update Photos in db...
     # -> if gphotos upload success: update external_ids, set status to LOADED_AND_MAPPED
     # -> if gphotos upload failure: set status to LOADED
-    mapped_media_items = []
-    unmapped_media_items = []
-    failed_media_items = images_to_upload
+    mapped_photos = []
+    unmapped_photos = []
+    failed_photos = images_to_upload
     if mapped_images_response:
         # update images mapped to an album
         if mapped_images_response.get('mapped_gpids_to_img_data', ''):
-            mapped_media_items = update_media_items_with_gphotos_data(
-                mapped_images_response['mapped_gpids_to_img_data'], media_items, failed_media_items, status=Status.LOADED_AND_MAPPED)
+            mapped_photos = update_photos_with_gphotos_data(
+                mapped_images_response['mapped_gpids_to_img_data'], photos, failed_photos, status=Status.LOADED_AND_MAPPED)
             # set album and save to db
-            for mapped_media_item in mapped_media_items:
-                mapped_media_item.album = album
-                mapped_media_item.save()
+            for mapped_photo in mapped_photos:
+                mapped_photo.album = album
+                mapped_photo.save()
         # update images that failed to map to album
         if mapped_images_response.get('unmapped_gpids_to_img_data', ''):
-            unmapped_media_items = update_media_items_with_gphotos_data(
-                mapped_images_response['unmapped_gpids_to_img_data'], media_items, failed_media_items, status=Status.LOADED)
+            unmapped_photos = update_photos_with_gphotos_data(
+                mapped_images_response['unmapped_gpids_to_img_data'], photos, failed_photos, status=Status.LOADED)
 
     # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
     # freshly fetch album to get all of its mappings - technically unnecessary for new albums, but just cleaner/streamlined this way
     album = Album.objects.get(external_id=album.external_id)
-    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.mediaitem_set.all())
+    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.photo_set.all())
     # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
     album.center_latitude = ctr_lat
     album.center_longitude = ctr_lng
@@ -544,15 +543,15 @@ def album_import_new_media(request):
     # for both new and existing album workflow: response messaging
     # if adding photos to existing album
     log_and_store_message(request, messages.SUCCESS,
-        f"Successfully mapped [{len(mapped_media_items)}] new media items to album [{album.name}]")
-    if unmapped_media_items:
+        f"Successfully mapped [{len(mapped_photos)}] new photos to album [{album.name}]")
+    if unmapped_photos:
         log_and_store_message(request, messages.ERROR,
-            f"Successfully loaded [{len(unmapped_media_items)}] media items, but failed to map these to album [{album.name}]")
-        log_and_store_message(request, messages.ERROR, f"Unmapped media items: [{unmapped_media_items}]")
-    if failed_media_items:
+            f"Successfully loaded [{len(unmapped_photos)}] photos, but failed to map these to album [{album.name}]")
+        log_and_store_message(request, messages.ERROR, f"Unmapped photos: [{unmapped_photos}]")
+    if failed_photos:
         log_and_store_message(request, messages.ERROR,
-            f"Failed to load [{len(failed_media_items)}] media items into google photos library.")
-        log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_items}]")
+            f"Failed to load [{len(failed_photos)}] photos into google photos library.")
+        log_and_store_message(request, messages.ERROR, f"Failed photos: [{failed_photos}]")
 
     # delete photos from s3
     s3manager.delete_dir(tmp_dir_uuid, image_file_names)
@@ -588,40 +587,40 @@ def album_delete(request):
     return redirect(f"/lockdownsf/manage/album_listing/")
 
 
-def album_media_items_delete(request):
+def album_photos_delete(request):
 
     # assign form data to vars and validate input 
     album_external_id = request.POST.get('album-external-id', '')
-    media_item_external_ids = request.POST.getlist('media-item-external-ids', '')
+    photo_external_ids = request.POST.getlist('photo-external-ids', '')
 
     if not album_external_id:
         log_and_store_message(request, messages.ERROR, 
-            f"Failure to delete media items from album, no album_external_id was specified")
+            f"Failure to delete photos from album, no album_external_id was specified")
         return redirect(f"/lockdownsf/manage/album_listing/")
 
-    if not media_item_external_ids:
+    if not photo_external_ids:
         log_and_store_message(request, messages.ERROR, 
-            f"Failure to delete media items from album [{album_external_id}], no media items were specified")
+            f"Failure to delete photos from album [{album_external_id}], no photos were specified")
         return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
-    successful_media_item_ids = []
-    failed_media_item_ids = []
+    success_photo_external_ids = []
+    failed_photo_external_ids = []
     album_label = album_external_id
 
-    # fetch media_items from db, delete them, and track deleted items in list 
-    for media_item_id in media_item_external_ids:
+    # fetch photos from db, delete them, and track deleted items in list 
+    for photo_external_id in photo_external_ids:
         try:
-            media_item = MediaItem.objects.get(external_id=media_item_id)
-            media_item.delete()
-            successful_media_item_ids.append(media_item_id)
+            photo = Photo.objects.get(external_id=photo_external_id)
+            photo.delete()
+            success_photo_external_ids.append(photo_external_id)
         except Exception as ex:
-            failed_media_item_ids.append(media_item_id)
+            failed_photo_external_ids.append(photo_external_id)
 
-    # fetch album and update GPS data based on remaining media items
+    # fetch album and update GPS data based on remaining photos
     try:
         album = Album.objects.get(external_id=album_external_id)
         album_label = album.name  
-        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.mediaitem_set.all())
+        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.photo_set.all())
         album.center_latitude = ctr_lat
         album.center_longitude = ctr_lng
         album.map_zoom_level = zoom_level
@@ -629,24 +628,24 @@ def album_media_items_delete(request):
         album.save()
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
-            f"After deleting media items from album [{album_external_id}], failure to fetch album or update its GPS info in db. Details: {ex}")
+            f"After deleting photos from album [{album_external_id}], failure to fetch album or update its GPS info in db. Details: {ex}")
         
     # generate success and failure messages
-    if successful_media_item_ids:
+    if success_photo_external_ids:
         log_and_store_message(request, messages.SUCCESS, 
-            f"Successfully deleted [{len(successful_media_item_ids)}] media items from album [{album_label}]")
-        # build html containing links to deleted Google Photos media
+            f"Successfully deleted [{len(success_photo_external_ids)}] photos from album [{album_label}]")
+        # build html containing links to deleted Google Photos media items
         # doing this here to leverage the simple text limitations of messages framework 
-        links_to_deleted_media_items = "<ul>"
-        for media_item_id in successful_media_item_ids:
-            links_to_deleted_media_items = f"{links_to_deleted_media_items}<li><a href=\"https://photos.google.com/lr/album/{album_external_id}/photo/{media_item_id}\" target=\"new\">{media_item_id}</a></li>"
-        links_to_deleted_media_items = f"{links_to_deleted_media_items}</ul>"
+        links_to_deleted_photos = "<ul>"
+        for photo_external_id in success_photo_external_ids:
+            links_to_deleted_photos = f"{links_to_deleted_photos}<li><a href=\"https://photos.google.com/lr/album/{album_external_id}/photo/{photo_external_id}\" target=\"new\">{photo_external_id}</a></li>"
+        links_to_deleted_photos = f"{links_to_deleted_photos}</ul>"
         log_and_store_message(request, messages.SUCCESS, 
-            f"Note that these media items still exist in Google Photos. To also delete them there, visit these links: {links_to_deleted_media_items}")
-    if failed_media_item_ids:
+            f"Note that these photos still exist in Google Photos. To also delete them there, visit these links: {links_to_deleted_photos}")
+    if failed_photo_external_ids:
         log_and_store_message(request, messages.ERROR, 
-            f"Failed to delete [{len(failed_media_item_ids)}] media items from album [{album_label}]")
-        log_and_store_message(request, messages.ERROR, f"Failed media items: [{failed_media_item_ids}]")
+            f"Failed to delete [{len(failed_photo_external_ids)}] photos from album [{album_label}]")
+        log_and_store_message(request, messages.ERROR, f"Failed photos: [{failed_photo_external_ids}]")
 
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
@@ -661,7 +660,7 @@ def album_diff(request, album_external_id):
     # form backing data
     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
-    # fetch album and mapped media_items from db
+    # fetch album and mapped photos from db
     try:
         db_album = Album.objects.get(external_id=album_external_id)
     except Exception as ex:
@@ -677,35 +676,35 @@ def album_diff(request, album_external_id):
         return redirect(f"/lockdownsf/manage/album_listing/")
     gphotos_album_media_items = gphotosapi.get_photos_for_album(album_external_id, gphotos_album.get('mediaItemsCount', ''))
 
-    # establish which fields and media items differ between db and api versions
+    # establish which fields and photos differ between db and api versions
     album_differences = []
-    media_items_only_in_db = []
-    media_items_only_in_api = []
-    media_items_in_both = {}  # dict of media item ids to thumb_urls
+    photos_only_in_db = []
+    photos_only_in_api = []
+    photos_in_both = {}  # dict of photo external_ids to thumb_urls
     already_compared_ids = []
 
     if db_album.name != gphotos_album.get('title', ''):
         album_differences.append('name')
 
-    for dbmi in db_album.mediaitem_set.all():
-        dbmi_found_in_gphotos = False
-        for gpmi in gphotos_album_media_items:
-            if dbmi.external_id == gpmi['id']:
-                dbmi_found_in_gphotos = True
+    for db_photo in db_album.photo_set.all():
+        db_photo_found_in_gphotos = False
+        for gphotos_media_item in gphotos_album_media_items:
+            if db_photo.external_id == gphotos_media_item['id']:
+                db_photo_found_in_gphotos = True
                 # massage gphotos data
-                massage_gphotos_media_item(gpmi)
+                massage_gphotos_media_item(gphotos_media_item)
                 # diff gphotos and db versions
-                if diff_media_item(dbmi, gpmi):
-                    media_items_in_both[dbmi.external_id] = gpmi.get('baseUrl', '')
-                already_compared_ids.append(dbmi.external_id)
+                if diff_photo(db_photo, gphotos_media_item):
+                    photos_in_both[db_photo.external_id] = gphotos_media_item.get('baseUrl', '')
+                already_compared_ids.append(db_photo.external_id)
                 break
-        if not dbmi_found_in_gphotos:
-            media_items_only_in_db.append(dbmi)
+        if not db_photo_found_in_gphotos:
+            photos_only_in_db.append(db_photo)
     
     # identify any items in gphotos not already found in gphotos_album_media_items
-    for gpmi in gphotos_album_media_items:
-        if gpmi['id'] not in already_compared_ids:
-            media_items_only_in_api.append(gpmi)
+    for gphotos_media_item in gphotos_album_media_items:
+        if gphotos_media_item['id'] not in already_compared_ids:
+            photos_only_in_api.append(gphotos_media_item)
 
     page_title = f"{page_title}: {db_album.name}"
 
@@ -718,17 +717,17 @@ def album_diff(request, album_external_id):
         'gphotos_album': gphotos_album,
         # 'gphotos_album_media_items': gphotos_album_media_items,
         'album_differences': album_differences,
-        'media_items_only_in_db': media_items_only_in_db,
-        'media_items_only_in_api': media_items_only_in_api,
-        'media_items_in_both': media_items_in_both,
-        'total_differences': len(album_differences) + len(media_items_only_in_db) + len(media_items_only_in_api) + len(media_items_in_both)
+        'photos_only_in_db': photos_only_in_db,
+        'photos_only_in_api': photos_only_in_api,
+        'photos_in_both': photos_in_both,
+        'total_differences': len(album_differences) + len(photos_only_in_db) + len(photos_only_in_api) + len(photos_in_both)
     }
     
     return render(request, template, context)
 
 
-def mediaitem_search(request):
-    template = 'mediaitem_search.html'
+def photo_search(request):
+    template = 'photo_search.html'
     page_title = 'Search for photos'
 
     # process messages
@@ -759,14 +758,14 @@ def mediaitem_search(request):
         or_filters = Q(extracted_text_search__icontains = search_text) | Q(external_id__icontains = search_text) | Q(file_name__icontains = search_text) | Q(description__icontains = search_text)
         search_criteria['search_text'] = search_text
 
-    # fetch media_items from db
-    matching_media_items = MediaItem.objects.filter(**and_filters).order_by('-dt_taken')
+    # fetch photos from db
+    matching_photos = Photo.objects.filter(**and_filters).order_by('-dt_taken')
     if or_filters:
-        matching_media_items = matching_media_items.filter(or_filters).order_by('-dt_taken')
+        matching_photos = matching_photos.filter(or_filters).order_by('-dt_taken')
     
     # pagination
-    total_results_count = len(matching_media_items)
-    paginator = Paginator(matching_media_items, MAX_RESULTS_PER_PAGE)
+    total_results_count = len(matching_photos)
+    paginator = Paginator(matching_photos, MAX_RESULTS_PER_PAGE)
     page_results = paginator.page(page_number) 
     prev_page_number = None
     next_page_number = None
@@ -775,7 +774,7 @@ def mediaitem_search(request):
     if page_results.has_next():
         next_page_number = page_number + 1
 
-    # fetch media_items from gphotos api to populate image metadata
+    # fetch media items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
     populate_fields_from_gphotosapi(page_results, fields_to_populate)
 
@@ -799,54 +798,54 @@ def mediaitem_search(request):
     return render(request, template, context)
 
 
-def mediaitem_view(request, media_item_external_id):
-    template = 'mediaitem_view.html'
+def photo_view(request, photo_external_id):
+    template = 'photo_view.html'
     page_title = 'Photo details'
 
     # form backing data
     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
     all_tags = Tag.objects.filter(owner=DEFAULT_OWNER)
 
-    # fetch media_item from db
+    # fetch photo from db
     try:
-        media_item = MediaItem.objects.get(external_id=media_item_external_id)
+        photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch media item, no match for external_id [{media_item_external_id}]")
-        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+            f"Failure to fetch photo, no match for external_id [{photo_external_id}]")
+        return redirect(f"/lockdownsf/manage/photo_search/")
 
-    # diff media_item returned by gphotos api to that mapped to db album
-    gphotos_media_item = gphotosapi.get_photo_by_id(media_item_external_id)
+    # diff media item returned by gphotos api to photo mapped to db album
+    gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
     # massage gphotos data
     massage_gphotos_media_item(gphotos_media_item)
     # diff gphotos and db versions
-    if diff_media_item(media_item, gphotos_media_item):
-        diff_link = f"<a href=\"/lockdownsf/manage/mediaitem_diff/{media_item_external_id}/\">inspect differences</a>"
+    if diff_photo(photo, gphotos_media_item):
+        diff_link = f"<a href=\"/lockdownsf/manage/photo_diff/{photo_external_id}/\">inspect differences</a>"
         log_and_store_message(request, messages.WARNING, 
-            f"Differences detected between Google Photos API and photo-facets db versions of this media item. Click to {diff_link}.")
+            f"Differences detected between Google Photos API and photo-facets db versions of this photo. Click to {diff_link}.")
 
-    # fetch album from db to determine previous and next media_items for sequential navigation
-    mapped_media_items = media_item.album.mediaitem_set.all().order_by('dt_taken')
+    # fetch album from db to determine previous and next photos for sequential navigation
+    mapped_photos = photo.album.photo_set.all().order_by('dt_taken')
 
-    # store all mapped media_item_ids to list, get index of current media item
-    album_media_item_ids = [m.external_id for m in mapped_media_items]
-    curr_index = album_media_item_ids.index(media_item_external_id)
+    # store all mapped photo external_ids to list, get index of current photo
+    album_photo_external_ids = [p.external_id for p in mapped_photos]
+    curr_index = album_photo_external_ids.index(photo_external_id)
 
-    # get media item ids for previous and next index
-    prev_media_item_id = None
-    next_media_item_id = None
+    # get photo external_ids for previous and next index
+    prev_photo_external_id = None
+    next_photo_external_id = None
     if curr_index > 0:
-        prev_media_item_id = album_media_item_ids[curr_index - 1]
-    if curr_index < len(album_media_item_ids) - 1:
-        next_media_item_id = album_media_item_ids[curr_index + 1]
+        prev_photo_external_id = album_photo_external_ids[curr_index - 1]
+    if curr_index < len(album_photo_external_ids) - 1:
+        next_photo_external_id = album_photo_external_ids[curr_index + 1]
 
-    # fetch media_items from gphotos api to populate image metadata
+    # fetch media items from gphotos api to populate image metadata
     fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    populate_fields_from_gphotosapi([media_item], fields_to_populate)
+    populate_fields_from_gphotosapi([photo], fields_to_populate)
 
-    # media_item_location = { 
-    #     'lat': str(media_item.latitude), 
-    #     'lng': str(media_item.longitude) 
+    # photo_location = { 
+    #     'lat': str(photo.latitude), 
+    #     'lng': str(photo.longitude) 
     # }
 
     # process messages
@@ -858,20 +857,20 @@ def mediaitem_view(request, media_item_external_id):
         'response_messages': response_messages,
         'all_albums': all_albums,
         'all_tags': all_tags,
-        'media_item_external_id': media_item_external_id, # TODO this is legacy I think
-        'media_item': media_item,
-        'prev_media_item_id': prev_media_item_id,
-        'next_media_item_id': next_media_item_id,
-        # 'media_item_location_json': json.dumps(media_item_location, indent=4),
+        'photo_external_id': photo_external_id, # TODO this is legacy I think
+        'photo': photo,
+        'prev_photo_external_id': prev_photo_external_id,
+        'next_photo_external_id': next_photo_external_id,
+        # 'photo_location_json': json.dumps(photo_location, indent=4),
     }
 
     return render(request, template, context)
 
 
-def mediaitem_edit(request):
+def photo_edit(request):
 
     # assign form data to vars 
-    media_item_external_id = request.POST.get('media-item-external-id', '')
+    photo_external_id = request.POST.get('photo-external-id', '')
     update_description_flag = request.POST.get('update-description-flag', '')
     new_description = request.POST.get('description', '')
     update_tags_flag = request.POST.get('update-tags-flag', '')
@@ -882,43 +881,43 @@ def mediaitem_edit(request):
     new_dt_taken = request.POST.get('dt-taken', '')
 
     # handle missing data
-    if not media_item_external_id:
-        log_and_store_message(request, messages.ERROR, f"Failure to update media item, external_id was not set")
-        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+    if not photo_external_id:
+        log_and_store_message(request, messages.ERROR, f"Failure to update photo, external_id was not set")
+        return redirect(f"/lockdownsf/manage/photo_search/")
 
     if not (update_description_flag or update_tags_flag or update_file_name_flag or update_dt_taken_flag):
         log_and_store_message(request, messages.ERROR, 
-            f"Failure to update media item, no data changes were submitted")
-        return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
+            f"Failure to update photo, no data changes were submitted")
+        return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
-    # fetch media_item from db
+    # fetch photo from db
     try:
-        media_item = MediaItem.objects.get(external_id=media_item_external_id)
+        photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to update media item, no match for external_id [{media_item_external_id}]")
-        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+            f"Failure to update photo, no match for external_id [{photo_external_id}]")
+        return redirect(f"/lockdownsf/manage/photo_search/")
 
     # description update - update db object and gphotos api field
     if update_description_flag:
         # db object update
-        media_item.description = new_description
+        photo.description = new_description
 
         # gphotos api update
         try:
-            response = gphotosapi.update_image_description(media_item_external_id, new_description)
+            response = gphotosapi.update_image_description(photo_external_id, new_description)
             log_and_store_message(request, messages.SUCCESS,
-                f"Successfully updated media item [{media_item_external_id}] with new description [{new_description}] in google photos api")
+                f"Successfully updated photo [{photo_external_id}] with new description [{new_description}] in google photos api")
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
-                f"Failure to update media item [{media_item_external_id}] with description [{new_description}] in google photos api. Exception: {ex}")
+                f"Failure to update photo [{photo_external_id}] with description [{new_description}] in google photos api. Exception: {ex}")
 
     # tags updates - update db object
     if update_tags_flag:
         # process form data
         if new_tag_ids:
             new_tag_ids = [int(tag_id) for tag_id in new_tag_ids]
-        old_tag_ids = [old_tag.id for old_tag in media_item.tags.all()]
+        old_tag_ids = [old_tag.id for old_tag in photo.tags.all()]
         tag_ids_to_remove = list(set(old_tag_ids) - set(new_tag_ids))
         tag_ids_to_add = list(set(new_tag_ids) - set(old_tag_ids))
 
@@ -926,7 +925,7 @@ def mediaitem_edit(request):
         for tag_id_to_remove in tag_ids_to_remove:
             try:
                 tag_to_remove = Tag.objects.get(pk=tag_id_to_remove)
-                media_item.tags.remove(tag_to_remove)
+                photo.tags.remove(tag_to_remove)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
                     f"Failure to remove tag, no tag with id [{tag_id_to_remove}] found in db")
@@ -935,7 +934,7 @@ def mediaitem_edit(request):
         for tag_id_to_add in tag_ids_to_add:
             try:
                 tag_to_add = Tag.objects.get(pk=tag_id_to_add)
-                media_item.tags.add(tag_to_add)
+                photo.tags.add(tag_to_add)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
                     f"Failure to add tag, no tag with id [{tag_id_to_add}] found in db")
@@ -943,29 +942,29 @@ def mediaitem_edit(request):
     # file_name update - update db object only, not editable in gphotos api
     if update_file_name_flag:
         # db object update
-        media_item.file_name = new_file_name
+        photo.file_name = new_file_name
 
     # dt_taken update - update db object only, not editable in gphotos api
     if update_dt_taken_flag:
         # transform datetime value and update db object 
         # new_dt_taken = datetime.strptime(new_dt_taken, '%Y-%m-%dT%H:%M:%SZ') 
-        media_item.dt_taken = new_dt_taken
+        photo.dt_taken = new_dt_taken
 
     # write accumulated changes to db
     try:
-        media_item.save()
+        photo.save()
         log_and_store_message(request, messages.SUCCESS,
-            f"Successfully updated media item [{media_item_external_id}] to db") 
+            f"Successfully updated photo [{photo_external_id}] to db") 
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to update media item [{media_item_external_id}] to db. Exception: {ex}")
+            f"Failure to update photo [{photo_external_id}] to db. Exception: {ex}")
 
-    return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
+    return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
 
-def mediaitem_diff(request, media_item_external_id):
-    template = 'mediaitem_diff.html'
-    page_title = 'Compare and sync media item data (Google Photos API vs photo-facets db)'
+def photo_diff(request, photo_external_id):
+    template = 'photo_diff.html'
+    page_title = 'Compare and sync photo data (Google Photos API vs photo-facets db)'
 
     # process messages
     response_messages = extract_messages_from_storage(request)
@@ -973,32 +972,32 @@ def mediaitem_diff(request, media_item_external_id):
     # form backing data
     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
-    # fetch media_item from db
+    # fetch photo from db
     try:
-        db_media_item = MediaItem.objects.get(external_id=media_item_external_id)
+        db_photo = Photo.objects.get(external_id=photo_external_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch media item to diff, no match found in photo-facets db for external_id [{media_item_external_id}]")
-        return redirect(f"/lockdownsf/manage/mediaitem_search/")
+            f"Failure to fetch photo to diff, no match found in photo-facets db for external_id [{photo_external_id}]")
+        return redirect(f"/lockdownsf/manage/photo_search/")
 
     # fetch media item from gphotos api 
-    gphotos_media_item = gphotosapi.get_photo_by_id(media_item_external_id)
+    gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
     if not gphotos_media_item:
         log_and_store_message(request, messages.ERROR,
-            f"Failure to fetch media item to diff, no match found in Google Photos API for external_id [{media_item_external_id}]")
-        return redirect(f"/lockdownsf/manage/mediaitem_view/{media_item_external_id}/")
+            f"Failure to fetch photo to diff, no match found in Google Photos API for external_id [{photo_external_id}]")
+        return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
     # massage gphotos data
     massage_gphotos_media_item(gphotos_media_item)
     # establish which fields have differences between gphotos and db versions
-    fields_with_differences = diff_media_item(db_media_item, gphotos_media_item)
+    fields_with_differences = diff_photo(db_photo, gphotos_media_item)
 
     context = {
         'template': template,
         'page_title': page_title,
         'response_messages': response_messages,
         'all_albums': all_albums,
-        'db_media_item': db_media_item,
+        'db_photo': db_photo,
         'gphotos_media_item': gphotos_media_item,
         'fields_with_differences': fields_with_differences,
     }
@@ -1019,7 +1018,7 @@ def tag_listing(request):
         
     all_tags = Tag.objects.all().order_by('name')
     for tag in all_tags:
-        tag.media_item_count = len(tag.mediaitem_set.all())
+        tag.photo_count = len(tag.photo_set.all())
         
     context = {
         'template': template,
@@ -1093,18 +1092,18 @@ def extract_ocr_text(request):
             "Failure to extract OCR text, both request_scope and external_id are required")
         return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
 
-    if request_scope not in ['album', 'media_item']:
+    if request_scope not in ['album', 'photo']:
         log_and_store_message(request, messages.ERROR, 
-            "Failure to extract OCR text, request_scope must be 'album' or 'media_item'")
+            "Failure to extract OCR text, request_scope must be 'album' or 'photo'")
         return redirect(f"/lockdownsf/manage/")  # TODO where should this go?
 
     # generate uuid for tmp s3 dir to store photos to if any are uploaded
     tmp_dir_uuid = str(uuid.uuid4())
     
-    if request_scope == 'media_item':
-        # fetch media item from db
+    if request_scope == 'photo':
+        # fetch photo from db
         try:
-            media_item = MediaItem.objects.get(external_id=external_id)
+            photo = Photo.objects.get(external_id=external_id)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
                 "Failure to extract OCR text, no image found in db matching external_id [{external_id}]")
@@ -1115,35 +1114,35 @@ def extract_ocr_text(request):
             s3_file_name = copy_gphotos_image_to_s3(external_id, tmp_dir_uuid)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, ex)
-            return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
+            return redirect(f"/lockdownsf/manage/photo_view/{external_id}/")
 
         # extract OCR text from image on s3
         extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, settings.S3_BUCKET)
 
-        # add extracted text to media_item and save 
-        media_item.extracted_text_search = extracted_text_search
-        media_item.extracted_text_display = extracted_text_display
-        media_item.save()
+        # add extracted text to photo and save 
+        photo.extracted_text_search = extracted_text_search
+        photo.extracted_text_display = extracted_text_display
+        photo.save()
 
         # delete photo from s3
         s3manager.delete_dir(tmp_dir_uuid, [external_id])
 
-        return redirect(f"/lockdownsf/manage/mediaitem_view/{external_id}/")
+        return redirect(f"/lockdownsf/manage/photo_view/{external_id}/")
 
     if request_scope == "album":
-        # fetch media items mapped to album from db
+        # fetch photos mapped to album from db
         try:
             album = Album.objects.get(external_id=external_id)
-            album_media_items = album.mediaitem_set.all()
+            album_photos = album.photo_set.all()
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
                 "Failure to extract OCR text, problem fetching images associated to album with external_id [{external_id}]")
             return redirect(f"/lockdownsf/manage/album_view/{external_id}/")  # should this redirect to another url?
 
-        for media_item in album_media_items:
+        for photo in album_photos:
             # copy image from gphotos to s3 for OCR extraction
             try:
-                s3_file_name = copy_gphotos_image_to_s3(media_item.external_id, tmp_dir_uuid)
+                s3_file_name = copy_gphotos_image_to_s3(photo.external_id, tmp_dir_uuid)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR, ex)
                 continue
@@ -1151,12 +1150,12 @@ def extract_ocr_text(request):
             # extract OCR text from image on s3
             extracted_text_search, extracted_text_display = s3manager.extract_text(s3_file_name, settings.S3_BUCKET)
 
-            # add extracted text to media_item and save 
-            media_item.extracted_text_search = extracted_text_search
-            media_item.extracted_text_display = extracted_text_display
-            media_item.save()
+            # add extracted text to photo and save 
+            photo.extracted_text_search = extracted_text_search
+            photo.extracted_text_display = extracted_text_display
+            photo.save()
 
             # delete photos from s3
-            s3manager.delete_dir(tmp_dir_uuid, [mi.external_id for mi in album_media_items if mi.external_id])
+            s3manager.delete_dir(tmp_dir_uuid, [p.external_id for p in album_photos if p.external_id])
 
         return redirect(f"/lockdownsf/manage/album_view/{external_id}/")

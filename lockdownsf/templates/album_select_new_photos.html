@@ -1,7 +1,7 @@
 {% extends 'manage.html' %}
 
 {% block body %}
-<form action="/lockdownsf/manage/album_import_new_media/" method="POST">
+<form action="/lockdownsf/manage/album_import_new_photos/" method="POST">
     <input type="hidden" id="tmp-dir-uuid" name="tmp-dir-uuid" value="{{ tmp_dir_uuid }}">
     <h5>Select album to import photos into:</h5>
     <select class="form-control form-control-inline-lg" id="select-album-external-id" name="select-album-external-id" onchange="showOrHideAlbumTitleInput();">
@@ -33,12 +33,12 @@
             This will generate a preview of photos to be imported. Once the preview is generated you will have the option to submit these photos for import into the specified album.</small>
     </div>
 
-    <div id="album-import-media-form" class="hidden-block form-group">
+    <div id="album-import-photos-form" class="hidden-block form-group">
         <div id="s3-upload-success" class="hidden-block alert alert-success"></div>
         <div id="s3-upload-failure" class="hidden-block alert alert-danger"></div>
         {% csrf_token %}
         <!-- <input type="hidden" id="image-count" name="image-count"> -->
-        <div id="album-import-media-submit" class="hidden-block form-group">
+        <div id="album-import-photos-submit" class="hidden-block form-group">
             <input type="submit" value="Import selected photos into album" class="btn btn-secondary">
         </div>
         <table id="image-preview-table" class="table table-hover hidden-block">
