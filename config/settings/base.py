@@ -133,3 +133,12 @@ STATIC_URL = '/static/'
 # STATICFILES_DIRS = [
 #     os.path.join(BASE_DIR, "static"),
 # ]
+
+
+# AWS config vars
+AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
+AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+S3_BUCKET = os.environ['S3_BUCKET']
+
+# Google config vars
+GOOGLE_MAPS_API_KEY = os.environ['GOOGLE_MAPS_API_KEY']

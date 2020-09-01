@@ -1,6 +1,10 @@
 from enum import Enum
 
 
+MAX_RESULTS_PER_PAGE = 50
+AWS_REGION_NAME = 'us-west-1'
+
+
 class Status(Enum):
     NEWBORN = 'NEWBORN'
     LOADED = 'LOADED'
