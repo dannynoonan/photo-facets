@@ -41,7 +41,7 @@ class Album(models.Model):
         return f"{self.name}|{self.external_id}"
 
 
-class MediaItem(models.Model):
+class Photo(models.Model):
     external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
     album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)

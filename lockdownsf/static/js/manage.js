@@ -326,7 +326,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 // display new image table and album creation form, hide file selector 
                 var tableEl = document.getElementById("image-preview-table");
                 tableEl.style.display = "block"; 
-                document.getElementById("album-import-media-form").style.display = "block";
+                document.getElementById("album-import-photos-form").style.display = "block";
                 document.getElementById("file-upload-selector").style.display = "none";
 
                 // add row to image preview table for each image added to s3
@@ -373,7 +373,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
 
                 if (successFileCount + failedFiles.length == totalFileCount) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-import-media-submit").style.display = 'block';
+                    document.getElementById("album-import-photos-submit").style.display = 'block';
                 }
 
                 // // extract and set properties using EXIF
@@ -386,7 +386,7 @@ function uploadFileClassic(file, sequence, s3Data, url) {
                 addToFailedFiles(file.name);
                 if (successFileCount + failedFiles.length == totalFileCount) {
                     // alert("Total retry count: " + totalRetryCount);
-                    document.getElementById("album-import-media-submit").style.display = 'block';
+                    document.getElementById("album-import-photos-submit").style.display = 'block';
                 }
             }
         }

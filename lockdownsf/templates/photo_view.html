@@ -2,45 +2,45 @@
 
 {% block body %}
 
-{% if media_item %}
+{% if photo %}
 <p></p>
-{% if prev_media_item_id %}
-    <a href="/lockdownsf/manage/mediaitem_view/{{ prev_media_item_id }}/" class="navigate">&#8249;</a>
+{% if prev_photo_external_id %}
+    <a href="/lockdownsf/manage/photo_view/{{ prev_photo_external_id }}/" class="navigate">&#8249;</a>
 {% endif %}
-<img src="{{ media_item.thumb_url }}"/>
-{% if next_media_item_id %}
-    <a href="/lockdownsf/manage/mediaitem_view/{{ next_media_item_id }}/" class="navigate">&#8250;</a>
+<img src="{{ photo.thumb_url }}"/>
+{% if next_photo_external_id %}
+    <a href="/lockdownsf/manage/photo_view/{{ next_photo_external_id }}/" class="navigate">&#8250;</a>
 {% endif %}
 
 <!-- <div id="miniGmap"></div> -->
 <p></p>
 
 <h4>Editable fields:</h4>
-<form action="/lockdownsf/manage/mediaitem_edit/" method="POST">
+<form action="/lockdownsf/manage/photo_edit/" method="POST">
     {% csrf_token %}
-    <input type="hidden" name="media-item-external-id" value="{{ media_item.external_id }}">
+    <input type="hidden" name="photo-external-id" value="{{ photo.external_id }}">
     <input type="hidden" id="update-description-flag" name="update-description-flag" value="">
     <input type="hidden" id="update-tags-flag" name="update-tags-flag" value="">
     <table class="table table-hover table-fit">
         <tr><th scope="row">Description:</th>
             <td id="description-display-cell">
                 <div id="description-display" onclick="makeDescriptionEditable()">
-                {% if media_item.description %}
-                    {{ media_item.description }}
+                {% if photo.description %}
+                    {{ photo.description }}
                 {% else %}
                     [+]
                 {% endif %}
                 </div></td>
             <td id="description-input-cell" class="hidden-block">
-                <input type="text" id="description-input" class="form-control" name="description" value="{{ media_item.description }}">
+                <input type="text" id="description-input" class="form-control" name="description" value="{{ photo.description }}">
             </td>
         </tr>
         <tr><th scope="row">Tags:</th>
             <td id="tag-display-cell">
                 <div id="tag-display" onclick="makeTagsEditable()">
-                {% if media_item.tags.all %}
+                {% if photo.tags.all %}
                     <ul>
-                    {% for tag in media_item.tags.all %}
+                    {% for tag in photo.tags.all %}
                         <li {% if tag.status == 'DISABLED' %} class="text-muted" {% endif %}>{{ tag.name }}</li>
                     {% endfor %}
                     </ul>
@@ -52,7 +52,7 @@
                 {% for tag in all_tags %}
                 <div class="form-group custom-control custom-checkbox">
                     <input type="checkbox" id="tag-{{ tag.id }}" class="custom-control-input" name="tag-ids" value="{{ tag.id }}"
-                    {% if tag in media_item.tags.all %} checked="" {% endif %}>
+                    {% if tag in photo.tags.all %} checked="" {% endif %}>
                     <label class="custom-control-label {% if tag.status == 'DISABLED' %} text-muted {% endif %}" 
                         for="tag-{{ tag.id }}">{{ tag.name }}</label>
                 </div>
@@ -68,38 +68,38 @@
 <table class="table table-hover table-fit">
     <tbody>
         <tr><th scope="row">Google photos id:</th>
-            <td><a href="https://photos.google.com/lr/album/{{ media_item.album.external_id }}/photo/{{ media_item.external_id }}" target="new">
-                    {{ media_item.external_id }}</a></td></tr>
+            <td><a href="https://photos.google.com/lr/album/{{ photo.album.external_id }}/photo/{{ photo.external_id }}" target="new">
+                    {{ photo.external_id }}</a></td></tr>
         <tr><th scope="row">File name:</th>
-            <td>{{ media_item.file_name }}</td></tr>
+            <td>{{ photo.file_name }}</td></tr>
         <tr><th scope="row">Album:</th>
-            <!-- <td><a href="https://photos.google.com/lr/album/{{ media_item.album.external_id }}" target="new"> -->
-            <td><a href="/lockdownsf/manage/album_view/{{ media_item.album.external_id }}/">
-                    {{ media_item.album.name }}</a></td></tr>
+            <!-- <td><a href="https://photos.google.com/lr/album/{{ photo.album.external_id }}" target="new"> -->
+            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
+                    {{ photo.album.name }}</a></td></tr>
         <tr><th scope="row">Date taken:</th>
-            <td>{{ media_item.dt_taken }}</td></tr>
+            <td>{{ photo.dt_taken }}</td></tr>
         <tr><th scope="row">Date added:</th>
-            <td>{{ media_item.dt_inserted }}</td></tr>
+            <td>{{ photo.dt_inserted }}</td></tr>
         <tr><th scope="row">Date updated:</th>
-            <td>{{ media_item.dt_updated }}</td></tr>
+            <td>{{ photo.dt_updated }}</td></tr>
         <tr><th scope="row">File format:</th>
-            <td>{{ media_item.mime_type }}</td></tr>
+            <td>{{ photo.mime_type }}</td></tr>
         <tr><th scope="row">Latitude:</th>
-            <td>{% if media_item.latitude %} {{ media_item.latitude }} {% endif %}</td></tr>
+            <td>{% if photo.latitude %} {{ photo.latitude }} {% endif %}</td></tr>
         <tr><th scope="row">Longitude:</th>
-            <td>{% if media_item.longitude %} {{ media_item.longitude }} {% endif %}</td></tr>
+            <td>{% if photo.longitude %} {{ photo.longitude }} {% endif %}</td></tr>
         <tr><th scope="row">Dimensions:</th>
-            <td>{{ media_item.width }} x {{ media_item.height }}</td></tr>
+            <td>{{ photo.width }} x {{ photo.height }}</td></tr>
         <tr><th scope="row">Status:</th>
-            <td>{{ media_item.status }}</td></tr>
+            <td>{{ photo.status }}</td></tr>
         <tr><th scope="row">Extracted text:</th>
             <form action="/lockdownsf/manage/extract_ocr_text/" method="POST">
                 {% csrf_token %}
-                <input type="hidden" name="request-scope" value="media_item">
-                <input type="hidden" name="external-id" value="{{ media_item.external_id }}">
+                <input type="hidden" name="request-scope" value="photo">
+                <input type="hidden" name="external-id" value="{{ photo.external_id }}">
                 <td>
-                    {% if media_item.extracted_text_display %}
-                    <small>{{ media_item.extracted_text_display|linebreaks }}</small>
+                    {% if photo.extracted_text_display %}
+                    <small>{{ photo.extracted_text_display|linebreaks }}</small>
                     <input type="submit" value="Regenerate OCR text" class="btn btn-secondary">
                     {% else %}
                     <input type="submit" value="Extract OCR text" class="btn btn-secondary">
@@ -113,7 +113,7 @@
 
 {% else %}
 <div class="alert alert-warning">
-    <h5>No media item found matching external_id <strong>{{ media_item_external_id }}</strong></h5>
+    <h5>No photo found matching external_id <strong>{{ photo_external_id }}</strong></h5>
 </div>
 {% endif %}
 

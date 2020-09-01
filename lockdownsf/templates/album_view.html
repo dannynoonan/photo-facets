@@ -73,7 +73,7 @@
 </div>
 {% endif %}
 
-<form action="/lockdownsf/manage/album_media_items_delete/" method="POST" class="form-group">
+<form action="/lockdownsf/manage/album_photos_delete/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
 <table class="table table-hover">
@@ -93,8 +93,8 @@
     {% for photo in page_results %}
         <tr>
             <th scope="row">
-                <input type="checkbox" name="media-item-external-ids" value="{{ photo.external_id }}"></th>
-            <td><a href="/lockdownsf/manage/mediaitem_view/{{ photo.external_id }}/">
+                <input type="checkbox" name="photo-external-ids" value="{{ photo.external_id }}"></th>
+            <td><a href="/lockdownsf/manage/photo_view/{{ photo.external_id }}/">
                     <img src="{{ photo.thumb_url }}" width="300"></a></td>
             <td>{{ photo.file_name }}</th>
             <td>{% if photo.description %} {{ photo.description }} {% endif %}</th>    
@@ -117,7 +117,7 @@
 </form>
 {% endif %}
 
-<form action="/lockdownsf/manage/album_select_new_media/" method="POST" class="form-group">
+<form action="/lockdownsf/manage/album_select_new_photos/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="add-to-album-external-id" value="{{ album.external_id }}">
     <input type="submit" value="[+] Add photos to album" class="btn btn-secondary">

@@ -35,46 +35,40 @@
                 </form></td></tr>
         {% endif %}
     {% endfor %}
-    {% for media_item_id, thumb_url in media_items_in_both.items %}
+    {% for photo_external_id, thumb_url in photos_in_both.items %}
         <tr><th scope="row"><img src="{{ thumb_url }}" width="300"></th>
-            <td colspan="2"><strong>PHOTO EXISTS IN BOTH</strong> Google Photos and Photo-Facets DB, but differences detected. <a href="/lockdownsf/manage/mediaitem_diff/{{ media_item_id }}/">Preview differences and sync...</a></td></tr>
+            <td colspan="2"><strong>PHOTO EXISTS IN BOTH</strong> Google Photos and Photo-Facets DB, but differences detected. <a href="/lockdownsf/manage/photo_diff/{{ photo_external_id }}/">Preview differences and sync...</a></td></tr>
     {% endfor %}
-    {% for media_item in media_items_only_in_api %}
+    {% for media_item in photos_only_in_api %}
         <tr><th scope="row" rowspan="2">
                 <a href="https://photos.google.com/lr/photo/{{ media_item.id }}" target="new"><img src="{{ media_item.baseUrl }}" width="300"></a></th>
             <td>Photo <strong>EXISTS</strong> in Google Photos</td>
             <td>Photo <strong>DOES NOT EXIST</strong> in Photo-Facets DB</td></tr>
-        <tr><td colspan="2">
-                <form action="/lockdownsf/manage/album_import_existing_media/" method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
-                    <input type="hidden" name="media-item-external-id" value="{{ media_item.id }}">
-                    <input type="hidden" name="import-source" value="gphotos">
-                    Sync actions available:<br/><br/>
-                    <strong>* Either: *</strong><br/> 
-                    (a) FULLY REMOVE PHOTO FROM ALBUM (i.e. remove it from Google Photos) - 2 options:
-                    <ul>
-                        <li><a href="https://photos.google.com/lr/photo/{{ media_item.id }}" target="new">Open photo in Google Photos</a> and click the "trash can" icon to manually delete it from library.</li>
-                        <li><a href="https://photos.google.com/lr/album/{{ db_album.external_id }}" target="new">Open album in Google Photos</a>, select the photo, and select the "Move to trash" option.</li>
-                    </ul>
-                    <strong>* Or: *</strong><br/>
-                    (b) RESTORE PHOTO TO ALBUM (i.e. restore it to Photo-Facets DB):
-                    <ul>
-                        <li>Re-import photo "{{ media_item.filename }}" into Photo-Facets DB from desktop via the <a href="/lockdownsf/manage/album_select_new_media/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.</li>
-                    </ul>
-                    Note: for RESTORE PHOTO option above, if you re-import the same original photo it should be matched to the existing version in Google Photos (no duplicate will be created).
-                </form>
+        <tr><td colspan="2">  
+                Sync actions available:<br/><br/>
+                <strong>* Either: *</strong><br/> 
+                (a) FULLY REMOVE PHOTO FROM ALBUM (i.e. remove it from Google Photos) - 2 options:
+                <ul>
+                    <li><a href="https://photos.google.com/lr/photo/{{ media_item.id }}" target="new">Open photo in Google Photos</a> and click the "trash can" icon to manually delete it from library.</li>
+                    <li><a href="https://photos.google.com/lr/album/{{ db_album.external_id }}" target="new">Open album in Google Photos</a>, select the photo, and select the "Move to trash" option.</li>
+                </ul>
+                <strong>* Or: *</strong><br/>
+                (b) RESTORE PHOTO TO ALBUM (i.e. restore it to Photo-Facets DB):
+                <ul>
+                    <li>Re-import photo "{{ media_item.filename }}" into Photo-Facets DB from desktop via the <a href="/lockdownsf/manage/album_select_new_photos/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.</li>
+                </ul>
+                Note: for RESTORE PHOTO option above, if you re-import the same original photo it should be matched to the existing version in Google Photos (no duplicate will be created).   
             </td></tr>
     {% endfor %}
-    {% for media_item in media_items_only_in_db %}
-        <tr><th scope="row" rowspan="2"><a href="/lockdownsf/manage/mediaitem_view/{{ media_item.external_id }}/">{{ media_item.file_name }}</a></th>
+    {% for photo in photos_only_in_db %}
+        <tr><th scope="row" rowspan="2"><a href="/lockdownsf/manage/photo_view/{{ photo.external_id }}/">{{ photo.file_name }}</a></th>
             <td>Photo <strong>DOES NOT EXIST</strong> in Google Photos</td>
             <td>Photo <strong>EXISTS</strong> in Photo-Facets DB</td></tr>
         <tr><td colspan="2">
-                <form action="/lockdownsf/manage/album_media_items_delete/" method="POST">
+                <form action="/lockdownsf/manage/album_photos_delete/" method="POST">
                     {% csrf_token %}
                     <input type="hidden" name="album-external-id" value="{{ db_album.external_id }}">
-                    <input type="hidden" name="media-item-external-ids" value="{{ media_item.external_id }}">
+                    <input type="hidden" name="photo-external-ids" value="{{ photo.external_id }}">
                     Sync actions available:<br/><br/>
                     <strong>* Either: *</strong><br/> 
                     (a) FULLY REMOVE PHOTO FROM ALBUM (i.e. remove it from Photo-Facets DB):
@@ -84,8 +78,8 @@
                     <strong>* Or: *</strong><br/>
                     (b) RESTORE PHOTO TO ALBUM (i.e. restore it to Google Photos): 
                     <ul>
-                        <li>Use the "Delete from DB" button above, then re-import the photo (file name: "{{ media_item.file_name }}") 
-                            via the <a href="/lockdownsf/manage/album_select_new_media/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.</li>
+                        <li>Use the "Delete from DB" button above, then re-import the photo (file name: "{{ photo.file_name }}") 
+                            via the <a href="/lockdownsf/manage/album_select_new_photos/?add-to-album-external-id={{ db_album.external_id }}">standard import page</a>.</li>
                             <!--(The actual photo is not stored in Photo-Facets DB, just location/description/tag/OCR metadata, which can be re-generated.) -->         
                     </ul>
                     Note: for RESTORE PHOTO option above, if you re-import the same original photo without first deleting it from DB, a duplicate photo record will be created.

@@ -20,7 +20,7 @@
         <input type="hidden" name="tag-id" value="{{ tag.id }}"> 
         <tr {% if tag.status == 'DISABLED' %} class="text-muted" {% endif %}> 
             <td id="tag-name-{{ tag.id }}">{{ tag.name }}</td>
-            <td><a href="/lockdownsf/manage/mediaitem_search/?search-tag={{ tag.name }}">{{ tag.media_item_count }}</a></th>
+            <td><a href="/lockdownsf/manage/photo_search/?search-tag={{ tag.name }}">{{ tag.photo_count }}</a></th>
             <td>{{ tag.dt_inserted }}</td>
             <td id="tag-status-display-cell-{{ tag.id }}">
                 <span id="tag-status-display-{{ tag.id }}" onclick="makeTagStatusEditable('{{ tag.id }}')">{{ tag.status }}</span>

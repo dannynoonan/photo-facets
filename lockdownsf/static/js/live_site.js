@@ -19,15 +19,15 @@
 // };
 
 var gmap;
-// dict of external_ids to media_items loaded from photoCollection 
-var loadedMediaItems = {};
-// dict of media_item external_ids to domImgs
+// dict of external_ids to photos loaded from photoCollection 
+var loadedPhotos = {};
+// dict of photo external_ids to domImgs
 var keysToDomImgs = {};
-// dict of media_item external_ids to google.maps.Marker objects
+// dict of photo external_ids to google.maps.Marker objects
 var keysToMarkers = {};
-// dict of tags to media_item external_ids
+// dict of tags to photo external_ids
 var tagsToKeys = {};
-// array of currently displayed media_item external_ids
+// array of currently displayed photo external_ids
 var displayedMarkerKeys = [];
 
 // const baseLatLng = {lat: 37.773972, lng: -122.431297};
@@ -56,27 +56,27 @@ function initGmap() {
 function loadPhotoCollection() {
     for (var i = 0; i < photoCollection.length; i++) {		
         album = photoCollection[i].album;
-        for (var j = 0; j < photoCollection[i].media_items.length; j++) {
-            // add to loadedMediaItems
-            var media_item = photoCollection[i].media_items[j];
-            loadedMediaItems[media_item.external_id] = media_item;
+        for (var j = 0; j < photoCollection[i].photos.length; j++) {
+            // add to loadedPhotos
+            var photo = photoCollection[i].photos[j];
+            loadedPhotos[photo.external_id] = photo;
             // add keys to tagsToKeys 
-            if (media_item.tags) {
-                for (var k = 0; k < media_item.tags.length; k++) {
-                    tag = media_item.tags[k];
+            if (photo.tags) {
+                for (var k = 0; k < photo.tags.length; k++) {
+                    tag = photo.tags[k];
                     if (tag in tagsToKeys) {
-                        tagsToKeys[tag].push(media_item.external_id);
+                        tagsToKeys[tag].push(photo.external_id);
                     }
                     else {
-                        tagsToKeys[tag] = [media_item.external_id];
+                        tagsToKeys[tag] = [photo.external_id];
                     }
                 }
             }
             // add to keysToDomImgs
             var domImg = document.createElement('div');
-            domImg.id = media_item.external_id;
-            domImg.src = media_item.thumb_url;
-            keysToDomImgs[media_item.external_id] = domImg;
+            domImg.id = photo.external_id;
+            domImg.src = photo.thumb_url;
+            keysToDomImgs[photo.external_id] = domImg;
             // console.log(domImg);
         }			
     }
@@ -150,8 +150,8 @@ function initAndDisplayAllPhotoMarkers() {
 //
 function initAndDisplayPhotoMarker(domImg) {
     // init marker
-    var latitude = parseFloat(loadedMediaItems[domImg.id].latitude);
-    var longitude = parseFloat(loadedMediaItems[domImg.id].longitude);
+    var latitude = parseFloat(loadedPhotos[domImg.id].latitude);
+    var longitude = parseFloat(loadedPhotos[domImg.id].longitude);
     var marker = new google.maps.Marker({  
         position: {lat: latitude, lng: longitude},
         map: gmap,
