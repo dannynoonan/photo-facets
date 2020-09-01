@@ -286,12 +286,12 @@ def map_images_to_album(gpids_to_img_data, album_id, gphotos_service=None):
         return result
 
 
-def get_album(album_id, gphotos_service=None):
+def get_album(album_external_id, gphotos_service=None):
     if not gphotos_service:
         gphotos_service = init_gphotos_service()
 
-    album_response = gphotos_service.albums().get(albumId=album_id).execute()
-
+    album_response = gphotos_service.albums().get(albumId=album_external_id).execute()
+        
     return album_response
     
     # album = None
