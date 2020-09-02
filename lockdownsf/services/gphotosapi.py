@@ -59,7 +59,7 @@ def init_gphotos_service():
         else:
             if not exists(CREDENTIALS_FILE):
                 with open(CREDENTIALS_FILE, 'w') as cf:
-                    print(f"@@@@@@@@ Begin writing CLIENT_CONFIG to CREDENTIALS_FILE: {json.dumps(CLIENT_CONFIG, indent=4}")
+                    print(f"@@@@@@@@ Begin writing CLIENT_CONFIG to CREDENTIALS_FILE: {json.dumps(CLIENT_CONFIG, indent=4)}")
                     cf.write(json.dumps(CLIENT_CONFIG, indent=4))
                     cf.close()
                     print(f"@@@@@@@@ Finish writing CLIENT_CONFIG to CREDENTIALS_FILE")
