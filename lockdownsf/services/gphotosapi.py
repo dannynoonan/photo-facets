@@ -62,7 +62,7 @@ def init_gphotos_service():
         with open(TOKEN_PICKLE_FILE, 'wb') as token:
             pickle.dump(creds, token)
 
-    gphotos_service = build(API_NAME, API_VERSION, credentials=creds)
+    gphotos_service = build('photoslibrary', 'v1', credentials=creds)
 
     return gphotos_service
 
