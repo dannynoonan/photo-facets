@@ -37,6 +37,8 @@ DEFAULT_OWNER = User.objects.get(email=os.environ['DEFAULT_OWNER_EMAIL'])
 def google_site_verification(request):
     template = 'google_site_verification.html'
 
+    # fake change to force restart
+
     context = {
         'google_site_verification': settings.GOOGLE_SITE_VERIFICATION
     }
