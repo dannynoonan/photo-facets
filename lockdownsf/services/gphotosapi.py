@@ -21,7 +21,7 @@ from lockdownsf.services import image_utils
 
 
 # CREDENTIALS_FILE = join(dirname(__file__), 'gphotos_credentials.json')
-CREDENTIALS_FILE = 'gphotos_credentials.json'
+CREDENTIALS_FILE = '/tmp/gphotos_credentials.json'
 GPHOTOS_UPLOAD_URL = 'https://photoslibrary.googleapis.com/v1/uploads'
 TOKEN_PICKLE_FILE = 'token.pickle'
 # SCOPES = [
