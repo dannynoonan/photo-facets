@@ -2,7 +2,7 @@ from __future__ import print_function
 
 from io import BytesIO
 import imghdr
-# import magic
+import json
 from os import listdir
 from os.path import dirname, exists, isfile, join
 import pickle
@@ -11,19 +11,18 @@ import requests
 import shutil
 
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow, InstalledAppFlow
 from google.auth.transport.requests import Request
+
+from django.conf import settings
 
 # from lockdownsf import metadata
 from lockdownsf.services import image_utils
 
 
-API_NAME = 'photoslibrary'
-API_VERSION = 'v1'
 # CREDENTIALS_FILE = join(dirname(__file__), 'gphotos_credentials.json')
 CREDENTIALS_FILE = 'gphotos_credentials.json'
 GPHOTOS_UPLOAD_URL = 'https://photoslibrary.googleapis.com/v1/uploads'
-# TOKEN_PICKLE_FILE = f"token_{API_NAME}_{API_VERSION}.pickle"
 TOKEN_PICKLE_FILE = 'token.pickle'
 # SCOPES = [
 #     'https://www.googleapis.com/auth/photoslibrary.appendonly',
@@ -33,7 +32,20 @@ SCOPES = [
     'https://www.googleapis.com/auth/photoslibrary',
     'https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata'
 ]
+CLIENT_CONFIG = {
+    'web': {
+        'client_id': settings.GOOGLE_CLIENT_ID,
+        'client_secret': settings.GOOGLE_CLIENT_SECRET,
+        'redirect_uris': [settings.GOOGLE_REDIRECT_URI],
+        #'redirect_uris': ["http://localhost:8080/auth/google/callback", "https://arcane-island-30983.herokuapp.com/auth/google/callback"],
+        'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+        'token_uri': 'https://accounts.google.com/o/oauth2/token',
 
+        # 'project_id': settings.GOOGLE_PROJECT_ID,
+        # 'auth_provider_x509_cert_url': 'https://www.googleapis.com/oauth2/v1/certs',
+        # 'javascript_origins': settings.GOOGLE_JAVASCRIPT_ORIGINS
+    }
+}
 
 
 def init_gphotos_service():
@@ -45,12 +57,20 @@ def init_gphotos_service():
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
+            if not exists(CREDENTIALS_FILE):
+                with open(CREDENTIALS_FILE, 'w') as cf:
+                    cf.write(json.dumps(CLIENT_CONFIG, indent=4))
+                    cf.close()
             flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
             creds = flow.run_local_server()
+            # https://stackoverflow.com/questions/51601915/how-to-use-the-google-api-without-checking-a-client-secret-json-into-version-con
+            # flow = Flow.from_client_config(client_config=CLIENT_CONFIG, scopes=SCOPES)   
+            # flow.redirect_uri = 'http://localhost:8000'
+            # authorization_url, state = flow.authorization_url(access_type='offline', include_granted_scopes='true')
         with open(TOKEN_PICKLE_FILE, 'wb') as token:
             pickle.dump(creds, token)
 
-    gphotos_service = build(API_NAME, API_VERSION, credentials=creds)
+    gphotos_service = build('photoslibrary', 'v1', credentials=creds)
 
     return gphotos_service
 
