@@ -33,6 +33,17 @@ from lockdownsf.services.controller_utils import (
 DEFAULT_OWNER = User.objects.get(email=os.environ['DEFAULT_OWNER_EMAIL'])
 
 
+# https://github.com/lotrekagency/django-google-site-verification/blob/master/google_site_verification/views.py
+def google_site_verification(request):
+    template = 'google_site_verification.html'
+
+    context = {
+        'google_site_verification': settings.GOOGLE_SITE_VERIFICATION
+    }
+
+    return render(request, template, context, content_type='text/html')
+
+
 def index(request):
     template = 'index.html'
     page_title = 'Photo facets home'
