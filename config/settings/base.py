@@ -35,6 +35,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     'arcane-island-30983.herokuapp.com',
+    'www.2020lockdownsf.com',
+    '2020lockdownsf.com'
 ]
 
 
