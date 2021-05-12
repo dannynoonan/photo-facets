@@ -137,60 +137,60 @@ def convert_album_to_json(album):
     return album_json
 
 
-def diff_photo(db_photo, gphotos_media_item):
-    fields_with_differences = []
-    if not (db_photo and gphotos_media_item):
-        # fields_with_differences = ['description', 'mime_type', 'file_name', 'dt_taken']
-        fields_with_differences = ['description', 'file_name']
-    else:
-        # description - massage empty data (TODO figure out better way to do this)
-        if not db_photo.description:
-            db_photo.description = ''
-        if db_photo.description != gphotos_media_item.get('description', ''):
-            fields_with_differences.append('description')
-        # file_name
-        if db_photo.file_name != gphotos_media_item.get('filename', ''):
-            fields_with_differences.append('file_name')
-        # date taken 
-        if not gphotos_media_item.get('dt_taken', ''):
-            if db_photo.dt_taken:
-                # db dt_taken is set but gphotos creationTime is not
-                fields_with_differences.append('dt_taken')
-        else:
-            if not db_photo.dt_taken:
-                # gphotos creationTime is set but db dt_taken is not
-                fields_with_differences.append('dt_taken')
-            else:
-                # if both gphotos creationTime and db dt_taken are set, massage data for comparison
-                if db_photo.dt_taken != gphotos_media_item['dt_taken']:
-                    fields_with_differences.append('dt_taken')
-        # mime type
-        # if db_photo.mime_type != gphotos_media_item.get('mimeType', ''):
-        #     fields_with_differences.append('mime_type')
+# def diff_photo(db_photo, gphotos_media_item):
+#     fields_with_differences = []
+#     if not (db_photo and gphotos_media_item):
+#         # fields_with_differences = ['description', 'mime_type', 'file_name', 'dt_taken']
+#         fields_with_differences = ['description', 'file_name']
+#     else:
+#         # description - massage empty data (TODO figure out better way to do this)
+#         if not db_photo.description:
+#             db_photo.description = ''
+#         if db_photo.description != gphotos_media_item.get('description', ''):
+#             fields_with_differences.append('description')
+#         # file_name
+#         if db_photo.file_name != gphotos_media_item.get('filename', ''):
+#             fields_with_differences.append('file_name')
+#         # date taken 
+#         if not gphotos_media_item.get('dt_taken', ''):
+#             if db_photo.dt_taken:
+#                 # db dt_taken is set but gphotos creationTime is not
+#                 fields_with_differences.append('dt_taken')
+#         else:
+#             if not db_photo.dt_taken:
+#                 # gphotos creationTime is set but db dt_taken is not
+#                 fields_with_differences.append('dt_taken')
+#             else:
+#                 # if both gphotos creationTime and db dt_taken are set, massage data for comparison
+#                 if db_photo.dt_taken != gphotos_media_item['dt_taken']:
+#                     fields_with_differences.append('dt_taken')
+#         # mime type
+#         # if db_photo.mime_type != gphotos_media_item.get('mimeType', ''):
+#         #     fields_with_differences.append('mime_type')
 
-    return fields_with_differences
+#     return fields_with_differences
 
 
-def album_diff_detected(db_album, gphotos_album):
-    # verify that neither album version is falsy
-    if not (db_album and gphotos_album):
-        return True
-    # album name - massage empty data (TODO figure out better way to do this)
-    if not db_album.name:
-        db_album.name = ''
-    if not gphotos_album.get('title', ''):
-        gphotos_album['title'] = ''
-    if not gphotos_album.get('title', '') or gphotos_album['title'] != db_album.name:
-        return True
-    # compare photo counts between db and gphotos versions
-    if not gphotos_album.get('mediaItemsCount', ''):
-        gphotos_album['mediaItemsCount'] = 0
-    else:
-        gphotos_album['mediaItemsCount'] = int(gphotos_album['mediaItemsCount'])  # TODO need a try/except?
-    if gphotos_album['mediaItemsCount'] != len(db_album.photo_set.all()):
-        return True
+# def album_diff_detected(db_album, gphotos_album):
+#     # verify that neither album version is falsy
+#     if not (db_album and gphotos_album):
+#         return True
+#     # album name - massage empty data (TODO figure out better way to do this)
+#     if not db_album.name:
+#         db_album.name = ''
+#     if not gphotos_album.get('title', ''):
+#         gphotos_album['title'] = ''
+#     if not gphotos_album.get('title', '') or gphotos_album['title'] != db_album.name:
+#         return True
+#     # compare photo counts between db and gphotos versions
+#     if not gphotos_album.get('mediaItemsCount', ''):
+#         gphotos_album['mediaItemsCount'] = 0
+#     else:
+#         gphotos_album['mediaItemsCount'] = int(gphotos_album['mediaItemsCount'])  # TODO need a try/except?
+#     if gphotos_album['mediaItemsCount'] != len(db_album.photo_set.all()):
+#         return True
 
-    return False
+#     return False
 
 
 # flatten gphotos_media_item data to simplify comparisons and django template access

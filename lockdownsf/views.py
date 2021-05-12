@@ -26,7 +26,8 @@ from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
 from lockdownsf.models import Album, Photo, Tag, User
 from lockdownsf.services import gphotosapi, image_utils, s3manager
 from lockdownsf.services.controller_utils import (
-    album_diff_detected, convert_album_to_json, copy_gphotos_image_to_s3, diff_photo, extract_messages_from_storage, 
+    # album_diff_detected, diff_photo, 
+    convert_album_to_json, copy_gphotos_image_to_s3, extract_messages_from_storage, 
     log_and_store_message, massage_gphotos_media_item, populate_fields_from_gphotosapi, update_photos_with_gphotos_data)
 
 
@@ -278,14 +279,14 @@ def album_view(request, album_external_id, page_number=None):
     # diff photos returned by gphotos api call to those mapped to db album
     try:
         gphotos_album = gphotosapi.get_album(album_external_id)
-        if album_diff_detected(album, gphotos_album):
-            diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
-            log_and_store_message(request, messages.WARNING, 
-                f"Differences detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
-        else:
-            diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">thorough comparison</a>"
-            log_and_store_message(request, messages.SUCCESS, 
-                f"A cursory scan found no high-level differences between Google Photos API and photo-facets db versions of this album. Click for a more {diff_link}.")
+        # if album_diff_detected(album, gphotos_album):
+        #     diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">inspect differences</a>"
+        #     log_and_store_message(request, messages.WARNING, 
+        #         f"Differences detected between Google Photos API and photo-facets db versions of this album. Click to {diff_link}.")
+        # else:
+        #     diff_link = f"<a href=\"/lockdownsf/manage/album_diff/{album_external_id}/\">thorough comparison</a>"
+        #     log_and_store_message(request, messages.SUCCESS, 
+        #         f"A cursory scan found no high-level differences between Google Photos API and photo-facets db versions of this album. Click for a more {diff_link}.")
     except HttpError as ex:
         log_and_store_message(request, messages.ERROR,
             f"[HttpError]: Failure to get album with external_id [{album_external_id}] from Google Photos API. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")        
@@ -690,86 +691,86 @@ def album_photos_delete(request):
     return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
 
-def album_diff(request, album_external_id):
-    template = 'album_diff.html'
-    page_title = 'Compare API vs DB data for album'
+# def album_diff(request, album_external_id):
+#     template = 'album_diff.html'
+#     page_title = 'Compare API vs DB data for album'
 
-    # process messages
-    response_messages = extract_messages_from_storage(request)
+#     # process messages
+#     response_messages = extract_messages_from_storage(request)
 
-    # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
+#     # form backing data
+#     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
-    # fetch album and mapped photos from db
-    try:
-        db_album = Album.objects.get(external_id=album_external_id)
-    except Exception as ex:
-        log_and_store_message(request, messages.ERROR, 
-            f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in db with external_id [{album_external_id}]. Details: {ex}")
-        return redirect(f"/lockdownsf/manage/album_listing/")
+#     # fetch album and mapped photos from db
+#     try:
+#         db_album = Album.objects.get(external_id=album_external_id)
+#     except Exception as ex:
+#         log_and_store_message(request, messages.ERROR, 
+#             f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in db with external_id [{album_external_id}]. Details: {ex}")
+#         return redirect(f"/lockdownsf/manage/album_listing/")
     
-    # fetch album and its mapped media items from gphotos api
-    try:
-        gphotos_album = gphotosapi.get_album(album_external_id)
-    except HttpError as ex:
-        log_and_store_message(request, messages.ERROR,
-            f"[HttpError]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
-        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
-    except Exception as ex:
-        log_and_store_message(request, messages.ERROR,
-            f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app? Details: {ex}")
-        return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+#     # fetch album and its mapped media items from gphotos api
+#     try:
+#         gphotos_album = gphotosapi.get_album(album_external_id)
+#     except HttpError as ex:
+#         log_and_store_message(request, messages.ERROR,
+#             f"[HttpError]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app?")
+#         return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
+#     except Exception as ex:
+#         log_and_store_message(request, messages.ERROR,
+#             f"[{ex.__class__.__name__}]: Failure to fetch album to diff, no album found in Google Photos with external_id [{album_external_id}]. Has this album been removed directly from Google Photos without being deleted in the Photo Facets app? Details: {ex}")
+#         return redirect(f"/lockdownsf/manage/album_view/{album_external_id}/")
 
-    gphotos_album_media_items = gphotosapi.get_photos_for_album(album_external_id, gphotos_album.get('mediaItemsCount', ''))
+#     gphotos_album_media_items = gphotosapi.get_photos_for_album(album_external_id, gphotos_album.get('mediaItemsCount', ''))
 
-    # establish which fields and photos differ between db and api versions
-    album_differences = []
-    photos_only_in_db = []
-    photos_only_in_api = []
-    photos_in_both = {}  # dict of photo external_ids to thumb_urls
-    already_compared_ids = []
+#     # establish which fields and photos differ between db and api versions
+#     album_differences = []
+#     photos_only_in_db = []
+#     photos_only_in_api = []
+#     photos_in_both = {}  # dict of photo external_ids to thumb_urls
+#     already_compared_ids = []
 
-    if db_album.name != gphotos_album.get('title', ''):
-        album_differences.append('name')
+#     if db_album.name != gphotos_album.get('title', ''):
+#         album_differences.append('name')
 
-    for db_photo in db_album.photo_set.all():
-        db_photo_found_in_gphotos = False
-        for gphotos_media_item in gphotos_album_media_items:
-            if db_photo.external_id == gphotos_media_item['id']:
-                db_photo_found_in_gphotos = True
-                # massage gphotos data
-                massage_gphotos_media_item(gphotos_media_item)
-                # diff gphotos and db versions
-                if diff_photo(db_photo, gphotos_media_item):
-                    photos_in_both[db_photo.external_id] = gphotos_media_item.get('baseUrl', '')
-                already_compared_ids.append(db_photo.external_id)
-                break
-        if not db_photo_found_in_gphotos:
-            photos_only_in_db.append(db_photo)
+#     for db_photo in db_album.photo_set.all():
+#         db_photo_found_in_gphotos = False
+#         for gphotos_media_item in gphotos_album_media_items:
+#             if db_photo.external_id == gphotos_media_item['id']:
+#                 db_photo_found_in_gphotos = True
+#                 # massage gphotos data
+#                 massage_gphotos_media_item(gphotos_media_item)
+#                 # diff gphotos and db versions
+#                 if diff_photo(db_photo, gphotos_media_item):
+#                     photos_in_both[db_photo.external_id] = gphotos_media_item.get('baseUrl', '')
+#                 already_compared_ids.append(db_photo.external_id)
+#                 break
+#         if not db_photo_found_in_gphotos:
+#             photos_only_in_db.append(db_photo)
     
-    # identify any items in gphotos not already found in gphotos_album_media_items
-    for gphotos_media_item in gphotos_album_media_items:
-        if gphotos_media_item['id'] not in already_compared_ids:
-            photos_only_in_api.append(gphotos_media_item)
+#     # identify any items in gphotos not already found in gphotos_album_media_items
+#     for gphotos_media_item in gphotos_album_media_items:
+#         if gphotos_media_item['id'] not in already_compared_ids:
+#             photos_only_in_api.append(gphotos_media_item)
 
-    page_title = f"{page_title}: {db_album.name}"
+#     page_title = f"{page_title}: {db_album.name}"
 
-    context = {
-        'template': template,
-        'page_title': page_title,
-        'response_messages': response_messages,
-        'all_albums': all_albums,
-        'db_album': db_album,
-        'gphotos_album': gphotos_album,
-        # 'gphotos_album_media_items': gphotos_album_media_items,
-        'album_differences': album_differences,
-        'photos_only_in_db': photos_only_in_db,
-        'photos_only_in_api': photos_only_in_api,
-        'photos_in_both': photos_in_both,
-        'total_differences': len(album_differences) + len(photos_only_in_db) + len(photos_only_in_api) + len(photos_in_both)
-    }
+#     context = {
+#         'template': template,
+#         'page_title': page_title,
+#         'response_messages': response_messages,
+#         'all_albums': all_albums,
+#         'db_album': db_album,
+#         'gphotos_album': gphotos_album,
+#         # 'gphotos_album_media_items': gphotos_album_media_items,
+#         'album_differences': album_differences,
+#         'photos_only_in_db': photos_only_in_db,
+#         'photos_only_in_api': photos_only_in_api,
+#         'photos_in_both': photos_in_both,
+#         'total_differences': len(album_differences) + len(photos_only_in_db) + len(photos_only_in_api) + len(photos_in_both)
+#     }
     
-    return render(request, template, context)
+#     return render(request, template, context)
 
 
 def photo_search(request):
@@ -864,11 +865,11 @@ def photo_view(request, photo_external_id):
     gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
     # massage gphotos data
     massage_gphotos_media_item(gphotos_media_item)
-    # diff gphotos and db versions
-    if diff_photo(photo, gphotos_media_item):
-        diff_link = f"<a href=\"/lockdownsf/manage/photo_diff/{photo_external_id}/\">inspect differences</a>"
-        log_and_store_message(request, messages.WARNING, 
-            f"Differences detected between Google Photos API and photo-facets db versions of this photo. Click to {diff_link}.")
+    # # diff gphotos and db versions
+    # if diff_photo(photo, gphotos_media_item):
+    #     diff_link = f"<a href=\"/lockdownsf/manage/photo_diff/{photo_external_id}/\">inspect differences</a>"
+    #     log_and_store_message(request, messages.WARNING, 
+    #         f"Differences detected between Google Photos API and photo-facets db versions of this photo. Click to {diff_link}.")
 
     # fetch album from db to determine previous and next photos for sequential navigation
     mapped_photos = photo.album.photo_set.all().order_by('dt_taken')
@@ -1008,47 +1009,47 @@ def photo_edit(request):
     return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
 
-def photo_diff(request, photo_external_id):
-    template = 'photo_diff.html'
-    page_title = 'Compare and sync photo data (Google Photos API vs photo-facets db)'
+# def photo_diff(request, photo_external_id):
+#     template = 'photo_diff.html'
+#     page_title = 'Compare and sync photo data (Google Photos API vs photo-facets db)'
 
-    # process messages
-    response_messages = extract_messages_from_storage(request)
+#     # process messages
+#     response_messages = extract_messages_from_storage(request)
 
-    # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
+#     # form backing data
+#     all_albums = Album.objects.filter(owner=DEFAULT_OWNER, external_id__isnull=False)
 
-    # fetch photo from db
-    try:
-        db_photo = Photo.objects.get(external_id=photo_external_id)
-    except Exception as ex:
-        log_and_store_message(request, messages.ERROR,
-            f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in photo-facets db for external_id [{photo_external_id}]")
-        return redirect(f"/lockdownsf/manage/photo_search/")
+#     # fetch photo from db
+#     try:
+#         db_photo = Photo.objects.get(external_id=photo_external_id)
+#     except Exception as ex:
+#         log_and_store_message(request, messages.ERROR,
+#             f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in photo-facets db for external_id [{photo_external_id}]")
+#         return redirect(f"/lockdownsf/manage/photo_search/")
 
-    # fetch media item from gphotos api 
-    gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
-    if not gphotos_media_item:
-        log_and_store_message(request, messages.ERROR,
-            f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in Google Photos API for external_id [{photo_external_id}]")
-        return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
+#     # fetch media item from gphotos api 
+#     gphotos_media_item = gphotosapi.get_photo_by_id(photo_external_id)
+#     if not gphotos_media_item:
+#         log_and_store_message(request, messages.ERROR,
+#             f"[{ex.__class__.__name__}]: Failure to fetch photo to diff, no match found in Google Photos API for external_id [{photo_external_id}]")
+#         return redirect(f"/lockdownsf/manage/photo_view/{photo_external_id}/")
 
-    # massage gphotos data
-    massage_gphotos_media_item(gphotos_media_item)
-    # establish which fields have differences between gphotos and db versions
-    fields_with_differences = diff_photo(db_photo, gphotos_media_item)
+#     # massage gphotos data
+#     massage_gphotos_media_item(gphotos_media_item)
+#     # establish which fields have differences between gphotos and db versions
+#     fields_with_differences = diff_photo(db_photo, gphotos_media_item)
 
-    context = {
-        'template': template,
-        'page_title': page_title,
-        'response_messages': response_messages,
-        'all_albums': all_albums,
-        'db_photo': db_photo,
-        'gphotos_media_item': gphotos_media_item,
-        'fields_with_differences': fields_with_differences,
-    }
+#     context = {
+#         'template': template,
+#         'page_title': page_title,
+#         'response_messages': response_messages,
+#         'all_albums': all_albums,
+#         'db_photo': db_photo,
+#         'gphotos_media_item': gphotos_media_item,
+#         'fields_with_differences': fields_with_differences,
+#     }
     
-    return render(request, template, context)
+#     return render(request, template, context)
 
 
 def tag_listing(request):
