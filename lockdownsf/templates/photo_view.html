@@ -7,7 +7,7 @@
 {% if prev_photo_id %}
     <a href="/lockdownsf/manage/photo_view/{{ prev_photo_id }}/" class="navigate">&#8249;</a>
 {% endif %}
-<img src="{{ photo.thumb_url }}"/>
+<img src="https://lockdownsf.s3.amazonaws.com/{{ photo.album.s3_dir }}/{{ photo.file_name }}">
 {% if next_photo_id %}
     <a href="/lockdownsf/manage/photo_view/{{ next_photo_id }}/" class="navigate">&#8250;</a>
 {% endif %}

@@ -4,7 +4,6 @@ import pytz
 from django.contrib import messages
 
 from lockdownsf import metadata
-# from lockdownsf.services import gphotosapi, s3manager
 from lockdownsf.services import s3manager
 
 
