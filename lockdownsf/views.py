@@ -24,7 +24,7 @@ from django.template import loader
 
 from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
 from lockdownsf.models import Album, Photo, Tag, User
-from lockdownsf.services import gphotosapi, image_utils, s3manager
+from lockdownsf.services import image_utils, s3manager
 from lockdownsf.services.controller_utils import (
     convert_album_to_json, extract_messages_from_storage, log_and_store_message)
 
@@ -74,10 +74,7 @@ def index(request):
         album_photos = album.photo_set.filter(tags__isnull=False).distinct()
         if not album_photos:
             continue
-        # fetch media items from gphotos api to populate photo metadata
-        # fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        # populate_fields_from_gphotosapi(album_photos, fields_to_populate)
-        # album.photos = album_photos
+        # album.photos = album_photos  # TODO why was this commented out?
         # populate json objects for live site js
         album_json = convert_album_to_json(album)
         photo_collection_json.append(album_json)
@@ -140,9 +137,6 @@ def album_map(request, album_id):
     # fetch tagged photos for album
     selected_album_photos = selected_album.photo_set.filter(tags__isnull=False).distinct()
     if selected_album_photos:
-        # fetch media items from gphotos api to populate photo metadata
-        # fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-        # populate_fields_from_gphotosapi(selected_album_photos, fields_to_populate)
         selected_album.photos = selected_album_photos
 
     # build single album photo_collection json to be passed to page js
@@ -288,10 +282,6 @@ def album_view(request, album_id, page_number=None):
         prev_page_number = page_number - 1
     if page_results.has_next():
         next_page_number = page_number + 1
-
-    # fetch media items from gphotos api to populate image metadata
-    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    # populate_fields_from_gphotosapi(page_results, fields_to_populate)
 
     # process messages
     response_messages = extract_messages_from_storage(request)
@@ -616,10 +606,6 @@ def photo_search(request):
     if page_results.has_next():
         next_page_number = page_number + 1
 
-    # fetch media items from gphotos api to populate image metadata
-    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    # populate_fields_from_gphotosapi(page_results, fields_to_populate)
-
     context = {
         'template': template,
         'page_title': page_title,
@@ -640,7 +626,7 @@ def photo_search(request):
     return render(request, template, context)
 
 
-def photo_view(request, photo_id):
+def photo_view(request, photo_id: int):
     template = 'photo_view.html'
     page_title = 'Photo details'
 
@@ -658,10 +644,11 @@ def photo_view(request, photo_id):
 
     # fetch album from db to determine previous and next photos for sequential navigation
     mapped_photos = photo.album.photo_set.all().order_by('dt_taken')
+    print(f"len(mapped_photos)={len(mapped_photos)}")
 
     # store all mapped photo_ids to list, get index of current photo
     album_photo_ids = [p.id for p in mapped_photos]
-    curr_index = album_photo_ids.index(photo_id)
+    curr_index = album_photo_ids.index(int(photo_id))  # TODO why do I need to cast photo_id as int here
 
     # get photo_ids for previous and next index
     prev_photo_id = None
@@ -670,10 +657,6 @@ def photo_view(request, photo_id):
         prev_photo_id = album_photo_ids[curr_index - 1]
     if curr_index < len(album_photo_ids) - 1:
         next_photo_id = album_photo_ids[curr_index + 1]
-
-    # fetch media items from gphotos api to populate image metadata
-    fields_to_populate = ['thumb_url', 'mime_type', 'width', 'height']
-    # populate_fields_from_gphotosapi([photo], fields_to_populate)
 
     # photo_location = { 
     #     'lat': str(photo.latitude), 
