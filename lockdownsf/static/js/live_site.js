@@ -19,15 +19,15 @@
 // };
 
 var gmap;
-// dict of external_ids to photos loaded from photoCollection 
+// dict of photo_ids to photos loaded from photoCollection 
 var loadedPhotos = {};
-// dict of photo external_ids to domImgs
+// dict of photo_ids to domImgs
 var keysToDomImgs = {};
-// dict of photo external_ids to google.maps.Marker objects
+// dict of photo_ids to google.maps.Marker objects
 var keysToMarkers = {};
-// dict of tags to photo external_ids
+// dict of tags to photo_ids
 var tagsToKeys = {};
-// array of currently displayed photo external_ids
+// array of currently displayed photo_ids
 var displayedMarkerKeys = [];
 
 // const baseLatLng = {lat: 37.773972, lng: -122.431297};
@@ -59,24 +59,24 @@ function loadPhotoCollection() {
         for (var j = 0; j < photoCollection[i].photos.length; j++) {
             // add to loadedPhotos
             var photo = photoCollection[i].photos[j];
-            loadedPhotos[photo.external_id] = photo;
+            loadedPhotos[photo.id] = photo;
             // add keys to tagsToKeys 
             if (photo.tags) {
                 for (var k = 0; k < photo.tags.length; k++) {
                     tag = photo.tags[k];
                     if (tag in tagsToKeys) {
-                        tagsToKeys[tag].push(photo.external_id);
+                        tagsToKeys[tag].push(photo.id);
                     }
                     else {
-                        tagsToKeys[tag] = [photo.external_id];
+                        tagsToKeys[tag] = [photo.id];
                     }
                 }
             }
             // add to keysToDomImgs
             var domImg = document.createElement('div');
-            domImg.id = photo.external_id;
+            domImg.id = photo.id;
             domImg.src = photo.thumb_url;
-            keysToDomImgs[photo.external_id] = domImg;
+            keysToDomImgs[photo.id] = domImg;
             // console.log(domImg);
         }			
     }
@@ -159,8 +159,8 @@ function initAndDisplayPhotoMarker(domImg) {
     });          
     //
     // var contentDiv = "<div class=\"marker-window-landscape\" style=\"height:" + adjustedHeight + "; width:" + adjustedWidth + ";\"><img src=\"" + this.src + "\" height=\"" + adjustedHeight + "\" width=\"" + adjustedWidth + "\"></div>";
-    var gphotos_url = "https://photos.google.com/lr/photo/" + domImg.id;
-    var contentDiv = "<div class=\"marker-window-landscape\"><a href=\"" + gphotos_url + "\" target=\"new\"><img src=\"" + domImg.src + "\"></a></div>";
+    // var contentDiv = "<div class=\"marker-window-landscape\"><img src=\"" + domImg.src + "\"></div>";
+    var contentDiv = "<div class=\"marker-window-landscape\">" + domImg.src + "</div>";
     // console.log("content for photo id [" + domImg.id + "]: " + contentDiv);          
     var markerWindow = new google.maps.InfoWindow({
         content: contentDiv,
