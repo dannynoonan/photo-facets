@@ -8,7 +8,6 @@
     <thead>
         <tr><th scope="col">Name</th>
             <th scope="col">Photos</th>
-            <th scope="col">External resource</th>
             <th scope="col">Description</th>
             <th scope="col">GPS location</th>
             <th scope="col">Zoom level</th>
@@ -18,9 +17,8 @@
     <tbody>
     {% for album in all_albums %}
         <tr><th scope="row">
-                <a href="/lockdownsf/manage/album_view/{{ album.external_id }}/">{{ album.name }}</a></th>
+                <a href="/lockdownsf/manage/album_view/{{ album.id }}/">{{ album.name }}</a></th>
             <td>{{ album.photo_count }}</td>
-            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id|truncatechars:20 }}</a></td>
             <td>{% if album.description %} {{ album.description }} {% endif %}</td>    
             <td>Lat: {{ album.center_latitude }}<br/>Lng: {{ album.center_longitude }}</td>
             <td>{{ album.map_zoom_level }}</td>
