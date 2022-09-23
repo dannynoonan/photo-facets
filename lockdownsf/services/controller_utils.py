@@ -52,10 +52,12 @@ def convert_album_to_json(album):
     photos_json = []
     for photo in album.photos:
         tags_json = [tag.name for tag in photo.tags.filter(status='ACTIVE').distinct()]
+        photo_thumb_url = f"<img src='https://lockdownsf.s3.amazonaws.com/{photo.album.s3_dir}/{photo.file_name}' width='300'>"
         photo_json = {
+            'id': str(photo.id),
             'longitude': str(photo.longitude),
             'latitude': str(photo.latitude),
-            'thumb_url': photo.thumb_url,
+            'thumb_url': photo_thumb_url,
             'tags': tags_json
         }
         photos_json.append(photo_json)

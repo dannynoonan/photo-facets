@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import boto3
 from datetime import datetime
 import exifread
@@ -69,19 +70,19 @@ def index(request):
     photo_collection_json = []
     all_albums_json = {} 
     for album in all_albums:
-        # fetch all photos per album; ignore albums lacking tagged photos 
+        # for live site display, albums must contain at least one photo having gps info and tags 
         # album_photos = album.photo_set.filter(tags__isnull=False, tags__in=active_tags).distinct()
-        album_photos = album.photo_set.filter(tags__isnull=False).distinct()
+        album_photos = album.photo_set.filter(tags__isnull=False, latitude__isnull=False, longitude__isnull=False).distinct()
         if not album_photos:
             continue
-        # album.photos = album_photos  # TODO why was this commented out?
+        album.photos = album_photos  # TODO why was this commented out?
         # populate json objects for live site js
         album_json = convert_album_to_json(album)
         photo_collection_json.append(album_json)
         all_albums_json[album.id] = album.name
     # build map meta json to be passed to page js
     map_meta_json = {}
-    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(all_albums)
+    ctr_lat, ctr_lng, zoom_level, num_photos_with_gps = image_utils.avg_gps_info(all_albums)
     map_meta_json['latitude'] = ctr_lat
     map_meta_json['longitude'] = ctr_lng
     map_meta_json['zoom_level'] = zoom_level
@@ -135,7 +136,7 @@ def album_map(request, album_id):
         return redirect(f"/lockdownsf/")
 
     # fetch tagged photos for album
-    selected_album_photos = selected_album.photo_set.filter(tags__isnull=False).distinct()
+    selected_album_photos = selected_album.photo_set.filter(tags__isnull=False, latitude__isnull=False, longitude__isnull=False).distinct()
     if selected_album_photos:
         selected_album.photos = selected_album_photos
 
@@ -442,6 +443,11 @@ def album_import_new_photos(request):
                 dt_taken = datetime.strptime(exif_data['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
         else: 
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
+
+        # TODO raise exception if lat/lng is not set?
+        if lat == 0 and lng == 0:
+            lat = None
+            lng = None
 
         # extract OCR text
         # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, settings.S3_BUCKET)
