@@ -4,13 +4,13 @@
 <form action="/lockdownsf/manage/album_import_new_photos/" method="POST">
     <input type="hidden" id="tmp-dir-uuid" name="tmp-dir-uuid" value="{{ tmp_dir_uuid }}">
     <h5>Select album to import photos into:</h5>
-    <select class="form-control form-control-inline-lg" id="select-album-external-id" name="select-album-external-id" onchange="showOrHideAlbumTitleInput();">
+    <select class="form-control form-control-inline-lg" id="select-album-id" name="select-album-id" onchange="showOrHideAlbumTitleInput();">
         <option value="">* Create new album *</option>
     {% for album in all_albums %}
-        <option value="{{ album.external_id }}" {% if add_to_album_external_id == album.external_id %} selected {% endif %}>{{ album.name }}</option>
+        <option value="{{ album.id }}" {% if add_to_album_id|add:"0" == album.id %} selected {% endif %}>{{ album.name }}</option>
     {% endfor %} 
     </select><br/>
-    <div id="new-album-name" {% if add_to_album_external_id %} class="hidden-block" {% endif %}>
+    <div id="new-album-name" {% if add_to_album_id %} class="hidden-block" {% endif %}>
         <input type="text" name="new-album-name" placeholder="New album title" class="form-control form-control-inline-lg">
     </div>
     <div id="album-import-progress" class="hidden-block">

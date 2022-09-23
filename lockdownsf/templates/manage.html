@@ -23,7 +23,7 @@
             <select class="form-control" id="select-album" name="select-album" onchange="updateAlbumFormAction();">
                 <option value="none">* album *</option>
             {% for album in all_albums %}
-                <option value="{{ album.external_id }}">{{ album.name }}</option>
+                <option value="{{ album.id }}">{{ album.name }}</option>
             {% endfor %} 
             </select>
             <button class="btn btn-secondary my-2 my-sm-0" type="submit">Go</button>

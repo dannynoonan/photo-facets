@@ -410,7 +410,7 @@ function addToFailedFiles(fileName) {
 
 
 function showOrHideAlbumTitleInput() {
-    var selectedAlbum = document.getElementById("select-album-external-id").value;
+    var selectedAlbum = document.getElementById("select-album-id").value;
     if (selectedAlbum == 0) {
         document.getElementById("new-album-name").style.display = "block";
     }

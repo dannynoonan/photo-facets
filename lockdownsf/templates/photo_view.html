@@ -4,12 +4,12 @@
 
 {% if photo %}
 <p></p>
-{% if prev_photo_external_id %}
-    <a href="/lockdownsf/manage/photo_view/{{ prev_photo_external_id }}/" class="navigate">&#8249;</a>
+{% if prev_photo_id %}
+    <a href="/lockdownsf/manage/photo_view/{{ prev_photo_id }}/" class="navigate">&#8249;</a>
 {% endif %}
 <img src="{{ photo.thumb_url }}"/>
-{% if next_photo_external_id %}
-    <a href="/lockdownsf/manage/photo_view/{{ next_photo_external_id }}/" class="navigate">&#8250;</a>
+{% if next_photo_id %}
+    <a href="/lockdownsf/manage/photo_view/{{ next_photo_id }}/" class="navigate">&#8250;</a>
 {% endif %}
 
 <!-- <div id="miniGmap"></div> -->
@@ -18,7 +18,7 @@
 <h4>Editable fields:</h4>
 <form action="/lockdownsf/manage/photo_edit/" method="POST">
     {% csrf_token %}
-    <input type="hidden" name="photo-external-id" value="{{ photo.external_id }}">
+    <input type="hidden" name="photo-id" value="{{ photo.id }}">
     <input type="hidden" id="update-description-flag" name="update-description-flag" value="">
     <input type="hidden" id="update-tags-flag" name="update-tags-flag" value="">
     <table class="table table-hover table-fit">
@@ -67,15 +67,10 @@
 <h4>Automagic fields:</h4>
 <table class="table table-hover table-fit">
     <tbody>
-        <tr><th scope="row">Google photos id:</th>
-            <td><a href="https://photos.google.com/lr/album/{{ photo.album.external_id }}/photo/{{ photo.external_id }}" target="new">
-                    {{ photo.external_id }}</a></td></tr>
         <tr><th scope="row">File name:</th>
             <td>{{ photo.file_name }}</td></tr>
         <tr><th scope="row">Album:</th>
-            <!-- <td><a href="https://photos.google.com/lr/album/{{ photo.album.external_id }}" target="new"> -->
-            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
-                    {{ photo.album.name }}</a></td></tr>
+            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.id }}/">{{ photo.album.name }}</a></td></tr>
         <tr><th scope="row">Date taken:</th>
             <td>{{ photo.dt_taken }}</td></tr>
         <tr><th scope="row">Date added:</th>
@@ -96,7 +91,7 @@
             <form action="/lockdownsf/manage/extract_ocr_text/" method="POST">
                 {% csrf_token %}
                 <input type="hidden" name="request-scope" value="photo">
-                <input type="hidden" name="external-id" value="{{ photo.external_id }}">
+                <input type="hidden" name="object-id" value="{{ photo.id }}">
                 <td>
                     {% if photo.extracted_text_display %}
                     <small>{{ photo.extracted_text_display|linebreaks }}</small>
@@ -113,7 +108,7 @@
 
 {% else %}
 <div class="alert alert-warning">
-    <h5>No photo found matching external_id <strong>{{ photo_external_id }}</strong></h5>
+    <h5>No photo found matching photo_id <strong>{{ photo_id }}</strong></h5>
 </div>
 {% endif %}
 
