@@ -14,7 +14,8 @@
                 <li class="nav-item {% if template == 'album_listing.html' %} active {% endif %}">
                     <a class="nav-link" href="/lockdownsf/manage/album_listing/">List</a>
                 </li>
-                <li class="nav-item {% if template == 'album_view.html' or template == 'album_diff.html' %} active {% endif %}">
+                <!-- <li class="nav-item {% if template == 'album_view.html' or template == 'album_diff.html' %} active {% endif %}"> -->
+                <li class="nav-item {% if template == 'album_view.html' %} active {% endif %}">
                     <a class="nav-link">Edit</a>
                 </li>
                 <li class="nav-item nav-link">Lookup:</li>
@@ -22,7 +23,7 @@
             <select class="form-control" id="select-album" name="select-album" onchange="updateAlbumFormAction();">
                 <option value="none">* album *</option>
             {% for album in all_albums %}
-                <option value="{{ album.external_id }}">{{ album.name }}</option>
+                <option value="{{ album.id }}">{{ album.name }}</option>
             {% endfor %} 
             </select>
             <button class="btn btn-secondary my-2 my-sm-0" type="submit">Go</button>
@@ -38,7 +39,8 @@
             <li class="nav-item {% if template == 'photo_search.html' %} active {% endif %}">
                 <a class="nav-link" href="/lockdownsf/manage/photo_search/">Search</a>
             </li>
-            <li class="nav-item {% if template == 'photo_view.html' or template == 'photo_diff.html' %} active {% endif %}">
+            <!-- <li class="nav-item {% if template == 'photo_view.html' or template == 'photo_diff.html' %} active {% endif %}"> -->
+            <li class="nav-item {% if template == 'photo_view.html' %} active {% endif %}">
                 <a class="nav-link">Edit</a>
             </li>
         </ul>

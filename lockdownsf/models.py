@@ -26,7 +26,7 @@ class Tag(models.Model):
 
 
 class Album(models.Model):
-    external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
+    s3_dir = models.CharField(max_length=128, db_index=True, unique=True) 
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=500)
     center_latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
@@ -38,17 +38,18 @@ class Album(models.Model):
     status = models.CharField(max_length=64, db_index=True)
 
     def __str__(self):
-        return f"{self.name}|{self.external_id}"
+        return f"{self.id}:{self.name}"
 
 
 class Photo(models.Model):
-    external_id = models.CharField(max_length=500, db_index=True, null=True, unique=True)
-    album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True)
+    album = models.ForeignKey(Album, on_delete=models.CASCADE)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     file_name = models.CharField(max_length=256, db_index=True)
-    mime_type = models.CharField(max_length=128, db_index=True)  # chopping block
+    mime_type = models.CharField(max_length=128, db_index=True)
     description = models.CharField(max_length=500, null=True)
-    dt_taken = models.DateTimeField(null=True)  # chopping block
+    width = models.IntegerField(null=True)
+    height = models.IntegerField(null=True)
+    dt_taken = models.DateTimeField(null=True)
     dt_inserted = models.DateTimeField(auto_now_add=True)
     dt_updated = models.DateTimeField(auto_now=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True)
@@ -58,6 +59,9 @@ class Photo(models.Model):
     extracted_text_display = models.CharField(max_length=16000, null=True)
     status = models.CharField(max_length=64, db_index=True)
 
+    class Meta:
+        unique_together = ('album', 'file_name')
+
     def __str__(self):
-        return f"{self.file_name}|{self.external_id}"
+        return f"{self.id}:{self.file_name}"  
     

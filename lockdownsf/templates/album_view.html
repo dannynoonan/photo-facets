@@ -5,13 +5,11 @@
 {% if album %}
 <form action="/lockdownsf/manage/album_edit/" method="POST">
     {% csrf_token %}
-    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
+    <input type="hidden" name="album-id" value="{{ album.id }}">
     <input type="hidden" id="update-album-name-flag" name="update-album-name-flag" value="">
 
     <table class="table table-hover table-fit">
         <tbody>
-            <tr><th scope="row">Google photos id:</th>
-                <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}" target="new">{{ album.external_id }}</a></td></tr>
             <tr><th scope="row">Title:</th>
                 <td id="album-name-display-cell" ><span onclick="makeAlbumNameEditable()">{{ album.name }}</span></td>
                 <td id="album-name-input-cell" class="hidden-block">
@@ -46,7 +44,7 @@
         <!-- previous page -->
         {% if prev_page_number %}
         <li class="page-item">
-            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.external_id }}/{{ prev_page_number }}/">&laquo;</a>
+            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.id }}/{{ prev_page_number }}/">&laquo;</a>
         </li>
         {% else %}
         <li class="page-item disabled">
@@ -56,13 +54,13 @@
         <!-- numbered pages -->
         {% for i in page_count_iterator %}
         <li class="page-item {% if page_number == i %} active {% endif %}">
-            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.external_id }}/{{ i }}/">{{ i }}</a>
+            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.id }}/{{ i }}/">{{ i }}</a>
         </li>
         {% endfor %}
         <!-- next page -->
         {% if next_page_number %}
         <li class="page-item">
-            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.external_id }}/{{ next_page_number }}/">&raquo;</a>
+            <a class="page-link" href="/lockdownsf/manage/album_view/{{ album.id }}/{{ next_page_number }}/">&raquo;</a>
         </li>
         {% else %}
         <li class="page-item disabled">
@@ -75,14 +73,14 @@
 
 <form action="/lockdownsf/manage/album_photos_delete/" method="POST" class="form-group">
     {% csrf_token %}
-    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
+    <input type="hidden" name="album-id" value="{{ album.id }}">
 <table class="table table-hover">
     <thead>
         <tr><th scope="col"></th>
             <th scope="col">Photo</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
-            <th scope="col">Google photos id</th>
+            <th scope="col">GPS location</th>
             <th scope="col">Mime type</th>
             <th scope="col"><nobr>Date taken /</nobr> <nobr>imported /</nobr> updated</th>
             <th scope="col">Dimensions</th>
@@ -93,16 +91,15 @@
     {% for photo in page_results %}
         <tr>
             <th scope="row">
-                <input type="checkbox" name="photo-external-ids" value="{{ photo.external_id }}"></th>
-            <td><a href="/lockdownsf/manage/photo_view/{{ photo.external_id }}/">
-                    <img src="{{ photo.thumb_url }}" width="300"></a></td>
+                <input type="checkbox" name="photo-ids" value="{{ photo.id }}"></th>
+            <td><a href="/lockdownsf/manage/photo_view/{{ photo.id }}/">
+                    <img src="https://lockdownsf.s3.amazonaws.com/{{ photo.album.s3_dir }}/{{ photo.file_name }}" width="300"></a></td>
             <td>{{ photo.file_name }}</th>
-            <td>{% if photo.description %} {{ photo.description }} {% endif %}</th>    
-            <td><a href="https://photos.google.com/lr/album/{{ album.external_id }}/photo/{{ photo.external_id }}" target="new">
-                    {{ photo.external_id|truncatechars:20 }}</a></td>
+            <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>    
+            <td {% if not photo.latitude %} class="text-danger" {% endif %}>Lat: {{ photo.latitude }}<br/>Lng: {{ photo.longitude }}</td>
             <td>{{ photo.mime_type }}</td>
             <td><small>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</small></td>
-            <td>{% if photo.width %} {{ photo.width }} x {{ photo.height }} {% endif %}</td>
+            <td {% if not photo.width or not photo.height %} class="text-danger" {% endif %}>{{ photo.width }} x {{ photo.height }}</td>
             <td>
             {% for tag in photo.tags.all %}
             <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>
@@ -119,7 +116,7 @@
 
 <form action="/lockdownsf/manage/album_select_new_photos/" method="POST" class="form-group">
     {% csrf_token %}
-    <input type="hidden" name="add-to-album-external-id" value="{{ album.external_id }}">
+    <input type="hidden" name="add-to-album-id" value="{{ album.id }}">
     <input type="submit" value="[+] Add photos to album" class="btn btn-secondary">
 </form>
 
@@ -127,14 +124,14 @@
 <form action="/lockdownsf/manage/extract_ocr_text/" method="POST" class="form-group">
     {% csrf_token %}
     <input type="hidden" name="request-scope" value="album">
-    <input type="hidden" name="external-id" value="{{ album.external_id }}">
+    <input type="hidden" name="object-id" value="{{ album.id }}">
     <input type="submit" value="[~] Extract OCR text ({{ total_results_count }} photos)" class="btn btn-secondary">
 </form>
 {% endif %}
 
 <form action="/lockdownsf/manage/album_delete/" method="POST" class="form-group">
     {% csrf_token %}
-    <input type="hidden" name="album-external-id" value="{{ album.external_id }}">
+    <input type="hidden" name="album-id" value="{{ album.id }}">
     <input type="submit" value="[x] DELETE ALBUM" class="btn btn-secondary">
 </form>
 

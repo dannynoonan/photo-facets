@@ -8,7 +8,7 @@
         <select class="form-control" id="search-album" name="search-album">
             <option value="">* album *</option>
         {% for album in all_albums %}
-            <option value="{{ album.external_id }}" {% if search_criteria.search_album_id == album.external_id %} selected {% endif %}>{{ album.name }}</option>
+            <option value="{{ album.id }}" {% if search_criteria.search_album_id == album.id %} selected {% endif %}>{{ album.name }}</option>
         {% endfor %} 
         </select>
         &nbsp;&nbsp;&nbsp;<strong>Tags:</strong>&nbsp;
@@ -86,20 +86,19 @@
             <th scope="col">Album</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
-            <th scope="col">Google id</th>
+            <th scope="col">GSP location</th>
             <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
     <tbody>
     {% for photo in page_results %}
-        <tr><td><a href="/lockdownsf/manage/photo_view/{{ photo.external_id }}/">
-                    <img src="{{ photo.thumb_url }}" width="300"></a></td>
-            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.external_id }}/">
+        <tr><td><a href="/lockdownsf/manage/photo_view/{{ photo.id }}/">
+            <img src="https://lockdownsf.s3.amazonaws.com/{{ photo.album.s3_dir }}/{{ photo.file_name }}" width="300"></a></td>
+            <td><a href="/lockdownsf/manage/album_view/{{ photo.album.id }}/">
                     {{ photo.album.name }}</a></td>
             <td>{{ photo.file_name }}</td>   
             <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>
-            <td><a href="https://photos.google.com/lr/photo/{{ photo.external_id }}">
-                {{ photo.external_id|truncatechars:20 }}</a></td>
+            <td {% if not photo.latitude or not photo.latitude %} class="text-danger" {% endif %}>Lat: {{ photo.latitude }}<br/>Lng: {{ photo.longitude }}</td>
             <td>
             {% for tag in photo.tags.all %}
                 <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>
