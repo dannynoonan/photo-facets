@@ -1,0 +1,11 @@
+# pyproject.toml
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = [
+    "lockdownsf/tests"
+]
+filterwarnings = [
+    "ignore::UserWarning",
+]

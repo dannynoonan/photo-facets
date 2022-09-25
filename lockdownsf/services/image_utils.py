@@ -24,6 +24,7 @@ def get_exif_data(img):
 
 
 def get_lat_lng(exif_gps_data):
+    print(exif_gps_data)
     lat = None
     lng = None
     # latitude
