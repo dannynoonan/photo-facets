@@ -25,7 +25,7 @@ from django.template import loader
 
 from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
 from lockdownsf.models import Album, Photo, Tag, User
-from lockdownsf.services import image_utils, s3manager
+from lockdownsf.services import album_utils, dao, photo_utils, s3manager
 from lockdownsf.services.controller_utils import (
     convert_album_to_json, extract_messages_from_storage, log_and_store_message)
 
@@ -54,8 +54,8 @@ def index(request):
     # process messages
     response_messages = extract_messages_from_storage(request)
 
-    # fetch all albums from db
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, center_latitude__isnull=False, center_longitude__isnull=False)
+    # fetch all albums with gps data
+    all_albums = dao.fetch_all_albums(gps_required=True)
     # active_tags = Tag.objects.filter(status='ACTIVE')
 
     if not all_albums:
@@ -82,7 +82,7 @@ def index(request):
         all_albums_json[album.id] = album.name
     # build map meta json to be passed to page js
     map_meta_json = {}
-    ctr_lat, ctr_lng, zoom_level, num_photos_with_gps = image_utils.avg_gps_info(all_albums)
+    ctr_lat, ctr_lng, zoom_level, num_photos_with_gps = photo_utils.avg_gps_info(all_albums)
     map_meta_json['latitude'] = ctr_lat
     map_meta_json['longitude'] = ctr_lng
     map_meta_json['zoom_level'] = zoom_level
@@ -112,8 +112,8 @@ def album_map(request, album_id):
     # process messages
     response_messages = extract_messages_from_storage(request)
 
-    # fetch all albums from db
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER, center_latitude__isnull=False, center_longitude__isnull=False)
+    # fetch all albums with gps data
+    all_albums = dao.fetch_all_albums(gps_required=True)
 
     if not all_albums:
         log_and_store_message(request, messages.ERROR, 'Failure to load albums to build photo collection')
@@ -129,7 +129,7 @@ def album_map(request, album_id):
         all_albums_json[album.id] = album.name
 
     try:
-        selected_album = Album.objects.get(pk=album_id)
+        selected_album = dao.fetch_album_by_id(album_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
             f"[{ex.__class__.__name__}]: Failure to load album with google photos id [{album_id}]. Details: {ex}")
@@ -205,7 +205,7 @@ def manage(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
 
     context = {
         'template': template,
@@ -224,7 +224,7 @@ def album_listing(request):
     # process messages
     response_messages = extract_messages_from_storage(request)
 
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
     if all_albums:
         for album in all_albums:
             album.photo_count = len(album.photo_set.all())
@@ -244,7 +244,7 @@ def album_view(request, album_id, page_number=None):
     page_title = 'Album details'
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
 
     if not album_id:
         log_and_store_message(request, messages.ERROR, 'Failure to fetch album, no album_id was specified')
@@ -260,7 +260,7 @@ def album_view(request, album_id, page_number=None):
 
     # fetch album and mapped photos from db
     try:
-        album = Album.objects.get(pk=album_id)
+        album = dao.fetch_album_by_id(album_id)
         mapped_photos = album.photo_set.all().order_by('dt_taken')
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
@@ -324,9 +324,7 @@ def album_edit(request):
 
     # update album name in db
     try:
-        album = Album.objects.get(pk=album_id)
-        album.name = album_name
-        album.save()
+        dao.update_album_name(album_id, album_name)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
             f"[{ex.__class__.__name__}]: Failed to update album with id [{album_id}]. Details: {ex}")
@@ -354,7 +352,7 @@ def album_select_new_photos(request):
     tmp_dir_uuid = str(uuid.uuid4())
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
 
     context = {
         'template': template,
@@ -401,7 +399,7 @@ def album_import_new_photos(request):
     # if adding photos to existing album: fetch album from db
     if album_id:
         try:
-            album = Album.objects.get(pk=album_id)
+            album = dao.fetch_album_by_id(album_id)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR,
                 f"[{ex.__class__.__name__}]: Failed to import photos, no album found matching album_id [{album_id}]. Details: {ex}")
@@ -414,10 +412,8 @@ def album_import_new_photos(request):
                 "Failed to create album, no album title was specified.")
             return redirect(f"/lockdownsf/manage/album_select_new_photos/")
 
-        # insert Album into db with status NEWBORN
-        album = Album(name=album_name, owner=DEFAULT_OWNER, status=Status.NEWBORN.name)
-        album.s3_dir = album_s3_dir_uuid 
-        album.save()
+        # insert Album into db 
+        album = dao.create_album(album_name, album_s3_dir_uuid)
 
     # for both new and existing album workflow: download photos from s3, extract GPS and timestamp info 
     photos = []
@@ -432,7 +428,7 @@ def album_import_new_photos(request):
         pil_image = Image.open(BytesIO(response.content))
 
         # extract GPS and timestamp info
-        exif_data = image_utils.get_exif_data(pil_image)
+        exif_data = photo_utils.get_exif_data(pil_image)
         lat = None
         lng = None
         width = None
@@ -440,7 +436,7 @@ def album_import_new_photos(request):
         dt_taken = None
         if exif_data:
             if exif_data.get('GPSInfo', ''):
-                lat, lng = image_utils.get_lat_lng(exif_data.get('GPSInfo', ''))
+                lat, lng = photo_utils.get_lat_lng(exif_data.get('GPSInfo', ''))
             if exif_data.get('ExifImageWidth', ''):
                 width = exif_data.get('ExifImageWidth', '')
             if exif_data.get('ExifImageHeight', ''):
@@ -466,13 +462,8 @@ def album_import_new_photos(request):
 
     # for both new and existing album workflow: calculate album lat/lng and furthest N-S or E-W distance between points
     # freshly fetch album to get all of its mappings - technically unnecessary for new albums, but just cleaner/streamlined this way
-    album = Album.objects.get(pk=album.id)
-    ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.photo_set.all())
-    # update Album in db with center lat/lng, zoom level, and status LOADED_AND_MAPPED
-    album.center_latitude = ctr_lat
-    album.center_longitude = ctr_lng
-    album.map_zoom_level = zoom_level
-    album.photos_having_gps = photos_having_gps
+    album = dao.fetch_album_by_id(album.id)
+    album_utils.update_album_gps_info(album)
     album.status = Status.LOADED_AND_MAPPED.name
     album.save()
 
@@ -497,7 +488,7 @@ def album_delete(request):
     else:
         try:
             # fetch album from db, then delete it and its associated s3 data
-            album = Album.objects.get(pk=album_id)
+            album = dao.fetch_album_by_id(album_id)
             album_s3_dir = album.s3_dir
             album.delete()
             s3manager.delete_dir(album_s3_dir)
@@ -533,7 +524,7 @@ def album_photos_delete(request):
     # fetch photos from db, delete them, and track deleted items in list 
     for photo_id in photo_ids:
         try:
-            photo = Photo.objects.get(pk=photo_id)
+            photo = dao.fetch_photo_by_id(photo_id)
             s3_dir = photo.album.s3_dir
             photo.delete()
             s3manager.delete_file(f"{s3_dir}/{photo.file_name}")
@@ -544,13 +535,9 @@ def album_photos_delete(request):
 
     # fetch album and update GPS data based on remaining photos
     try:
-        album = Album.objects.get(pk=album_id)
+        album = dao.fetch_album_by_id(album_id)
         album_label = album.name  
-        ctr_lat, ctr_lng, zoom_level, photos_having_gps = image_utils.avg_gps_info(album.photo_set.all())
-        album.center_latitude = ctr_lat
-        album.center_longitude = ctr_lng
-        album.map_zoom_level = zoom_level
-        album.photos_having_gps = photos_having_gps
+        album_utils.update_album_gps_info(album)
         album.save()
     except Exception as ex:
         log_and_store_message(request, messages.ERROR, 
@@ -576,8 +563,8 @@ def photo_search(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
-    all_tags = Tag.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
+    all_tags = dao.fetch_all_tags()
 
     # assign form data to vars and assemble query filters
     search_criteria = {}
@@ -641,12 +628,12 @@ def photo_view(request, photo_id: int):
     page_title = 'Photo details'
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
-    all_tags = Tag.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
+    all_tags = dao.fetch_all_tags()
 
     # fetch photo from db
     try:
-        photo = Photo.objects.get(pk=photo_id)
+        photo = dao.fetch_photo_by_id(photo_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
             f"[{ex.__class__.__name__}]: Failure to fetch photo, no match for photo_id [{photo_id}]")
@@ -717,7 +704,7 @@ def photo_edit(request):
 
     # fetch photo from db
     try:
-        photo = Photo.objects.get(pk=photo_id)
+        photo = dao.fetch_photo_by_id(photo_id)
     except Exception as ex:
         log_and_store_message(request, messages.ERROR,
             f"[{ex.__class__.__name__}]: Failure to update photo, no match for photo_id [{photo_id}]")
@@ -740,7 +727,7 @@ def photo_edit(request):
         # delete old tags that aren't in new list
         for tag_id_to_remove in tag_ids_to_remove:
             try:
-                tag_to_remove = Tag.objects.get(pk=tag_id_to_remove)
+                tag_to_remove = dao.fetch_tag_by_id(tag_id_to_remove)
                 photo.tags.remove(tag_to_remove)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
@@ -749,7 +736,7 @@ def photo_edit(request):
         # add new tags that aren't in old list
         for tag_id_to_add in tag_ids_to_add:
             try:
-                tag_to_add = Tag.objects.get(pk=tag_id_to_add)
+                tag_to_add = dao.fetch_tag_by_id(tag_id_to_add)
                 photo.tags.add(tag_to_add)
             except Exception as ex:
                 log_and_store_message(request, messages.ERROR,
@@ -786,10 +773,10 @@ def tag_listing(request):
     response_messages = extract_messages_from_storage(request)
 
     # form backing data
-    all_albums = Album.objects.filter(owner=DEFAULT_OWNER)
+    all_albums = dao.fetch_all_albums()
     all_tag_statuses = [ts.name for ts in TagStatus]
         
-    all_tags = Tag.objects.all().order_by('name')
+    all_tags = dao.fetch_all_tags(order_by='name')
     for tag in all_tags:
         tag.photo_count = len(tag.photo_set.all())
         
@@ -814,8 +801,7 @@ def tag_create(request):
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
     try:
-        new_tag = Tag(name=new_tag_name, status=TagStatus.ACTIVE.name, owner=DEFAULT_OWNER)
-        new_tag.save()
+        new_tag = dao.create_tag(new_tag_name)
         log_and_store_message(request, messages.SUCCESS, f"Successfully created new tag [{new_tag.name}].")
         return redirect(f"/lockdownsf/manage/tag_listing/")
 
@@ -878,7 +864,7 @@ def extract_ocr_text(request):
     if request_scope == 'photo':
         # fetch photo from db
         try:
-            photo = Photo.objects.get(pk=object_id)
+            photo = dao.fetch_photo_by_id(object_id)
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 
                 f"[{ex.__class__.__name__}]: Failure to extract OCR text, no image found in db matching id [{object_id}]")
@@ -910,7 +896,7 @@ def extract_ocr_text(request):
     if request_scope == "album":
         # fetch photos mapped to album from db
         try:
-            album = Album.objects.get(pk=object_id)
+            album = dao.fetch_album_by_id(object_id)
             album_photos = album.photo_set.all()
         except Exception as ex:
             log_and_store_message(request, messages.ERROR, 

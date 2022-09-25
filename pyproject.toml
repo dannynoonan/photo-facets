@@ -4,7 +4,7 @@ DJANGO_SETTINGS_MODULE = "config.settings.local"
 minversion = "7.0"
 addopts = "-ra -q"
 testpaths = [
-    "lockdownsf/tests"
+    "lockdownsf/tests/unit_tests"
 ]
 filterwarnings = [
     "ignore::UserWarning",
