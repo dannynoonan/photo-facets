@@ -1,4 +1,4 @@
-boto3==1.24.74
+boto3==1.23.10
 django==4.1.1
 django-environ==0.9.0
 django-heroku==0.3.1
