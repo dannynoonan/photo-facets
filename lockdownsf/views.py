@@ -21,7 +21,7 @@ from django.db import IntegrityError
 from django.db.models import Q
 from django.http import HttpResponse, Http404
 from django.shortcuts import render, redirect
-from django.template import loader
+# from django.template import loader
 
 from lockdownsf.metadata import Status, TagStatus, MAX_RESULTS_PER_PAGE
 from lockdownsf.models import Album, Photo, Tag, User
