@@ -80,6 +80,7 @@
             <th scope="col">Photo</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
+            <th scope="col">GPS location</th>
             <th scope="col">Mime type</th>
             <th scope="col"><nobr>Date taken /</nobr> <nobr>imported /</nobr> updated</th>
             <th scope="col">Dimensions</th>
@@ -94,10 +95,11 @@
             <td><a href="/lockdownsf/manage/photo_view/{{ photo.id }}/">
                     <img src="https://lockdownsf.s3.amazonaws.com/{{ photo.album.s3_dir }}/{{ photo.file_name }}" width="300"></a></td>
             <td>{{ photo.file_name }}</th>
-            <td>{% if photo.description %} {{ photo.description }} {% endif %}</th>    
+            <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>    
+            <td {% if not photo.latitude %} class="text-danger" {% endif %}>Lat: {{ photo.latitude }}<br/>Lng: {{ photo.longitude }}</td>
             <td>{{ photo.mime_type }}</td>
             <td><small>{{ photo.dt_taken }}<br/>{{ photo.dt_inserted }}<br/>{{ photo.dt_updated }}</small></td>
-            <td>{% if photo.width %} {{ photo.width }} x {{ photo.height }} {% endif %}</td>
+            <td {% if not photo.width or not photo.height %} class="text-danger" {% endif %}>{{ photo.width }} x {{ photo.height }}</td>
             <td>
             {% for tag in photo.tags.all %}
             <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>

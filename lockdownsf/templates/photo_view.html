@@ -80,11 +80,11 @@
         <tr><th scope="row">File format:</th>
             <td>{{ photo.mime_type }}</td></tr>
         <tr><th scope="row">Latitude:</th>
-            <td>{% if photo.latitude %} {{ photo.latitude }} {% endif %}</td></tr>
+            <td {% if not photo.latitude %} class="text-danger" {% endif %}>{{ photo.latitude }}</td></tr>
         <tr><th scope="row">Longitude:</th>
-            <td>{% if photo.longitude %} {{ photo.longitude }} {% endif %}</td></tr>
+            <td {% if not photo.longitude %} class="text-danger" {% endif %}>{{ photo.longitude }}</td></tr>
         <tr><th scope="row">Dimensions:</th>
-            <td>{{ photo.width }} x {{ photo.height }}</td></tr>
+            <td {% if not photo.width or not photo.height %} class="text-danger" {% endif %}>{{ photo.width }} x {{ photo.height }}</td></tr>
         <tr><th scope="row">Status:</th>
             <td>{{ photo.status }}</td></tr>
         <tr><th scope="row">Extracted text:</th>

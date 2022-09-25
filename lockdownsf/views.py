@@ -433,21 +433,25 @@ def album_import_new_photos(request):
 
         # extract GPS and timestamp info
         exif_data = image_utils.get_exif_data(pil_image)
-        lat = 0
-        lng = 0
+        lat = None
+        lng = None
+        width = None
+        height = None
         dt_taken = None
         if exif_data:
             if exif_data.get('GPSInfo', ''):
                 lat, lng = image_utils.get_lat_lng(exif_data.get('GPSInfo', ''))
+            if exif_data.get('ExifImageWidth', ''):
+                width = exif_data.get('ExifImageWidth', '')
+            if exif_data.get('ExifImageHeight', ''):
+                height = exif_data.get('ExifImageHeight', '')
             if exif_data.get('DateTimeOriginal', ''):
                 dt_taken = datetime.strptime(exif_data['DateTimeOriginal'], '%Y:%m:%d %H:%M:%S')
+
         else: 
             log_and_store_message(request, messages.ERROR, f"Failure to get exif_data for image_path [{image_path}]")
 
         # TODO raise exception if lat/lng is not set?
-        if lat == 0 and lng == 0:
-            lat = None
-            lng = None
 
         # extract OCR text
         # extracted_text_search, extracted_text_display = s3manager.extract_text(image_file_name, settings.S3_BUCKET)
@@ -455,7 +459,7 @@ def album_import_new_photos(request):
         # init and save Photos to db, with status NEWBORN, not yet mapped to Album
         photo = Photo(
             album=album, owner=DEFAULT_OWNER, file_name=image_file_name, mime_type=pil_image.format, dt_taken=dt_taken, 
-            latitude=lat, longitude=lng, status=Status.LOADED_AND_MAPPED.name)
+            width=width, height=height, latitude=lat, longitude=lng, status=Status.LOADED_AND_MAPPED.name)
             # extracted_text_search=extracted_text_search, extracted_text_display=extracted_text_display)
         photo.save()
         photos.append(photo)
@@ -475,7 +479,7 @@ def album_import_new_photos(request):
     log_and_store_message(request, messages.SUCCESS,
         f"Successfully mapped [{len(photos)}] new photos to album [{album.name}]")
 
-    # if adding to existing album, move photos to correct s3 bucket
+    # if adding to existing album, move photos to correct s3 dir
     if album_s3_dir_uuid != album.s3_dir:
         s3manager.move_photos(album_s3_dir_uuid, album.s3_dir, image_file_names)
     

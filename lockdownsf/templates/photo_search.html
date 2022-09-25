@@ -86,6 +86,7 @@
             <th scope="col">Album</th>
             <th scope="col">File name</th>
             <th scope="col">Description</th>
+            <th scope="col">GSP location</th>
             <th scope="col">Tags</th>
             <th scope="col">OCR text</th></tr>
     </thead>
@@ -97,6 +98,7 @@
                     {{ photo.album.name }}</a></td>
             <td>{{ photo.file_name }}</td>   
             <td>{% if photo.description %} {{ photo.description }} {% endif %}</td>
+            <td {% if not photo.latitude or not photo.latitude %} class="text-danger" {% endif %}>Lat: {{ photo.latitude }}<br/>Lng: {{ photo.longitude }}</td>
             <td>
             {% for tag in photo.tags.all %}
                 <span class="nobreak {% if tag.status == 'DISABLED' %} text-muted {% endif %}">{{ tag.name }}</span><br/>
