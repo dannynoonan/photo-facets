@@ -97,28 +97,6 @@ def extract_text(img_file_name, bucket):
 #     return img_dest_file_path
 
 
-# def delete_dir_old(dir_to_delete, file_names):
-#     if not (dir_to_delete and file_names):
-#         return
-#     s3_resource = boto3.resource('s3',
-#          aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-#          aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY)
-         
-#     # delete each file in dir_to_delete
-#     for fn in file_names:
-#         file_path = f"{dir_to_delete}/{fn}"
-#         try:
-#             s3_resource.Object(settings.S3_BUCKET, file_path).delete()
-#         except Exception as ex:
-#             raise Exception(f"Failed to delete file [{file_path}] from s3. Details: {ex}")
-
-#     # delete dir_to_delete
-#     try:
-#         s3_resource.Object(settings.S3_BUCKET, dir_to_delete).delete()
-#     except Exception as ex:
-#         raise Exception(f"Failed to delete temp directory [{dir_to_delete}] from s3. Details: {ex}")
-
-
 def delete_dir(dir_to_delete: str) -> None:
     s3_client = boto3.client('s3',
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
