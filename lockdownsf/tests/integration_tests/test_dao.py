@@ -5,6 +5,6 @@ from lockdownsf.models import Album
 
 @pytest.mark.django_db
 def test_create_album():
-    pass
+    assert True
 
     
